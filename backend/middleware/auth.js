@@ -44,10 +44,15 @@ exports.verifyToken = async (req, res, next) => {
     
     // Check if user has verified email
     if (!user.email_verified) {
-      return res.status(403).json({ 
-        status: 'error',
-        message: 'Please verify your email address before accessing this resource.' 
-      });
+      // In development mode, bypass email verification
+      if (process.env.NODE_ENV === 'development') {
+        logger.warn(`Bypassing email verification for ${user.email} in development mode`);
+      } else {
+        return res.status(403).json({ 
+          status: 'error',
+          message: 'Please verify your email address before accessing this resource.' 
+        });
+      }
     }
     
     // Set user on request object

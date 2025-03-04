@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, createContext, useContext, ReactNode } from 'react';
-import api from '@/lib/axios';
+import api, { setAccessToken, clearAccessToken } from '@/lib/axios';
 
 interface User {
   id: string;
@@ -33,7 +33,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (token) {
         try {
           // Set the token in axios headers
-          api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+          setAccessToken(token);
           
           // Fetch user data
           const response = await api.get('/api/auth/me');
@@ -41,7 +41,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         } catch (error) {
           console.error('Auth check failed:', error);
           localStorage.removeItem('accessToken');
-          delete api.defaults.headers.common['Authorization'];
+          clearAccessToken();
         }
       }
       
@@ -57,7 +57,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     localStorage.setItem('accessToken', token);
     
     // Set token in axios headers
-    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    setAccessToken(token);
     
     // Set user data
     setUser(userData);
@@ -75,7 +75,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       localStorage.removeItem('accessToken');
       
       // Remove token from axios headers
-      delete api.defaults.headers.common['Authorization'];
+      clearAccessToken();
       
       // Clear user data
       setUser(null);

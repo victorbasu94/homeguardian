@@ -15,6 +15,14 @@ const api = axios.create({
 // In-memory token storage (more secure than localStorage)
 let accessToken: string | null = null;
 
+// Initialize token from localStorage if available
+if (typeof window !== 'undefined') {
+  const storedToken = localStorage.getItem('accessToken');
+  if (storedToken) {
+    accessToken = storedToken;
+  }
+}
+
 // Function to set the access token
 export const setAccessToken = (token: string) => {
   accessToken = token;
