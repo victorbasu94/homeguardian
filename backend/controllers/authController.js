@@ -177,10 +177,15 @@ exports.login = async (req, res) => {
     
     // Check if email is verified
     if (!user.email_verified) {
-      return res.status(403).json({
-        status: 'error',
-        message: 'Please verify your email before logging in'
-      });
+      // In development mode, bypass email verification
+      if (process.env.NODE_ENV === 'development') {
+        logger.warn(`Bypassing email verification for ${email} in development mode`);
+      } else {
+        return res.status(403).json({
+          status: 'error',
+          message: 'Please verify your email before logging in'
+        });
+      }
     }
     
     // Generate tokens

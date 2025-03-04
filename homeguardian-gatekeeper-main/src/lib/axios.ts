@@ -1,14 +1,14 @@
-
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import { toast } from 'sonner';
 
 // Create a base axios instance with common configuration
 const api = axios.create({
-  baseURL: 'https://api.example.com', // Replace with your actual API URL in production
+  baseURL: 'http://localhost:5001', // Local development backend server
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true, // Include credentials in requests
   timeout: 10000, // 10 seconds
 });
 
@@ -77,7 +77,7 @@ api.interceptors.response.use(
               }
               
               // Call the refresh token endpoint
-              const response = await axios.post('https://api.example.com/api/auth/refresh', {
+              const response = await axios.post('http://localhost:5001/api/auth/refresh', {
                 refreshToken
               });
               
