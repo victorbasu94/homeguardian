@@ -7,14 +7,13 @@ import StickyCallToAction from '@/components/StickyCallToAction';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 
-type PricingPlan = 'monthly' | 'yearly';
+type PricingPlan = 'monthly';
 type SubscriptionTier = 'basic' | 'pro' | 'premium';
 
 interface PricingTierProps {
   title: string;
   price: {
     monthly: number;
-    yearly: number;
   };
   description: string;
   features: {
@@ -41,81 +40,62 @@ const PricingTier: React.FC<PricingTierProps> = ({
   icon,
   homes
 }) => {
-  const yearlyDiscount = Math.round((1 - (price.yearly / 12) / price.monthly) * 100);
-  
   return (
     <div className={`
       relative rounded-2xl overflow-hidden transition-all duration-300
       ${highlighted 
         ? 'border-2 border-primary shadow-xl scale-105 z-10 bg-white' 
-        : 'border border-gray-200 shadow-card bg-white hover:shadow-card-hover'}
+        : 'border border-neutral/10 shadow-md bg-white/80'}
     `}>
       {highlighted && (
-        <div className="absolute top-0 left-0 right-0 bg-primary text-white text-center py-2 font-medium">
+        <div className="absolute top-0 left-0 right-0 bg-primary text-white text-center py-1.5 text-sm font-medium">
           Most Popular
         </div>
       )}
       
-      <div className={`p-8 ${highlighted ? 'pt-14' : 'pt-8'}`}>
-        <div className="flex items-center gap-4 mb-4">
-          <div className={`
-            p-3 rounded-full 
-            ${highlighted ? 'bg-primary/10 text-primary' : 'bg-gray-100 text-neutral/70'}
-          `}>
+      <div className="p-6 pt-8">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="bg-primary/10 p-2 rounded-full">
             {icon}
           </div>
-          <h3 className="text-2xl font-bold">{title}</h3>
+          <h3 className="text-xl font-semibold">{title}</h3>
         </div>
         
-        <p className="text-neutral/70 mb-6">{description}</p>
-        
-        <div className="mb-6">
+        <div>
           <div className="flex items-end gap-2">
             <span className="text-4xl font-bold">
-              ${plan === 'monthly' ? price.monthly : Math.round(price.yearly / 12)}
+              ${price.monthly}
             </span>
-            <span className="text-neutral/70 mb-1">/month</span>
+            <span className="text-neutral/70 mb-1">/ month</span>
           </div>
           
-          {plan === 'yearly' && (
-            <div className="text-sm mt-1 text-primary font-medium">
-              Save {yearlyDiscount}% with annual billing
-            </div>
-          )}
+          <p className="text-neutral/80 mt-3 text-sm">
+            {description}
+          </p>
           
-          <div className="text-sm text-neutral/70 mt-1">
-            {plan === 'yearly' 
-              ? `$${price.yearly} billed annually` 
-              : 'Billed monthly'}
+          <div className="mt-2 text-sm text-neutral/70">
+            For up to {homes} {homes === 1 ? 'home' : 'homes'}
           </div>
         </div>
         
-        <div className="mb-8">
-          <div className="flex items-center gap-2 mb-4">
-            <Home className="h-4 w-4 text-neutral/70" />
-            <span className="text-neutral/70">Up to {homes} {homes === 1 ? 'home' : 'homes'}</span>
-          </div>
-          
+        <div className="mt-6">
           <Button 
-            onClick={() => onSubscribe(tier)} 
-            className={`w-full ${highlighted ? '' : 'bg-primary/10 text-primary hover:bg-primary/20'}`}
-            variant={highlighted ? 'default' : 'outline'}
-            size="lg"
+            className={`w-full ${highlighted ? 'bg-primary hover:bg-primary/90' : ''}`}
+            onClick={() => onSubscribe(tier)}
           >
-            Get Started <ArrowRight className="ml-2 h-5 w-5" />
+            Get Started
           </Button>
         </div>
         
-        <div className="space-y-4">
-          <div className="text-sm font-medium">Includes:</div>
-          {features.map((feature, i) => (
-            <div key={i} className="flex items-start gap-3">
+        <div className="mt-6 space-y-4">
+          {features.map((feature, index) => (
+            <div key={index} className="flex items-start gap-3">
               {feature.included ? (
-                <CheckCircle className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                <CheckCircle className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
               ) : (
-                <X className="h-5 w-5 text-neutral/30 mt-0.5 flex-shrink-0" />
+                <X className="h-5 w-5 text-neutral/40 flex-shrink-0 mt-0.5" />
               )}
-              <span className={feature.included ? 'text-neutral/80' : 'text-neutral/50'}>
+              <span className={feature.included ? 'text-neutral' : 'text-neutral/50'}>
                 {feature.text}
               </span>
             </div>
@@ -129,85 +109,72 @@ const PricingTier: React.FC<PricingTierProps> = ({
 const Pricing: React.FC = () => {
   const [plan, setPlan] = useState<PricingPlan>('monthly');
   
-  const handlePlanToggle = () => {
-    setPlan(plan === 'monthly' ? 'yearly' : 'monthly');
-  };
-  
   const handleSubscribe = (tier: SubscriptionTier) => {
-    // In a real app, this would navigate to checkout with the selected tier
-    console.log(`Subscribing to ${tier} plan`);
+    // In a real app, this would redirect to a checkout page
     window.location.href = `/register?plan=${tier}&billing=${plan}`;
   };
   
   const pricingTiers = [
     {
       title: 'Basic',
-      tier: 'basic' as SubscriptionTier,
-      icon: <Shield className="h-6 w-6" />,
       price: {
         monthly: 9.99,
-        yearly: 99.99,
       },
-      description: 'Essential home maintenance for single-home owners',
-      homes: 1,
-      highlighted: false,
+      description: 'Essential home maintenance for budget-conscious homeowners.',
       features: [
+        { text: 'Seasonal maintenance reminders', included: true },
+        { text: 'Basic home maintenance guide', included: true },
+        { text: 'Email support', included: true },
         { text: 'Personalized maintenance schedule', included: true },
-        { text: 'Basic task reminders', included: true },
-        { text: 'DIY maintenance guides', included: true },
-        { text: 'Seasonal checklists', included: true },
-        { text: 'Maintenance history tracking', included: true },
-        { text: 'Professional service recommendations', included: false },
         { text: 'Priority support', included: false },
-        { text: 'Multiple homes', included: false },
-        { text: 'Advanced reporting', included: false },
+        { text: 'Professional consultation', included: false },
+        { text: 'Service provider recommendations', included: false },
+        { text: 'Home value protection report', included: false },
       ],
+      tier: 'basic' as SubscriptionTier,
+      icon: <Home className="h-6 w-6 text-primary" />,
+      homes: 1,
     },
     {
       title: 'Pro',
-      tier: 'pro' as SubscriptionTier,
-      icon: <Zap className="h-6 w-6" />,
       price: {
         monthly: 19.99,
-        yearly: 199.99,
       },
-      description: 'Advanced features for serious homeowners',
-      homes: 2,
-      highlighted: true,
+      description: 'Comprehensive coverage for proactive homeowners.',
       features: [
-        { text: 'Personalized maintenance schedule', included: true },
-        { text: 'Advanced task reminders', included: true },
-        { text: 'DIY maintenance guides', included: true },
-        { text: 'Seasonal checklists', included: true },
-        { text: 'Maintenance history tracking', included: true },
-        { text: 'Professional service recommendations', included: true },
-        { text: 'Priority support', included: true },
-        { text: 'Multiple homes', included: true },
-        { text: 'Advanced reporting', included: false },
+        { text: 'All Basic features', included: true },
+        { text: 'Detailed maintenance tutorials', included: true },
+        { text: 'Priority email support', included: true },
+        { text: 'Maintenance cost estimator', included: true },
+        { text: 'Service provider recommendations', included: true },
+        { text: 'Professional consultation', included: false },
+        { text: 'Custom maintenance alerts', included: false },
+        { text: 'Home value protection report', included: false },
       ],
+      tier: 'pro' as SubscriptionTier,
+      highlighted: true,
+      icon: <Shield className="h-6 w-6 text-primary" />,
+      homes: 2,
     },
     {
       title: 'Premium',
-      tier: 'premium' as SubscriptionTier,
-      icon: <Home className="h-6 w-6" />,
       price: {
         monthly: 29.99,
-        yearly: 299.99,
       },
-      description: 'Complete solution for multiple properties',
-      homes: 5,
-      highlighted: false,
+      description: 'Ultimate protection for your valuable home investment.',
       features: [
-        { text: 'Personalized maintenance schedule', included: true },
-        { text: 'Advanced task reminders', included: true },
-        { text: 'DIY maintenance guides', included: true },
-        { text: 'Seasonal checklists', included: true },
-        { text: 'Maintenance history tracking', included: true },
-        { text: 'Professional service recommendations', included: true },
-        { text: 'Priority support', included: true },
-        { text: 'Multiple homes', included: true },
-        { text: 'Advanced reporting', included: true },
+        { text: 'All Pro features', included: true },
+        { text: 'Phone support', included: true },
+        { text: 'Quarterly professional consultation', included: true },
+        { text: 'Emergency maintenance guidance', included: true },
+        { text: 'Custom maintenance alerts', included: true },
+        { text: 'Home value protection report', included: true },
+        { text: 'Multiple property management', included: true },
+        { text: 'Annual home health assessment', included: true },
       ],
+      tier: 'premium' as SubscriptionTier,
+      icon: <Zap className="h-6 w-6 text-primary" />,
+      homes: 5,
     },
   ];
   
@@ -231,32 +198,6 @@ const Pricing: React.FC = () => {
         {/* Decorative elements */}
         <div className="absolute top-20 right-10 w-64 h-64 rounded-full bg-white/10 blur-3xl"></div>
         <div className="absolute bottom-10 left-10 w-80 h-80 rounded-full bg-white/5 blur-3xl"></div>
-      </section>
-      
-      {/* Pricing Toggle */}
-      <section className="py-12 -mt-16 relative z-20">
-        <div className="container-width">
-          <div className="bg-white rounded-2xl shadow-xl p-6 max-w-xs mx-auto flex items-center justify-center gap-4">
-            <span className={`font-medium ${plan === 'monthly' ? 'text-primary' : 'text-neutral/70'}`}>
-              Monthly
-            </span>
-            
-            <Switch 
-              checked={plan === 'yearly'} 
-              onCheckedChange={handlePlanToggle} 
-              className="data-[state=checked]:bg-primary"
-            />
-            
-            <div className="flex items-center gap-2">
-              <span className={`font-medium ${plan === 'yearly' ? 'text-primary' : 'text-neutral/70'}`}>
-                Yearly
-              </span>
-              <span className="bg-tertiary/20 text-tertiary text-xs font-bold px-2 py-1 rounded-full">
-                Save 20%
-              </span>
-            </div>
-          </div>
-        </div>
       </section>
       
       {/* Pricing Tiers */}
@@ -500,3 +441,4 @@ const Pricing: React.FC = () => {
 };
 
 export default Pricing;
+

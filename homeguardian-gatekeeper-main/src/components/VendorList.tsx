@@ -48,7 +48,11 @@ interface Vendor {
   phone: string;
 }
 
-const VendorList: React.FC = () => {
+interface VendorListProps {
+  className?: string;
+}
+
+const VendorList: React.FC<VendorListProps> = ({ className }) => {
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -85,10 +89,10 @@ const VendorList: React.FC = () => {
   }, [open]);
 
   return (
-    <div className="mt-4">
+    <div className={className}>
       <Button 
         variant="outline" 
-        className="w-full" 
+        className="vendor-dialog-trigger w-full h-10 flex items-center gap-2 justify-center" 
         onClick={() => setOpen(true)}
       >
         Connect to Vendors

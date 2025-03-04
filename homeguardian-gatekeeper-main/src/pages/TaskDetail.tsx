@@ -39,7 +39,18 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Card, CardContent } from '@/components/ui/card';
 import api from '@/lib/axios';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogClose,
+} from '@/components/ui/dialog';
 
 // Task status types
 type TaskStatus = 'pending' | 'in_progress' | 'completed' | 'overdue';
@@ -201,6 +212,40 @@ const mockTask: Task = {
   ],
 };
 
+// Mock vendor data for local development
+const mockVendors = [
+  {
+    name: "ABC Home Services",
+    address: "123 Main St, Anytown, CA 94123",
+    distance: 1.2,
+    phone: "555-123-4567"
+  },
+  {
+    name: "Quality Home Maintenance",
+    address: "456 Oak Ave, Anytown, CA 94123",
+    distance: 2.5,
+    phone: "555-234-5678"
+  },
+  {
+    name: "Professional Home Care",
+    address: "789 Pine Rd, Anytown, CA 94123",
+    distance: 3.1,
+    phone: "555-345-6789"
+  },
+  {
+    name: "Expert Home Solutions",
+    address: "101 Maple Dr, Anytown, CA 94123",
+    distance: 4.2,
+    phone: "555-456-7890"
+  },
+  {
+    name: "Premier Home Specialists",
+    address: "202 Cedar Ln, Anytown, CA 94123",
+    distance: 5.0,
+    phone: "555-567-8901"
+  }
+];
+
 const TaskDetail: React.FC = () => {
   const { taskId } = useParams<{ taskId: string }>();
   const [task, setTask] = useState<Task | null>(null);
@@ -209,6 +254,10 @@ const TaskDetail: React.FC = () => {
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const [isUpdatingTask, setIsUpdatingTask] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isVendorDialogOpen, setIsVendorDialogOpen] = useState<boolean>(false);
+  const [vendors, setVendors] = useState<any[]>([]);
+  const [isLoadingVendors, setIsLoadingVendors] = useState<boolean>(false);
+  const [vendorError, setVendorError] = useState<string | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -435,6 +484,37 @@ const TaskDetail: React.FC = () => {
     navigate('/dashboard');
   };
   
+  // Fetch vendors when the dialog is opened
+  const fetchVendors = async () => {
+    setIsLoadingVendors(true);
+    setVendorError(null);
+    
+    try {
+      // In development mode, use mock data
+      if (process.env.NODE_ENV === 'development') {
+        // Simulate API delay
+        await new Promise(resolve => setTimeout(resolve, 500));
+        setVendors(mockVendors);
+      } else {
+        // In production, fetch from API
+        const response = await api.get('/api/vendors');
+        setVendors(response.data);
+      }
+    } catch (err) {
+      console.error('Error fetching vendors:', err);
+      setVendorError('Failed to load vendors. Please try again later.');
+    } finally {
+      setIsLoadingVendors(false);
+    }
+  };
+  
+  // Fetch vendors when the dialog is opened
+  useEffect(() => {
+    if (isVendorDialogOpen) {
+      fetchVendors();
+    }
+  }, [isVendorDialogOpen]);
+  
   if (isLoading) {
     return (
       <div className="min-h-screen flex flex-col bg-softWhite">
@@ -466,7 +546,7 @@ const TaskDetail: React.FC = () => {
   }
   
   return (
-    <div className="min-h-screen flex flex-col bg-softWhite">
+    <div className="min-h-screen flex flex-col bg-background">
       <div className="flex-grow container mx-auto py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-5xl mx-auto">
           {/* Back button and actions */}
@@ -476,15 +556,17 @@ const TaskDetail: React.FC = () => {
             </Button>
             
             <div className="flex items-center gap-3">
-              <VendorList task={task} />
-              
-              <Button variant="outline" className="flex items-center gap-2">
-                <Edit className="h-4 w-4" /> Edit Task
+              <Button 
+                variant="outline" 
+                className="flex items-center gap-2 w-[160px] justify-center"
+                onClick={() => setIsVendorDialogOpen(true)}
+              >
+                Connect to Vendors
               </Button>
               
               <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
                 <AlertDialogTrigger asChild>
-                  <Button variant="destructive" className="flex items-center gap-2">
+                  <Button variant="destructive" className="flex items-center gap-2 w-[160px] justify-center">
                     <Trash2 className="h-4 w-4" /> Delete
                   </Button>
                 </AlertDialogTrigger>
@@ -746,6 +828,75 @@ const TaskDetail: React.FC = () => {
           </Tabs>
         </div>
       </div>
+      
+      {/* Vendor dialog */}
+      <Dialog open={isVendorDialogOpen} onOpenChange={setIsVendorDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Local Home Service Vendors</DialogTitle>
+            <DialogDescription>
+              Connect with trusted home service providers in your area.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            {isLoadingVendors ? (
+              <div className="flex justify-center items-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            ) : vendorError ? (
+              <div className="text-center py-8 text-destructive">
+                <p>{vendorError}</p>
+                <Button 
+                  variant="outline" 
+                  className="mt-4" 
+                  onClick={fetchVendors}
+                >
+                  Try Again
+                </Button>
+              </div>
+            ) : (
+              <ScrollArea className="h-[50vh] pr-4">
+                {vendors.map((vendor, index) => (
+                  <div key={index} className="mb-4">
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h3 className="font-semibold text-lg">{vendor.name}</h3>
+                            <p className="text-sm text-muted-foreground">{vendor.address}</p>
+                            <p className="text-sm mt-1">{vendor.distance} miles away</p>
+                          </div>
+                          <Button size="sm" variant="secondary" className="flex-shrink-0">
+                            Call
+                          </Button>
+                        </div>
+                        <p className="text-sm mt-2">
+                          <span className="font-medium">Phone:</span> {vendor.phone}
+                        </p>
+                      </CardContent>
+                    </Card>
+                    {index < vendors.length - 1 && <Separator className="my-2" />}
+                  </div>
+                ))}
+              </ScrollArea>
+            )}
+          </div>
+          
+          <DialogFooter className="sm:justify-between">
+            <DialogClose asChild>
+              <Button type="button" variant="secondary">
+                Close
+              </Button>
+            </DialogClose>
+            <Button type="button" variant="default">
+              View All Vendors
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      <Footer />
     </div>
   );
 };

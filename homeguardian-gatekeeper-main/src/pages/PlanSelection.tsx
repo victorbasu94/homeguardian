@@ -7,14 +7,13 @@ import api from '@/lib/axios';
 import ProgressBar from '@/components/ProgressBar';
 import { Button } from '@/components/ui/button';
 
-type PricingPlan = 'monthly' | 'yearly';
+type PricingPlan = 'monthly';
 type SubscriptionTier = 'basic' | 'pro' | 'premium';
 
 interface PricingTierProps {
   title: string;
   price: {
     monthly: number;
-    yearly: number;
   };
   description: string;
   features: {
@@ -40,7 +39,6 @@ const PricingTier = ({
   isLoading
 }: PricingTierProps) => {
   const currentPrice = price[plan];
-  const yearlyDiscount = plan === 'yearly' ? 'Save 20%' : '';
   
   return (
     <div 
@@ -59,11 +57,8 @@ const PricingTier = ({
         <h3 className="text-2xl font-bold mb-2 font-poppins text-primary">{title}</h3>
         <div className="flex items-end gap-2 mb-2">
           <span className="text-4xl font-bold text-neutral">${currentPrice}</span>
-          <span className="text-neutral/70 mb-1">/ {plan === 'monthly' ? 'month' : 'year'}</span>
+          <span className="text-neutral/70 mb-1">/ month</span>
         </div>
-        {yearlyDiscount && (
-          <span className="text-secondary text-sm font-medium">{yearlyDiscount}</span>
-        )}
         <p className="text-neutral/80 mt-3 font-inter">{description}</p>
       </div>
       
@@ -104,10 +99,6 @@ const PlanSelection = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { user } = useAuth();
-  
-  const handlePlanToggle = (newPlan: PricingPlan) => {
-    setPlan(newPlan);
-  };
   
   const handleSubscribe = async (tier: SubscriptionTier) => {
     if (!user) {
@@ -150,7 +141,6 @@ const PlanSelection = () => {
       title: 'Basic',
       price: {
         monthly: 9.99,
-        yearly: 7.99,
       },
       description: 'Essential home maintenance for budget-conscious homeowners.',
       features: [
@@ -168,7 +158,6 @@ const PlanSelection = () => {
       title: 'Pro',
       price: {
         monthly: 19.99,
-        yearly: 15.99,
       },
       description: 'Comprehensive coverage for proactive homeowners.',
       features: [
@@ -187,7 +176,6 @@ const PlanSelection = () => {
       title: 'Premium',
       price: {
         monthly: 29.99,
-        yearly: 23.99,
       },
       description: 'Ultimate protection for your valuable home investment.',
       features: [
@@ -204,7 +192,7 @@ const PlanSelection = () => {
   ];
   
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
+    <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-16 max-w-7xl">
         <div className="text-center mb-12">
           <h1 className="text-3xl font-bold mb-3">Choose Your Plan</h1>
@@ -214,32 +202,6 @@ const PlanSelection = () => {
         </div>
         
         <ProgressBar value={100} max={100} size="sm" color="success" />
-        
-        {/* Billing toggle */}
-        <div className="flex justify-center mb-12">
-          <div className="bg-white rounded-full p-1 inline-flex shadow-sm border border-gray-100">
-            <button
-              onClick={() => handlePlanToggle('monthly')}
-              className={`px-6 py-2 rounded-full text-sm font-medium transition-all ${
-                plan === 'monthly' 
-                  ? 'bg-primary text-white shadow-sm' 
-                  : 'text-neutral hover:text-primary'
-              }`}
-            >
-              Monthly
-            </button>
-            <button
-              onClick={() => handlePlanToggle('yearly')}
-              className={`px-6 py-2 rounded-full text-sm font-medium transition-all ${
-                plan === 'yearly' 
-                  ? 'bg-primary text-white shadow-sm' 
-                  : 'text-neutral hover:text-primary'
-              }`}
-            >
-              Yearly <span className="text-secondary font-medium ml-1">Save 20%</span>
-            </button>
-          </div>
-        </div>
         
         {/* Pricing tiers */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
