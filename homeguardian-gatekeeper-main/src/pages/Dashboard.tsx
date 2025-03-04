@@ -297,7 +297,28 @@ const Dashboard = () => {
       const response = await api.get(`/api/tasks/${homeId}`);
       console.log("Tasks response:", response.data);
       
-      setTasks(response.data.data || []);
+      // Check if we have tasks data
+      if (response.data && response.data.data) {
+        // Map the API response to match the TaskData interface
+        const mappedTasks = response.data.data.map((task: any) => ({
+          id: task.id || task._id,
+          title: task.title || task.task_name || "Untitled Task",
+          description: task.description || task.why || "",
+          due_date: task.due_date || new Date().toISOString(),
+          status: task.status || (task.completed ? 'completed' : 'pending'),
+          priority: task.priority || 'medium',
+          home_id: task.home_id || homeId,
+          category: task.category || "General",
+          estimated_time: task.estimated_time || 30,
+          estimated_cost: task.estimated_cost || null
+        }));
+        
+        console.log("Mapped tasks:", mappedTasks);
+        setTasks(mappedTasks);
+      } else {
+        console.log("No tasks data found in response");
+        setTasks([]);
+      }
     } catch (error) {
       console.error("Error fetching tasks:", error);
       setTasksError("Failed to load tasks for this home. Please try again later.");
@@ -361,7 +382,18 @@ const Dashboard = () => {
       return <Skeleton className="h-6 w-24" />;
     }
     
-    if (!userData?.subscription_status || userData.subscription_status === "inactive") {
+    if (!userData?.subscription_status || userData.subscription_status === "inactive" || userData.subscription_status === "trial") {
+      // Only show the trial banner if the status is specifically "trial"
+      if (userData?.subscription_status === "trial") {
+        return (
+          <div className="flex items-center gap-2 text-sm text-amber-600 bg-amber-50 px-3 py-1 rounded-full">
+            <AlertCircle className="h-4 w-4" />
+            <span>Trial subscription</span>
+          </div>
+        );
+      }
+      
+      // Show the "No active subscription" banner for inactive or no subscription
       return (
         <div className="flex items-center gap-2 text-sm text-amber-600 bg-amber-50 px-3 py-1 rounded-full">
           <AlertCircle className="h-4 w-4" />
@@ -482,12 +514,27 @@ const Dashboard = () => {
       );
     }
     
-    if (tasks.length === 0) {
+    // Filter tasks by search query
+    const filteredTasks = searchQuery.trim() !== '' 
+      ? tasks.filter(task => 
+          (task.title?.toLowerCase() || '').includes(searchQuery.toLowerCase()) || 
+          (task.description?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+          (task.category?.toLowerCase() || '').includes(searchQuery.toLowerCase())
+        )
+      : tasks;
+    
+    console.log("Search query:", searchQuery);
+    console.log("Filtered tasks:", filteredTasks);
+    console.log("Original tasks:", tasks);
+    
+    if (filteredTasks.length === 0) {
       return (
         <div className="bg-muted/30 border border-border rounded-lg p-6 text-center">
-          <h3 className="text-lg font-medium mb-2">No tasks for this home</h3>
+          <h3 className="text-lg font-medium mb-2">No tasks found</h3>
           <p className="text-muted-foreground mb-4">
-            Add maintenance tasks to keep track of your home upkeep
+            {searchQuery.trim() !== '' 
+              ? "No tasks match your search criteria." 
+              : "Add maintenance tasks to keep track of your home upkeep"}
           </p>
           <Button onClick={() => navigate(`/homes/${selectedHome.id}/tasks/add`)}>
             <PlusCircle className="h-4 w-4 mr-2" />
@@ -498,8 +545,8 @@ const Dashboard = () => {
     }
     
     // Filter tasks by completion status
-    const pendingTasks = tasks.filter(task => task.status === 'pending');
-    const completedTasks = tasks.filter(task => task.status === 'completed');
+    const pendingTasks = filteredTasks.filter(task => task.status === 'pending');
+    const completedTasks = filteredTasks.filter(task => task.status === 'completed');
     
     return (
       <div className="space-y-6">
@@ -512,7 +559,7 @@ const Dashboard = () => {
                   key={task.id} 
                   task={task} 
                   onComplete={() => handleTaskComplete(task.id)}
-                  onViewDetails={() => handleTaskClick(task)}
+                  onViewDetails={() => navigate(`/tasks/${task.id}`)}
                 />
               ))}
             </div>
@@ -528,7 +575,7 @@ const Dashboard = () => {
                   key={task.id} 
                   task={task} 
                   onComplete={() => handleTaskComplete(task.id)}
-                  onViewDetails={() => handleTaskClick(task)}
+                  onViewDetails={() => navigate(`/tasks/${task.id}`)}
                 />
               ))}
             </div>
@@ -575,6 +622,9 @@ const Dashboard = () => {
         </div>
         
         <SubscriptionStatus 
+          status={userData?.subscription_status === 'active' ? 'active' : 
+                 userData?.subscription_status === 'trial' ? 'trial' : 'none'}
+          expiryDate={userData?.subscription_end_date ? format(new Date(userData.subscription_end_date), 'MMMM d, yyyy') : undefined}
           onUpgrade={() => navigate('/plan-selection')}
         />
         
@@ -624,42 +674,7 @@ const Dashboard = () => {
           </TabsContent>
           
           <TabsContent value="tasks">
-            {loadingTasks ? (
-              <div className="flex justify-center py-12">
-                <div className="animate-pulse space-y-4 w-full max-w-3xl">
-                  {[1, 2, 3].map(i => (
-                    <div key={i} className="h-32 bg-gray-200 rounded-lg"></div>
-                  ))}
-                </div>
-              </div>
-            ) : tasks.length === 0 ? (
-              <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
-                <ClipboardList className="h-12 w-12 mx-auto text-neutral/30 mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No tasks found</h3>
-                <p className="text-neutral/70 mb-6">
-                  {searchQuery 
-                    ? "No tasks match your search criteria." 
-                    : selectedHome 
-                      ? "This home doesn't have any tasks yet." 
-                      : "You don't have any tasks yet."}
-                </p>
-                <Button>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Task
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {tasks.map(task => (
-                  <TaskCard
-                    key={task.id}
-                    task={task}
-                    onComplete={() => handleTaskComplete(task.id)}
-                    onViewDetails={() => navigate(`/tasks/${task.id}`)}
-                  />
-                ))}
-              </div>
-            )}
+            {renderTasks()}
           </TabsContent>
           
           <TabsContent value="notifications">

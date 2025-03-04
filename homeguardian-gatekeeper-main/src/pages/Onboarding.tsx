@@ -17,7 +17,7 @@ import api from '@/lib/axios';
 // Step 1: Basic Home Information Schema
 const homeBasicSchema = z.object({
   name: z.string().min(2, 'Home name must be at least 2 characters'),
-  type: z.enum(['house', 'apartment', 'condo', 'townhouse', 'other'], {
+  type: z.enum(['house', 'apartment', 'condo', 'townhouse', 'mobile', 'single_family', 'other'], {
     required_error: 'Please select a home type',
   }),
   address: z.string().min(5, 'Please enter a valid address'),
@@ -214,11 +214,12 @@ const Onboarding: React.FC = () => {
   
   // Define home type options
   const homeTypes = [
-    { value: "single_family", label: "Single Family Home" },
+    { value: "house", label: "House" },
+    { value: "apartment", label: "Apartment" },
     { value: "condo", label: "Condominium" },
     { value: "townhouse", label: "Townhouse" },
-    { value: "apartment", label: "Apartment" },
     { value: "mobile", label: "Mobile Home" },
+    { value: "single_family", label: "Single Family Home" },
     { value: "other", label: "Other" }
   ];
   
@@ -315,7 +316,7 @@ const Onboarding: React.FC = () => {
                   <Select 
                     onValueChange={(value) => {
                       setFormData({ ...formData, type: value as any });
-                      setValueStep1('type', value as 'house' | 'apartment' | 'condo' | 'townhouse' | 'other');
+                      setValueStep1('type', value as 'house' | 'apartment' | 'condo' | 'townhouse' | 'mobile' | 'single_family' | 'other');
                     }}
                     defaultValue={formData.type}
                   >
