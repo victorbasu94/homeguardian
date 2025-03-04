@@ -1,4 +1,3 @@
-
 import { Home as HomeIcon, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -10,20 +9,27 @@ export interface HomeData {
   year_built: number;
   square_feet: number;
   image_url?: string;
+  location?: string;
 }
 
-interface HomeCardProps {
+export interface HomeCardProps {
   home: HomeData;
   className?: string;
+  isSelected?: boolean;
+  onClick?: () => void;
 }
 
-const HomeCard = ({ home, className }: HomeCardProps) => {
+const HomeCard = ({ home, className, isSelected = false, onClick }: HomeCardProps) => {
   return (
     <div 
       className={cn(
-        "group relative bg-white border border-border/50 shadow-sm rounded-lg overflow-hidden transition-all hover:shadow-md hover:border-primary/20",
+        "group relative bg-white border shadow-sm rounded-lg overflow-hidden transition-all cursor-pointer",
+        isSelected 
+          ? "border-primary shadow-md ring-2 ring-primary/20" 
+          : "border-border/50 hover:shadow-md hover:border-primary/20",
         className
       )}
+      onClick={onClick}
     >
       <div className="aspect-video bg-muted/30 relative">
         {home.image_url ? (
@@ -58,6 +64,7 @@ const HomeCard = ({ home, className }: HomeCardProps) => {
           to={`/homes/${home.id}`} 
           className="inline-flex items-center text-sm font-medium text-primary hover:text-primary/80 transition-colors"
           aria-label={`View details for ${home.name}`}
+          onClick={(e) => e.stopPropagation()}
         >
           View details
           <ArrowRight className="ml-1 h-4 w-4" />

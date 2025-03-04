@@ -222,26 +222,29 @@ const deletePaymentMethod = async (paymentMethodId) => {
 /**
  * Create a checkout session for subscription
  * @param {string} customerId - Stripe customer ID
+ * @param {string} priceId - Stripe price ID
  * @param {string} successUrl - URL to redirect to on success
  * @param {string} cancelUrl - URL to redirect to on cancel
  * @returns {Promise<Object>} - Checkout session
  */
-const createCheckoutSession = async (customerId, successUrl, cancelUrl) => {
+const createCheckoutSession = async (customerId, priceId, successUrl, cancelUrl) => {
   try {
-    logger.info(`Creating checkout session for customer: ${customerId}`);
+    logger.info(`Creating checkout session for customer: ${customerId}, price: ${priceId}`);
     
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       payment_method_types: ['card'],
       line_items: [
         {
-          price: process.env.STRIPE_PRICE_ID,
+          price: priceId,
           quantity: 1,
         },
       ],
       mode: 'subscription',
       success_url: successUrl,
       cancel_url: cancelUrl,
+      allow_promotion_codes: true,
+      billing_address_collection: 'auto',
     });
     
     logger.info(`Checkout session created successfully: ${session.id}`);

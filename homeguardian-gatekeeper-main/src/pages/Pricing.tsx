@@ -1,10 +1,14 @@
-
 import { useState, useEffect } from 'react';
 import { CheckCircle, Shield, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
+import api from '@/lib/axios';
 
 type PricingPlan = 'monthly' | 'yearly';
+type SubscriptionTier = 'basic' | 'pro' | 'premium';
 
 interface PricingTierProps {
   title: string;
@@ -19,9 +23,22 @@ interface PricingTierProps {
   }[];
   highlighted?: boolean;
   plan: PricingPlan;
+  tier: SubscriptionTier;
+  onSubscribe: (tier: SubscriptionTier) => void;
+  isLoading: boolean;
 }
 
-const PricingTier = ({ title, price, description, features, highlighted = false, plan }: PricingTierProps) => {
+const PricingTier = ({ 
+  title, 
+  price, 
+  description, 
+  features, 
+  highlighted = false, 
+  plan, 
+  tier,
+  onSubscribe,
+  isLoading
+}: PricingTierProps) => {
   const currentPrice = price[plan];
   const yearlyDiscount = plan === 'yearly' ? 'Save 20%' : '';
   
@@ -70,9 +87,11 @@ const PricingTier = ({ title, price, description, features, highlighted = false,
           highlighted 
             ? 'bg-secondary text-white hover:bg-secondary-dark' 
             : 'bg-primary text-white hover:bg-primary-dark'
-        }`}
+        } ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
+        onClick={() => onSubscribe(tier)}
+        disabled={isLoading}
       >
-        Get Started
+        {isLoading ? 'Processing...' : 'Choose Plan'}
       </button>
     </div>
   );
@@ -80,6 +99,10 @@ const PricingTier = ({ title, price, description, features, highlighted = false,
 
 const Pricing = () => {
   const [plan, setPlan] = useState<PricingPlan>('monthly');
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
+  const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuth();
   
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -117,6 +140,45 @@ const Pricing = () => {
     { text: 'Priority Support', included: true },
     { text: 'Home Systems Monitoring', included: true },
   ];
+
+  const handleSubscribe = async (tier: SubscriptionTier) => {
+    if (!isAuthenticated) {
+      // Redirect to login if not authenticated
+      toast({
+        title: 'Authentication required',
+        description: 'Please log in or create an account to subscribe.',
+      });
+      navigate('/login');
+      return;
+    }
+    
+    setIsLoading(true);
+    
+    try {
+      // Call the subscribe API endpoint
+      const response = await api.post('/api/subscriptions/checkout', {
+        plan_type: tier,
+        billing_cycle: plan
+      });
+      
+      // Redirect to Stripe Checkout
+      if (response.data.checkout_url) {
+        window.location.href = response.data.checkout_url;
+      } else {
+        throw new Error('No checkout URL returned');
+      }
+    } catch (error: any) {
+      console.error('Subscription error:', error);
+      
+      toast({
+        title: 'Subscription error',
+        description: error.response?.data?.message || 'An error occurred. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -164,27 +226,36 @@ const Pricing = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
             <PricingTier
               title="Basic"
-              price={{ monthly: 9.99, yearly: 95.88 }}
-              description="Essential protection for your home's basic maintenance needs."
+              price={{ monthly: 9, yearly: 95.88 }}
+              description="Essential maintenance tracking."
               features={basicFeatures}
               plan={plan}
+              tier="basic"
+              onSubscribe={handleSubscribe}
+              isLoading={isLoading}
             />
             
             <PricingTier
               title="Pro"
-              price={{ monthly: 19.99, yearly: 191.88 }}
-              description="Advanced protection with personalized maintenance schedules."
+              price={{ monthly: 19, yearly: 191.88 }}
+              description="Includes AI insights and reminders."
               features={proFeatures}
               highlighted={true}
               plan={plan}
+              tier="pro"
+              onSubscribe={handleSubscribe}
+              isLoading={isLoading}
             />
             
             <PricingTier
               title="Premium"
-              price={{ monthly: 29.99, yearly: 287.88 }}
-              description="Ultimate protection with all features and dedicated support."
+              price={{ monthly: 29, yearly: 287.88 }}
+              description="Full access with priority support."
               features={premiumFeatures}
               plan={plan}
+              tier="premium"
+              onSubscribe={handleSubscribe}
+              isLoading={isLoading}
             />
           </div>
         </div>
@@ -244,10 +315,10 @@ const Pricing = () => {
               Join thousands of homeowners who trust HomeGuardian to keep their homes in perfect condition.
             </p>
             <a 
-              href="/register" 
+              href={isAuthenticated ? "/dashboard" : "/register"} 
               className="bg-white text-primary px-8 py-3 rounded-full font-medium hover:bg-white/90 transition-colors inline-block animate-pulse-glow"
             >
-              Start Your Free Trial
+              {isAuthenticated ? "Go to Dashboard" : "Start Your Free Trial"}
             </a>
           </div>
         </div>

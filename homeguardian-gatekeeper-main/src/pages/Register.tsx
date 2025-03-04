@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -11,6 +10,7 @@ import { registerSchema } from '@/lib/validation';
 import AuthCard from '@/components/auth/AuthCard';
 import FormInput from '@/components/ui/FormInput';
 import PasswordStrength from '@/components/auth/PasswordStrength';
+import { useAuth } from '@/hooks/useAuth';
 
 // Type definition inferred from the schema
 type RegisterFormValues = z.infer<typeof registerSchema>;
@@ -19,6 +19,7 @@ const Register = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { login } = useAuth();
   
   const {
     register,
@@ -37,19 +38,33 @@ const Register = () => {
     
     try {
       // Send registration request to API
-      await api.post('/api/auth/register', {
+      const response = await api.post('/api/auth/register', {
         email: data.email,
         password: data.password
       });
       
-      // Show success toast
-      toast({
-        title: 'Registration successful',
-        description: 'Your account has been created successfully. Please log in.',
-      });
-      
-      // Redirect to login page
-      navigate('/login');
+      // Handle automatic login
+      if (response.data.accessToken) {
+        // Store the token and user data
+        login(response.data.accessToken, response.data.user);
+        
+        // Show success toast
+        toast({
+          title: 'Registration successful',
+          description: 'Your account has been created. Redirecting to onboarding...',
+        });
+        
+        // Redirect to onboarding page
+        navigate('/onboarding');
+      } else {
+        // Fallback to login page if auto-login fails
+        toast({
+          title: 'Registration successful',
+          description: 'Your account has been created successfully. Please log in.',
+        });
+        
+        navigate('/login');
+      }
     } catch (error: any) {
       // Handle registration error
       console.error('Registration error:', error);

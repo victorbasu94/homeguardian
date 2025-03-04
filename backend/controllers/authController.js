@@ -80,10 +80,27 @@ exports.register = async (req, res) => {
       logger.warn(`Failed to send verification email to ${email}`);
     }
     
-    // Return success response
+    // Auto-login: Generate tokens
+    const accessToken = generateToken(user._id);
+    const refreshToken = generateRefreshToken(user._id);
+    
+    // Save refresh token to database
+    user.refresh_token = refreshToken;
+    await user.save();
+    
+    // Set refresh token as HttpOnly cookie
+    setRefreshTokenCookie(res, refreshToken);
+    
+    // Return success response with access token
     res.status(201).json({
       status: 'success',
-      message: 'Registration successful. Please check your email to verify your account.'
+      message: 'Registration successful. Please check your email to verify your account.',
+      accessToken,
+      user: {
+        id: user._id,
+        email: user.email,
+        subscription_status: user.subscription_status
+      }
     });
   } catch (error) {
     logger.error('Registration error:', error);

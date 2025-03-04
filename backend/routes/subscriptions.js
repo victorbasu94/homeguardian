@@ -1088,4 +1088,105 @@ router.post('/create-portal-session', verifyToken, async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/subscriptions/checkout:
+ *   post:
+ *     summary: Create a Stripe checkout session for subscription
+ *     description: Creates a checkout session for the user to subscribe to a plan
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - plan_type
+ *             properties:
+ *               plan_type:
+ *                 type: string
+ *                 enum: [basic, pro, premium]
+ *                 description: The subscription plan type
+ *               billing_cycle:
+ *                 type: string
+ *                 enum: [monthly, yearly]
+ *                 description: The billing cycle (defaults to monthly)
+ *     responses:
+ *       200:
+ *         description: Checkout session created successfully
+ *       400:
+ *         description: Invalid request parameters
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *       500:
+ *         description: Server error
+ */
+router.post('/checkout', verifyToken, async (req, res) => {
+  try {
+    const { plan_type, billing_cycle = 'monthly' } = req.body;
+    const userId = req.user.id;
+
+    // Validate plan type
+    if (!['basic', 'pro', 'premium'].includes(plan_type)) {
+      return res.status(400).json({ message: 'Invalid plan type. Must be one of: basic, pro, premium' });
+    }
+
+    // Validate billing cycle
+    if (!['monthly', 'yearly'].includes(billing_cycle)) {
+      return res.status(400).json({ message: 'Invalid billing cycle. Must be one of: monthly, yearly' });
+    }
+
+    // Get user from database
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Create Stripe customer if not exists
+    if (!user.stripe_customer_id) {
+      const customerId = await stripeService.createCustomer(user.email);
+      user.stripe_customer_id = customerId;
+      await user.save();
+    }
+
+    // Determine price ID based on plan and billing cycle
+    let priceId;
+    if (plan_type === 'basic') {
+      priceId = billing_cycle === 'monthly' 
+        ? process.env.STRIPE_PRICE_BASIC_MONTHLY 
+        : process.env.STRIPE_PRICE_BASIC_YEARLY;
+    } else if (plan_type === 'pro') {
+      priceId = billing_cycle === 'monthly' 
+        ? process.env.STRIPE_PRICE_PRO_MONTHLY 
+        : process.env.STRIPE_PRICE_PRO_YEARLY;
+    } else if (plan_type === 'premium') {
+      priceId = billing_cycle === 'monthly' 
+        ? process.env.STRIPE_PRICE_PREMIUM_MONTHLY 
+        : process.env.STRIPE_PRICE_PREMIUM_YEARLY;
+    }
+
+    // Set success and cancel URLs
+    const successUrl = `${process.env.FRONTEND_URL}/dashboard?subscription=success`;
+    const cancelUrl = `${process.env.FRONTEND_URL}/pricing?subscription=canceled`;
+
+    // Create checkout session
+    const session = await stripeService.createCheckoutSession(
+      user.stripe_customer_id,
+      priceId,
+      successUrl,
+      cancelUrl
+    );
+
+    logger.info(`Checkout session created for user ${userId}, plan: ${plan_type}, billing: ${billing_cycle}`);
+
+    // Return checkout URL
+    res.status(200).json({ checkout_url: session.url });
+  } catch (error) {
+    logger.error(`Error creating checkout session: ${error.message}`, { error });
+    res.status(500).json({ message: 'Failed to create checkout session' });
+  }
+});
+
 module.exports = router; 
