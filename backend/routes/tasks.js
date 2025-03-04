@@ -87,10 +87,13 @@ router.get('/:homeId',
  *             required:
  *               - home_id
  *               - task_name
+ *               - description
  *             properties:
  *               home_id:
  *                 type: string
  *               task_name:
+ *                 type: string
+ *               description:
  *                 type: string
  *               due_date:
  *                 type: string
@@ -99,6 +102,18 @@ router.get('/:homeId',
  *                 type: string
  *               why:
  *                 type: string
+ *               estimated_time:
+ *                 type: number
+ *               estimated_cost:
+ *                 type: number
+ *               category:
+ *                 type: string
+ *               priority:
+ *                 type: string
+ *               steps:
+ *                 type: array
+ *                 items:
+ *                   type: object
  *     responses:
  *       201:
  *         description: Task created successfully
@@ -120,10 +135,13 @@ router.post('/',
       .notEmpty().withMessage('Task name is required')
       .isString().withMessage('Task name must be a string')
       .trim(),
+    body('description')
+      .notEmpty().withMessage('Description is required')
+      .isString().withMessage('Description must be a string')
+      .trim(),
     body('due_date')
       .optional()
-      .isISO8601().withMessage('Due date must be a valid date')
-      .toDate(),
+      .isISO8601().withMessage('Due date must be a valid date in ISO 8601 format'),
     body('frequency')
       .optional()
       .isString().withMessage('Frequency must be a string')
@@ -131,7 +149,33 @@ router.post('/',
     body('why')
       .optional()
       .isString().withMessage('Why must be a string')
-      .trim()
+      .trim(),
+    body('estimated_time')
+      .optional()
+      .isNumeric().withMessage('Estimated time must be a number')
+      .isInt({ min: 0 }).withMessage('Estimated time must be a non-negative number'),
+    body('estimated_cost')
+      .optional()
+      .isNumeric().withMessage('Estimated cost must be a number')
+      .isFloat({ min: 0 }).withMessage('Estimated cost must be a non-negative number'),
+    body('category')
+      .optional()
+      .isString().withMessage('Category must be a string')
+      .isIn(['maintenance', 'cleaning', 'safety', 'seasonal', 'repair', 'improvement', 'other']).withMessage('Invalid category'),
+    body('priority')
+      .optional()
+      .isString().withMessage('Priority must be a string')
+      .isIn(['low', 'medium', 'high']).withMessage('Invalid priority'),
+    body('steps')
+      .optional()
+      .isArray().withMessage('Steps must be an array'),
+    body('steps.*.step_number')
+      .optional()
+      .isNumeric().withMessage('Step number must be a number')
+      .isInt({ min: 1 }).withMessage('Step number must be a positive number'),
+    body('steps.*.description')
+      .optional()
+      .isString().withMessage('Step description must be a string')
   ],
   async (req, res, next) => {
     try {
@@ -158,10 +202,23 @@ router.post('/',
       const sanitizedInput = {
         home_id: homeId,
         task_name: sanitize(req.body.task_name),
+        description: sanitize(req.body.description),
         due_date: req.body.due_date ? sanitize(req.body.due_date) : undefined,
         frequency: req.body.frequency ? sanitize(req.body.frequency) : undefined,
-        why: req.body.why ? sanitize(req.body.why) : undefined
+        why: req.body.why ? sanitize(req.body.why) : undefined,
+        estimated_time: req.body.estimated_time ? sanitize(req.body.estimated_time) : undefined,
+        estimated_cost: req.body.estimated_cost ? sanitize(req.body.estimated_cost) : undefined,
+        category: req.body.category ? sanitize(req.body.category) : undefined,
+        priority: req.body.priority ? sanitize(req.body.priority) : undefined
       };
+      
+      // Handle steps array
+      if (req.body.steps && Array.isArray(req.body.steps)) {
+        sanitizedInput.steps = req.body.steps.map(step => ({
+          step_number: sanitize(step.step_number),
+          description: sanitize(step.description)
+        }));
+      }
       
       // Create new task
       const task = new Task(sanitizedInput);
@@ -169,8 +226,8 @@ router.post('/',
       
       // Return success response
       res.status(201).json({
-        id: task._id,
-        message: "Task created"
+        message: "Task created successfully",
+        data: task
       });
     } catch (error) {
       next(error);

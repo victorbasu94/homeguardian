@@ -7,7 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { ArrowLeft, Home as HomeIcon, MapPin, Calendar, Ruler } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
+import { ArrowLeft, Home as HomeIcon, MapPin, Calendar, Ruler, Thermometer, Droplets, Construction, Layers, Warehouse } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import api from "@/lib/axios";
 
@@ -37,6 +39,34 @@ const AddHome = ({ isEditing = false }: AddHomeProps) => {
   const [maintenanceLevel, setMaintenanceLevel] = useState("");
   const [reminderFrequency, setReminderFrequency] = useState("");
   const [notes, setNotes] = useState("");
+  
+  // New form state variables
+  const [numberOfStories, setNumberOfStories] = useState("");
+  const [exteriorMaterial, setExteriorMaterial] = useState("");
+  const [foundationType, setFoundationType] = useState("");
+  const [basementType, setBasementType] = useState("");
+  const [atticType, setAtticType] = useState("");
+  const [windowsCount, setWindowsCount] = useState("");
+  const [windowType, setWindowType] = useState("");
+  const [plumbingType, setPlumbingType] = useState("");
+  const [plumbingAge, setPlumbingAge] = useState("");
+  const [electricalPanelAge, setElectricalPanelAge] = useState("");
+  const [electricalPanelType, setElectricalPanelType] = useState("");
+  const [hasGarage, setHasGarage] = useState(false);
+  const [garageType, setGarageType] = useState("");
+  const [hasPool, setHasPool] = useState(false);
+  const [poolType, setPoolType] = useState("");
+  const [hasSolarPanels, setHasSolarPanels] = useState(false);
+  const [solarPanelType, setSolarPanelType] = useState("");
+  const [hasBackupGenerator, setHasBackupGenerator] = useState(false);
+  const [generatorType, setGeneratorType] = useState("");
+  const [hasIrrigationSystem, setHasIrrigationSystem] = useState(false);
+  const [irrigationType, setIrrigationType] = useState("");
+  const [hasSecuritySystem, setHasSecuritySystem] = useState(false);
+  const [securitySystemType, setSecuritySystemType] = useState("");
+  const [hasSmartHomeDevices, setHasSmartHomeDevices] = useState(false);
+  const [smartHomeDeviceTypes, setSmartHomeDeviceTypes] = useState<string[]>([]);
+  
   const [loading, setLoading] = useState(false);
   const [fetchingHome, setFetchingHome] = useState(false);
   
@@ -73,6 +103,33 @@ const AddHome = ({ isEditing = false }: AddHomeProps) => {
           setMaintenanceLevel(homeData.maintenance_level || '');
           setReminderFrequency(homeData.reminder_frequency || '');
           setNotes(homeData.notes || '');
+          
+          // Set new form state variables
+          setNumberOfStories(homeData.number_of_stories || '');
+          setExteriorMaterial(homeData.exterior_material || '');
+          setFoundationType(homeData.foundation_type || '');
+          setBasementType(homeData.basement_type || '');
+          setAtticType(homeData.attic_type || '');
+          setWindowsCount(homeData.windows_count || '');
+          setWindowType(homeData.window_type || '');
+          setPlumbingType(homeData.plumbing_type || '');
+          setPlumbingAge(homeData.plumbing_age || '');
+          setElectricalPanelAge(homeData.electrical_panel_age || '');
+          setElectricalPanelType(homeData.electrical_panel_type || '');
+          setHasGarage(homeData.has_garage || false);
+          setGarageType(homeData.garage_type || '');
+          setHasPool(homeData.has_pool || false);
+          setPoolType(homeData.pool_type || '');
+          setHasSolarPanels(homeData.has_solar_panels || false);
+          setSolarPanelType(homeData.solar_panel_type || '');
+          setHasBackupGenerator(homeData.has_backup_generator || false);
+          setGeneratorType(homeData.generator_type || '');
+          setHasIrrigationSystem(homeData.has_irrigation_system || false);
+          setIrrigationType(homeData.irrigation_type || '');
+          setHasSecuritySystem(homeData.has_security_system || false);
+          setSecuritySystemType(homeData.security_system_type || '');
+          setHasSmartHomeDevices(homeData.has_smart_home_devices || false);
+          setSmartHomeDeviceTypes(homeData.smart_home_device_types || []);
         } catch (error) {
           console.error("Error fetching home data:", error);
           toast({
@@ -122,13 +179,122 @@ const AddHome = ({ isEditing = false }: AddHomeProps) => {
     { value: "geothermal", label: "Geothermal" }
   ];
   
+  // New option arrays
+  const exteriorMaterialTypes = [
+    { value: "vinyl", label: "Vinyl Siding" },
+    { value: "wood", label: "Wood Siding" },
+    { value: "brick", label: "Brick" },
+    { value: "stucco", label: "Stucco" },
+    { value: "fiber_cement", label: "Fiber Cement" },
+    { value: "stone", label: "Stone" },
+    { value: "aluminum", label: "Aluminum Siding" },
+    { value: "other", label: "Other" }
+  ];
+  
+  const foundationTypes = [
+    { value: "concrete_slab", label: "Concrete Slab" },
+    { value: "crawl_space", label: "Crawl Space" },
+    { value: "basement", label: "Full Basement" },
+    { value: "pier_beam", label: "Pier and Beam" },
+    { value: "other", label: "Other" }
+  ];
+  
+  const basementTypes = [
+    { value: "none", label: "No Basement" },
+    { value: "unfinished", label: "Unfinished" },
+    { value: "finished", label: "Finished" },
+    { value: "partially_finished", label: "Partially Finished" },
+    { value: "walkout", label: "Walkout" }
+  ];
+  
+  const atticTypes = [
+    { value: "none", label: "No Attic" },
+    { value: "unfinished", label: "Unfinished" },
+    { value: "finished", label: "Finished" },
+    { value: "partially_finished", label: "Partially Finished" }
+  ];
+  
+  const windowTypes = [
+    { value: "single_pane", label: "Single Pane" },
+    { value: "double_pane", label: "Double Pane" },
+    { value: "triple_pane", label: "Triple Pane" },
+    { value: "low_e", label: "Low-E Glass" },
+    { value: "mixed", label: "Mixed Types" }
+  ];
+  
+  const plumbingTypes = [
+    { value: "copper", label: "Copper" },
+    { value: "pex", label: "PEX" },
+    { value: "galvanized", label: "Galvanized" },
+    { value: "pvc", label: "PVC/CPVC" },
+    { value: "mixed", label: "Mixed Types" }
+  ];
+  
+  const electricalPanelTypes = [
+    { value: "circuit_breaker", label: "Circuit Breaker" },
+    { value: "fuse_box", label: "Fuse Box" },
+    { value: "smart_panel", label: "Smart Panel" }
+  ];
+  
+  const garageTypes = [
+    { value: "attached", label: "Attached" },
+    { value: "detached", label: "Detached" },
+    { value: "carport", label: "Carport" },
+    { value: "none", label: "None" }
+  ];
+  
+  const poolTypes = [
+    { value: "inground", label: "In-ground" },
+    { value: "above_ground", label: "Above Ground" },
+    { value: "hot_tub", label: "Hot Tub/Spa" },
+    { value: "none", label: "None" }
+  ];
+  
+  const solarPanelTypes = [
+    { value: "roof_mounted", label: "Roof Mounted" },
+    { value: "ground_mounted", label: "Ground Mounted" },
+    { value: "none", label: "None" }
+  ];
+  
+  const generatorTypes = [
+    { value: "standby", label: "Standby (Permanent)" },
+    { value: "portable", label: "Portable" },
+    { value: "none", label: "None" }
+  ];
+  
+  const irrigationTypes = [
+    { value: "in_ground", label: "In-ground Sprinkler System" },
+    { value: "drip", label: "Drip Irrigation" },
+    { value: "manual", label: "Manual/Hose-based" },
+    { value: "none", label: "None" }
+  ];
+  
+  const securitySystemTypes = [
+    { value: "monitored", label: "Professionally Monitored" },
+    { value: "self_monitored", label: "Self-Monitored" },
+    { value: "local_alarm", label: "Local Alarm Only" },
+    { value: "none", label: "None" }
+  ];
+  
+  const smartHomeDeviceOptions = [
+    { value: "thermostat", label: "Smart Thermostat" },
+    { value: "doorbell", label: "Smart Doorbell" },
+    { value: "locks", label: "Smart Locks" },
+    { value: "lighting", label: "Smart Lighting" },
+    { value: "speakers", label: "Smart Speakers/Assistants" },
+    { value: "appliances", label: "Smart Appliances" },
+    { value: "cameras", label: "Security Cameras" },
+    { value: "water_sensors", label: "Water Leak Sensors" },
+    { value: "smoke_detectors", label: "Smart Smoke/CO Detectors" }
+  ];
+  
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate form
+    // Validate form - mandatory fields
     if (!name || !type || !address || !city || !state || !zipCode || !yearBuilt || !squareFeet || 
-        !bedrooms || !bathrooms || !roofType || !hvacType || !maintenanceLevel || !reminderFrequency) {
+        !bedrooms || !bathrooms || !roofType || !hvacType || !numberOfStories || !maintenanceLevel || !reminderFrequency) {
       toast({
         title: "Missing fields",
         description: "Please fill in all required fields.",
@@ -171,6 +337,56 @@ const AddHome = ({ isEditing = false }: AddHomeProps) => {
       return;
     }
     
+    // Validate number of stories
+    const numberOfStoriesNum = parseInt(numberOfStories);
+    if (isNaN(numberOfStoriesNum) || numberOfStoriesNum <= 0) {
+      toast({
+        title: "Invalid number of stories",
+        description: "Number of stories must be a positive number.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Validate windows count if provided
+    if (windowsCount) {
+      const windowsCountNum = parseInt(windowsCount);
+      if (isNaN(windowsCountNum) || windowsCountNum < 0) {
+        toast({
+          title: "Invalid windows count",
+          description: "Windows count must be a valid number.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+    
+    // Validate plumbing age if provided
+    if (plumbingAge) {
+      const plumbingAgeNum = parseInt(plumbingAge);
+      if (isNaN(plumbingAgeNum) || plumbingAgeNum < 0 || plumbingAgeNum > 150) {
+        toast({
+          title: "Invalid plumbing age",
+          description: "Plumbing age must be between 0 and 150 years.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+    
+    // Validate electrical panel age if provided
+    if (electricalPanelAge) {
+      const electricalPanelAgeNum = parseInt(electricalPanelAge);
+      if (isNaN(electricalPanelAgeNum) || electricalPanelAgeNum < 0 || electricalPanelAgeNum > 150) {
+        toast({
+          title: "Invalid electrical panel age",
+          description: "Electrical panel age must be between 0 and 150 years.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+    
     setLoading(true);
     
     try {
@@ -188,7 +404,32 @@ const AddHome = ({ isEditing = false }: AddHomeProps) => {
         maintenance_level: maintenanceLevel,
         reminder_frequency: reminderFrequency,
         notes,
-        user_id: user?.id
+        user_id: user?.id,
+        number_of_stories: numberOfStoriesNum,
+        exterior_material: exteriorMaterial,
+        foundation_type: foundationType,
+        basement_type: basementType,
+        attic_type: atticType,
+        windows_count: windowsCount,
+        window_type: windowType,
+        plumbing_type: plumbingType,
+        plumbing_age: plumbingAge,
+        electrical_panel_age: electricalPanelAge,
+        electrical_panel_type: electricalPanelType,
+        has_garage: hasGarage,
+        garage_type: garageType,
+        has_pool: hasPool,
+        pool_type: poolType,
+        has_solar_panels: hasSolarPanels,
+        solar_panel_type: solarPanelType,
+        has_backup_generator: hasBackupGenerator,
+        generator_type: generatorType,
+        has_irrigation_system: hasIrrigationSystem,
+        irrigation_type: irrigationType,
+        has_security_system: hasSecuritySystem,
+        security_system_type: securitySystemType,
+        has_smart_home_devices: hasSmartHomeDevices,
+        smart_home_device_types: smartHomeDeviceTypes
       };
       
       if (isEditing && homeId) {
@@ -379,7 +620,7 @@ const AddHome = ({ isEditing = false }: AddHomeProps) => {
                       </div>
                     </div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
                         <Label htmlFor="bedrooms">Bedrooms</Label>
                         <Input
@@ -402,6 +643,19 @@ const AddHome = ({ isEditing = false }: AddHomeProps) => {
                           step="0.5"
                           value={bathrooms}
                           onChange={(e) => setBathrooms(e.target.value)}
+                          placeholder="e.g., 2"
+                          required
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="numberOfStories">Number of Stories</Label>
+                        <Input
+                          id="numberOfStories"
+                          type="number"
+                          min="1"
+                          value={numberOfStories}
+                          onChange={(e) => setNumberOfStories(e.target.value)}
                           placeholder="e.g., 2"
                           required
                         />
@@ -439,6 +693,414 @@ const AddHome = ({ isEditing = false }: AddHomeProps) => {
                             ))}
                           </SelectContent>
                         </Select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-white p-6 rounded-lg border border-border shadow-sm">
+                  <h2 className="text-xl font-semibold mb-4">Additional Home Details</h2>
+                  <p className="text-sm text-muted-foreground mb-4">These details help us provide more accurate maintenance recommendations.</p>
+                  
+                  <div className="space-y-6">
+                    <div>
+                      <h3 className="text-lg font-medium mb-3">Structure & Exterior</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="exteriorMaterial">Exterior Material</Label>
+                          <Select value={exteriorMaterial} onValueChange={setExteriorMaterial}>
+                            <SelectTrigger id="exteriorMaterial">
+                              <SelectValue placeholder="Select exterior material" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {exteriorMaterialTypes.map((type) => (
+                                <SelectItem key={type.value} value={type.value}>
+                                  {type.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor="foundationType">Foundation Type</Label>
+                          <Select value={foundationType} onValueChange={setFoundationType}>
+                            <SelectTrigger id="foundationType">
+                              <SelectValue placeholder="Select foundation type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {foundationTypes.map((type) => (
+                                <SelectItem key={type.value} value={type.value}>
+                                  {type.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <h3 className="text-lg font-medium mb-3">Interior Features</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="basementType">Basement Type</Label>
+                          <Select value={basementType} onValueChange={setBasementType}>
+                            <SelectTrigger id="basementType">
+                              <SelectValue placeholder="Select basement type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {basementTypes.map((type) => (
+                                <SelectItem key={type.value} value={type.value}>
+                                  {type.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor="atticType">Attic Type</Label>
+                          <Select value={atticType} onValueChange={setAtticType}>
+                            <SelectTrigger id="atticType">
+                              <SelectValue placeholder="Select attic type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {atticTypes.map((type) => (
+                                <SelectItem key={type.value} value={type.value}>
+                                  {type.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <h3 className="text-lg font-medium mb-3">Windows & Doors</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="windowsCount">Number of Windows</Label>
+                          <Input
+                            id="windowsCount"
+                            type="number"
+                            min="0"
+                            value={windowsCount}
+                            onChange={(e) => setWindowsCount(e.target.value)}
+                            placeholder="e.g., 12"
+                          />
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor="windowType">Window Type</Label>
+                          <Select value={windowType} onValueChange={setWindowType}>
+                            <SelectTrigger id="windowType">
+                              <SelectValue placeholder="Select window type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {windowTypes.map((type) => (
+                                <SelectItem key={type.value} value={type.value}>
+                                  {type.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <h3 className="text-lg font-medium mb-3">Plumbing & Electrical</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="plumbingType">Plumbing Type</Label>
+                          <Select value={plumbingType} onValueChange={setPlumbingType}>
+                            <SelectTrigger id="plumbingType">
+                              <SelectValue placeholder="Select plumbing type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {plumbingTypes.map((type) => (
+                                <SelectItem key={type.value} value={type.value}>
+                                  {type.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor="plumbingAge">Plumbing Age (years)</Label>
+                          <Input
+                            id="plumbingAge"
+                            type="number"
+                            min="0"
+                            max="150"
+                            value={plumbingAge}
+                            onChange={(e) => setPlumbingAge(e.target.value)}
+                            placeholder="e.g., 15"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                        <div>
+                          <Label htmlFor="electricalPanelType">Electrical Panel Type</Label>
+                          <Select value={electricalPanelType} onValueChange={setElectricalPanelType}>
+                            <SelectTrigger id="electricalPanelType">
+                              <SelectValue placeholder="Select panel type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {electricalPanelTypes.map((type) => (
+                                <SelectItem key={type.value} value={type.value}>
+                                  {type.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor="electricalPanelAge">Electrical Panel Age (years)</Label>
+                          <Input
+                            id="electricalPanelAge"
+                            type="number"
+                            min="0"
+                            max="150"
+                            value={electricalPanelAge}
+                            onChange={(e) => setElectricalPanelAge(e.target.value)}
+                            placeholder="e.g., 10"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <h3 className="text-lg font-medium mb-3">Additional Features</h3>
+                      
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-0.5">
+                            <Label htmlFor="hasGarage">Garage</Label>
+                            <p className="text-sm text-muted-foreground">Does your home have a garage?</p>
+                          </div>
+                          <Switch
+                            id="hasGarage"
+                            checked={hasGarage}
+                            onCheckedChange={setHasGarage}
+                          />
+                        </div>
+                        
+                        {hasGarage && (
+                          <div>
+                            <Label htmlFor="garageType">Garage Type</Label>
+                            <Select value={garageType} onValueChange={setGarageType}>
+                              <SelectTrigger id="garageType">
+                                <SelectValue placeholder="Select garage type" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {garageTypes.map((type) => (
+                                  <SelectItem key={type.value} value={type.value}>
+                                    {type.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+                        
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-0.5">
+                            <Label htmlFor="hasPool">Pool or Hot Tub</Label>
+                            <p className="text-sm text-muted-foreground">Does your home have a pool or hot tub?</p>
+                          </div>
+                          <Switch
+                            id="hasPool"
+                            checked={hasPool}
+                            onCheckedChange={setHasPool}
+                          />
+                        </div>
+                        
+                        {hasPool && (
+                          <div>
+                            <Label htmlFor="poolType">Pool Type</Label>
+                            <Select value={poolType} onValueChange={setPoolType}>
+                              <SelectTrigger id="poolType">
+                                <SelectValue placeholder="Select pool type" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {poolTypes.map((type) => (
+                                  <SelectItem key={type.value} value={type.value}>
+                                    {type.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+                        
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-0.5">
+                            <Label htmlFor="hasSolarPanels">Solar Panels</Label>
+                            <p className="text-sm text-muted-foreground">Does your home have solar panels?</p>
+                          </div>
+                          <Switch
+                            id="hasSolarPanels"
+                            checked={hasSolarPanels}
+                            onCheckedChange={setHasSolarPanels}
+                          />
+                        </div>
+                        
+                        {hasSolarPanels && (
+                          <div>
+                            <Label htmlFor="solarPanelType">Solar Panel Type</Label>
+                            <Select value={solarPanelType} onValueChange={setSolarPanelType}>
+                              <SelectTrigger id="solarPanelType">
+                                <SelectValue placeholder="Select solar panel type" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {solarPanelTypes.map((type) => (
+                                  <SelectItem key={type.value} value={type.value}>
+                                    {type.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+                        
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-0.5">
+                            <Label htmlFor="hasBackupGenerator">Backup Generator</Label>
+                            <p className="text-sm text-muted-foreground">Does your home have a backup generator?</p>
+                          </div>
+                          <Switch
+                            id="hasBackupGenerator"
+                            checked={hasBackupGenerator}
+                            onCheckedChange={setHasBackupGenerator}
+                          />
+                        </div>
+                        
+                        {hasBackupGenerator && (
+                          <div>
+                            <Label htmlFor="generatorType">Generator Type</Label>
+                            <Select value={generatorType} onValueChange={setGeneratorType}>
+                              <SelectTrigger id="generatorType">
+                                <SelectValue placeholder="Select generator type" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {generatorTypes.map((type) => (
+                                  <SelectItem key={type.value} value={type.value}>
+                                    {type.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+                        
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-0.5">
+                            <Label htmlFor="hasIrrigationSystem">Irrigation System</Label>
+                            <p className="text-sm text-muted-foreground">Does your home have an irrigation system?</p>
+                          </div>
+                          <Switch
+                            id="hasIrrigationSystem"
+                            checked={hasIrrigationSystem}
+                            onCheckedChange={setHasIrrigationSystem}
+                          />
+                        </div>
+                        
+                        {hasIrrigationSystem && (
+                          <div>
+                            <Label htmlFor="irrigationType">Irrigation Type</Label>
+                            <Select value={irrigationType} onValueChange={setIrrigationType}>
+                              <SelectTrigger id="irrigationType">
+                                <SelectValue placeholder="Select irrigation type" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {irrigationTypes.map((type) => (
+                                  <SelectItem key={type.value} value={type.value}>
+                                    {type.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+                        
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-0.5">
+                            <Label htmlFor="hasSecuritySystem">Security System</Label>
+                            <p className="text-sm text-muted-foreground">Does your home have a security system?</p>
+                          </div>
+                          <Switch
+                            id="hasSecuritySystem"
+                            checked={hasSecuritySystem}
+                            onCheckedChange={setHasSecuritySystem}
+                          />
+                        </div>
+                        
+                        {hasSecuritySystem && (
+                          <div>
+                            <Label htmlFor="securitySystemType">Security System Type</Label>
+                            <Select value={securitySystemType} onValueChange={setSecuritySystemType}>
+                              <SelectTrigger id="securitySystemType">
+                                <SelectValue placeholder="Select security system type" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {securitySystemTypes.map((type) => (
+                                  <SelectItem key={type.value} value={type.value}>
+                                    {type.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+                        
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-0.5">
+                            <Label htmlFor="hasSmartHomeDevices">Smart Home Devices</Label>
+                            <p className="text-sm text-muted-foreground">Does your home have smart home devices?</p>
+                          </div>
+                          <Switch
+                            id="hasSmartHomeDevices"
+                            checked={hasSmartHomeDevices}
+                            onCheckedChange={setHasSmartHomeDevices}
+                          />
+                        </div>
+                        
+                        {hasSmartHomeDevices && (
+                          <div className="space-y-2">
+                            <Label>Smart Home Device Types</Label>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                              {smartHomeDeviceOptions.map((option) => (
+                                <div key={option.value} className="flex items-center space-x-2">
+                                  <Checkbox 
+                                    id={`smart-${option.value}`}
+                                    checked={smartHomeDeviceTypes.includes(option.value)}
+                                    onCheckedChange={(checked) => {
+                                      if (checked) {
+                                        setSmartHomeDeviceTypes([...smartHomeDeviceTypes, option.value]);
+                                      } else {
+                                        setSmartHomeDeviceTypes(
+                                          smartHomeDeviceTypes.filter((value) => value !== option.value)
+                                        );
+                                      }
+                                    }}
+                                  />
+                                  <Label 
+                                    htmlFor={`smart-${option.value}`}
+                                    className="text-sm cursor-pointer"
+                                  >
+                                    {option.label}
+                                  </Label>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>

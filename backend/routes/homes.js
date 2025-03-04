@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { body, query, validationResult } = require('express-validator');
+const { body, query, validationResult, param } = require('express-validator');
 const sanitize = require('mongo-sanitize');
 const { verifyToken } = require('../middleware/auth');
 const Home = require('../models/Home');
@@ -62,14 +62,93 @@ router.post('/',
       .optional()
       .isString().withMessage('Name must be a string')
       .trim(),
+    body('home_type')
+      .notEmpty().withMessage('Home type is required')
+      .isString().withMessage('Home type must be a string')
+      .isIn(['single_family', 'apartment', 'townhouse', 'condo', 'mobile_home', 'other']).withMessage('Invalid home type'),
+    body('number_of_stories')
+      .isNumeric().withMessage('Number of stories must be a number')
+      .isInt({ min: 1 }).withMessage('Number of stories must be at least 1'),
     body('roof_type')
-      .optional()
+      .notEmpty().withMessage('Roof type is required')
       .isString().withMessage('Roof type must be a string')
-      .trim(),
+      .isIn(['asphalt_shingles', 'metal', 'tile', 'flat', 'slate', 'wood_shingles', 'other']).withMessage('Invalid roof type'),
     body('hvac_type')
-      .optional()
+      .notEmpty().withMessage('HVAC type is required')
       .isString().withMessage('HVAC type must be a string')
-      .trim()
+      .isIn(['central_hvac', 'radiator', 'window_ac', 'heat_pump', 'ductless_mini_split', 'boiler', 'other']).withMessage('Invalid HVAC type'),
+    
+    // Optional fields validation
+    body('exterior_material')
+      .optional()
+      .isString().withMessage('Exterior material must be a string')
+      .isIn(['brick', 'vinyl_siding', 'wood', 'stucco', 'fiber_cement', 'stone', 'aluminum', 'other']).withMessage('Invalid exterior material'),
+    body('foundation_type')
+      .optional()
+      .isString().withMessage('Foundation type must be a string')
+      .isIn(['slab', 'crawlspace', 'basement', 'pier_and_beam', 'other']).withMessage('Invalid foundation type'),
+    body('windows.count')
+      .optional()
+      .isNumeric().withMessage('Window count must be a number')
+      .isInt({ min: 0 }).withMessage('Window count must be a non-negative number'),
+    body('windows.type')
+      .optional()
+      .isString().withMessage('Window type must be a string')
+      .isIn(['single_pane', 'double_pane', 'triple_pane', 'other']).withMessage('Invalid window type'),
+    body('windows.year_installed')
+      .optional()
+      .isNumeric().withMessage('Window installation year must be a number')
+      .isInt({ min: 1800, max: new Date().getFullYear() }).withMessage(`Window installation year must be between 1800 and ${new Date().getFullYear()}`),
+    body('plumbing.age')
+      .optional()
+      .isNumeric().withMessage('Plumbing age must be a number')
+      .isInt({ min: 0 }).withMessage('Plumbing age must be a non-negative number'),
+    body('plumbing.material')
+      .optional()
+      .isString().withMessage('Plumbing material must be a string')
+      .isIn(['copper', 'pvc', 'pex', 'galvanized', 'cast_iron', 'other']).withMessage('Invalid plumbing material'),
+    body('appliances')
+      .optional()
+      .isArray().withMessage('Appliances must be an array'),
+    body('appliances.*.name')
+      .optional()
+      .isString().withMessage('Appliance name must be a string'),
+    body('appliances.*.age')
+      .optional()
+      .isNumeric().withMessage('Appliance age must be a number')
+      .isInt({ min: 0 }).withMessage('Appliance age must be a non-negative number'),
+    body('yard_garden.exists')
+      .optional()
+      .isBoolean().withMessage('Yard/garden exists must be a boolean'),
+    body('yard_garden.size')
+      .optional()
+      .isString().withMessage('Yard/garden size must be a string')
+      .isIn(['small', 'medium', 'large']).withMessage('Invalid yard/garden size'),
+    body('yard_garden.features')
+      .optional()
+      .isArray().withMessage('Yard/garden features must be an array'),
+    body('garage.type')
+      .optional()
+      .isString().withMessage('Garage type must be a string')
+      .isIn(['attached', 'detached', 'none']).withMessage('Invalid garage type'),
+    body('garage.size')
+      .optional()
+      .isString().withMessage('Garage size must be a string')
+      .isIn(['1_car', '2_car', '3_car', 'other']).withMessage('Invalid garage size'),
+    body('recent_renovations')
+      .optional()
+      .isArray().withMessage('Recent renovations must be an array'),
+    body('recent_renovations.*.type')
+      .optional()
+      .isString().withMessage('Renovation type must be a string'),
+    body('recent_renovations.*.year')
+      .optional()
+      .isNumeric().withMessage('Renovation year must be a number')
+      .isInt({ min: 1800, max: new Date().getFullYear() }).withMessage(`Renovation year must be between 1800 and ${new Date().getFullYear()}`),
+    body('occupancy')
+      .optional()
+      .isString().withMessage('Occupancy must be a string')
+      .isIn(['primary_residence', 'rental', 'vacation_home', 'other']).withMessage('Invalid occupancy type')
   ],
   async (req, res, next) => {
     try {
@@ -85,10 +164,61 @@ router.post('/',
         square_footage: sanitize(req.body.square_footage),
         location: sanitize(req.body.location),
         name: req.body.name ? sanitize(req.body.name) : undefined,
-        roof_type: req.body.roof_type ? sanitize(req.body.roof_type) : undefined,
-        hvac_type: req.body.hvac_type ? sanitize(req.body.hvac_type) : undefined,
+        home_type: sanitize(req.body.home_type),
+        number_of_stories: sanitize(req.body.number_of_stories),
+        roof_type: sanitize(req.body.roof_type),
+        hvac_type: sanitize(req.body.hvac_type),
         user_id: req.user.id // Set from authenticated user
       };
+
+      // Add optional fields if provided
+      if (req.body.exterior_material) sanitizedInput.exterior_material = sanitize(req.body.exterior_material);
+      if (req.body.foundation_type) sanitizedInput.foundation_type = sanitize(req.body.foundation_type);
+      
+      // Handle nested objects
+      if (req.body.windows) {
+        sanitizedInput.windows = {};
+        if (req.body.windows.count) sanitizedInput.windows.count = sanitize(req.body.windows.count);
+        if (req.body.windows.type) sanitizedInput.windows.type = sanitize(req.body.windows.type);
+        if (req.body.windows.year_installed) sanitizedInput.windows.year_installed = sanitize(req.body.windows.year_installed);
+      }
+      
+      if (req.body.plumbing) {
+        sanitizedInput.plumbing = {};
+        if (req.body.plumbing.age) sanitizedInput.plumbing.age = sanitize(req.body.plumbing.age);
+        if (req.body.plumbing.material) sanitizedInput.plumbing.material = sanitize(req.body.plumbing.material);
+      }
+      
+      if (req.body.appliances && Array.isArray(req.body.appliances)) {
+        sanitizedInput.appliances = req.body.appliances.map(appliance => ({
+          name: sanitize(appliance.name),
+          age: sanitize(appliance.age)
+        }));
+      }
+      
+      if (req.body.yard_garden) {
+        sanitizedInput.yard_garden = {};
+        if (req.body.yard_garden.exists !== undefined) sanitizedInput.yard_garden.exists = req.body.yard_garden.exists;
+        if (req.body.yard_garden.size) sanitizedInput.yard_garden.size = sanitize(req.body.yard_garden.size);
+        if (req.body.yard_garden.features && Array.isArray(req.body.yard_garden.features)) {
+          sanitizedInput.yard_garden.features = req.body.yard_garden.features.map(feature => sanitize(feature));
+        }
+      }
+      
+      if (req.body.garage) {
+        sanitizedInput.garage = {};
+        if (req.body.garage.type) sanitizedInput.garage.type = sanitize(req.body.garage.type);
+        if (req.body.garage.size) sanitizedInput.garage.size = sanitize(req.body.garage.size);
+      }
+      
+      if (req.body.recent_renovations && Array.isArray(req.body.recent_renovations)) {
+        sanitizedInput.recent_renovations = req.body.recent_renovations.map(renovation => ({
+          type: sanitize(renovation.type),
+          year: sanitize(renovation.year)
+        }));
+      }
+      
+      if (req.body.occupancy) sanitizedInput.occupancy = sanitize(req.body.occupancy);
 
       // Create new home
       const home = new Home(sanitizedInput);
@@ -292,6 +422,257 @@ router.get('/:homeId/health',
       res.status(200).json({ score });
     } catch (error) {
       logger.error('Error calculating health score:', error);
+      next(error);
+    }
+  }
+);
+
+/**
+ * @swagger
+ * /api/homes/{id}:
+ *   put:
+ *     summary: Update a home
+ *     tags: [Homes]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Home ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               year_built:
+ *                 type: number
+ *               square_footage:
+ *                 type: number
+ *               location:
+ *                 type: string
+ *               name:
+ *                 type: string
+ *               home_type:
+ *                 type: string
+ *               number_of_stories:
+ *                 type: number
+ *               roof_type:
+ *                 type: string
+ *               hvac_type:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Home updated successfully
+ *       400:
+ *         description: Invalid input data
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - home does not belong to user
+ *       404:
+ *         description: Home not found
+ */
+router.put('/:id',
+  verifyToken,
+  [
+    param('id')
+      .isMongoId().withMessage('Invalid home ID format'),
+    body('year_built')
+      .optional()
+      .isNumeric().withMessage('Year built must be a number')
+      .isInt({ min: 1800, max: new Date().getFullYear() }).withMessage(`Year built must be between 1800 and ${new Date().getFullYear()}`),
+    body('square_footage')
+      .optional()
+      .isNumeric().withMessage('Square footage must be a number')
+      .isInt({ min: 1 }).withMessage('Square footage must be a positive number'),
+    body('location')
+      .optional()
+      .isString().withMessage('Location must be a string')
+      .trim(),
+    body('name')
+      .optional()
+      .isString().withMessage('Name must be a string')
+      .trim(),
+    body('home_type')
+      .optional()
+      .isString().withMessage('Home type must be a string')
+      .isIn(['single_family', 'apartment', 'townhouse', 'condo', 'mobile_home', 'other']).withMessage('Invalid home type'),
+    body('number_of_stories')
+      .optional()
+      .isNumeric().withMessage('Number of stories must be a number')
+      .isInt({ min: 1 }).withMessage('Number of stories must be at least 1'),
+    body('roof_type')
+      .optional()
+      .isString().withMessage('Roof type must be a string')
+      .isIn(['asphalt_shingles', 'metal', 'tile', 'flat', 'slate', 'wood_shingles', 'other']).withMessage('Invalid roof type'),
+    body('hvac_type')
+      .optional()
+      .isString().withMessage('HVAC type must be a string')
+      .isIn(['central_hvac', 'radiator', 'window_ac', 'heat_pump', 'ductless_mini_split', 'boiler', 'other']).withMessage('Invalid HVAC type'),
+    
+    // Optional fields validation
+    body('exterior_material')
+      .optional()
+      .isString().withMessage('Exterior material must be a string')
+      .isIn(['brick', 'vinyl_siding', 'wood', 'stucco', 'fiber_cement', 'stone', 'aluminum', 'other']).withMessage('Invalid exterior material'),
+    body('foundation_type')
+      .optional()
+      .isString().withMessage('Foundation type must be a string')
+      .isIn(['slab', 'crawlspace', 'basement', 'pier_and_beam', 'other']).withMessage('Invalid foundation type'),
+    body('windows.count')
+      .optional()
+      .isNumeric().withMessage('Window count must be a number')
+      .isInt({ min: 0 }).withMessage('Window count must be a non-negative number'),
+    body('windows.type')
+      .optional()
+      .isString().withMessage('Window type must be a string')
+      .isIn(['single_pane', 'double_pane', 'triple_pane', 'other']).withMessage('Invalid window type'),
+    body('windows.year_installed')
+      .optional()
+      .isNumeric().withMessage('Window installation year must be a number')
+      .isInt({ min: 1800, max: new Date().getFullYear() }).withMessage(`Window installation year must be between 1800 and ${new Date().getFullYear()}`),
+    body('plumbing.age')
+      .optional()
+      .isNumeric().withMessage('Plumbing age must be a number')
+      .isInt({ min: 0 }).withMessage('Plumbing age must be a non-negative number'),
+    body('plumbing.material')
+      .optional()
+      .isString().withMessage('Plumbing material must be a string')
+      .isIn(['copper', 'pvc', 'pex', 'galvanized', 'cast_iron', 'other']).withMessage('Invalid plumbing material'),
+    body('appliances')
+      .optional()
+      .isArray().withMessage('Appliances must be an array'),
+    body('yard_garden.exists')
+      .optional()
+      .isBoolean().withMessage('Yard/garden exists must be a boolean'),
+    body('yard_garden.size')
+      .optional()
+      .isString().withMessage('Yard/garden size must be a string')
+      .isIn(['small', 'medium', 'large']).withMessage('Invalid yard/garden size'),
+    body('yard_garden.features')
+      .optional()
+      .isArray().withMessage('Yard/garden features must be an array'),
+    body('garage.type')
+      .optional()
+      .isString().withMessage('Garage type must be a string')
+      .isIn(['attached', 'detached', 'none']).withMessage('Invalid garage type'),
+    body('garage.size')
+      .optional()
+      .isString().withMessage('Garage size must be a string')
+      .isIn(['1_car', '2_car', '3_car', 'other']).withMessage('Invalid garage size'),
+    body('recent_renovations')
+      .optional()
+      .isArray().withMessage('Recent renovations must be an array'),
+    body('occupancy')
+      .optional()
+      .isString().withMessage('Occupancy must be a string')
+      .isIn(['primary_residence', 'rental', 'vacation_home', 'other']).withMessage('Invalid occupancy type')
+  ],
+  async (req, res, next) => {
+    try {
+      // Validate request
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+      }
+
+      const homeId = sanitize(req.params.id);
+      
+      // Verify home exists and belongs to the authenticated user
+      const home = await Home.findById(homeId);
+      
+      if (!home) {
+        return res.status(404).json({ error: "Home not found" });
+      }
+      
+      if (home.user_id.toString() !== req.user.id) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
+      // Prepare update object with sanitized inputs
+      const updateData = {};
+      
+      // Basic fields
+      if (req.body.year_built !== undefined) updateData.year_built = sanitize(req.body.year_built);
+      if (req.body.square_footage !== undefined) updateData.square_footage = sanitize(req.body.square_footage);
+      if (req.body.location !== undefined) updateData.location = sanitize(req.body.location);
+      if (req.body.name !== undefined) updateData.name = sanitize(req.body.name);
+      if (req.body.home_type !== undefined) updateData.home_type = sanitize(req.body.home_type);
+      if (req.body.number_of_stories !== undefined) updateData.number_of_stories = sanitize(req.body.number_of_stories);
+      if (req.body.roof_type !== undefined) updateData.roof_type = sanitize(req.body.roof_type);
+      if (req.body.hvac_type !== undefined) updateData.hvac_type = sanitize(req.body.hvac_type);
+      
+      // Optional fields
+      if (req.body.exterior_material !== undefined) updateData.exterior_material = sanitize(req.body.exterior_material);
+      if (req.body.foundation_type !== undefined) updateData.foundation_type = sanitize(req.body.foundation_type);
+      
+      // Handle nested objects
+      if (req.body.windows) {
+        updateData.windows = {};
+        if (req.body.windows.count !== undefined) updateData.windows.count = sanitize(req.body.windows.count);
+        if (req.body.windows.type !== undefined) updateData.windows.type = sanitize(req.body.windows.type);
+        if (req.body.windows.year_installed !== undefined) updateData.windows.year_installed = sanitize(req.body.windows.year_installed);
+      }
+      
+      if (req.body.plumbing) {
+        updateData.plumbing = {};
+        if (req.body.plumbing.age !== undefined) updateData.plumbing.age = sanitize(req.body.plumbing.age);
+        if (req.body.plumbing.material !== undefined) updateData.plumbing.material = sanitize(req.body.plumbing.material);
+      }
+      
+      if (req.body.appliances !== undefined) {
+        updateData.appliances = req.body.appliances.map(appliance => ({
+          name: sanitize(appliance.name),
+          age: sanitize(appliance.age)
+        }));
+      }
+      
+      if (req.body.yard_garden) {
+        updateData.yard_garden = {};
+        if (req.body.yard_garden.exists !== undefined) updateData.yard_garden.exists = req.body.yard_garden.exists;
+        if (req.body.yard_garden.size !== undefined) updateData.yard_garden.size = sanitize(req.body.yard_garden.size);
+        if (req.body.yard_garden.features !== undefined) {
+          updateData.yard_garden.features = req.body.yard_garden.features.map(feature => sanitize(feature));
+        }
+      }
+      
+      if (req.body.garage) {
+        updateData.garage = {};
+        if (req.body.garage.type !== undefined) updateData.garage.type = sanitize(req.body.garage.type);
+        if (req.body.garage.size !== undefined) updateData.garage.size = sanitize(req.body.garage.size);
+      }
+      
+      if (req.body.recent_renovations !== undefined) {
+        updateData.recent_renovations = req.body.recent_renovations.map(renovation => ({
+          type: sanitize(renovation.type),
+          year: sanitize(renovation.year)
+        }));
+      }
+      
+      if (req.body.occupancy !== undefined) updateData.occupancy = sanitize(req.body.occupancy);
+      
+      // Update home
+      const updatedHome = await Home.findByIdAndUpdate(
+        homeId,
+        { $set: updateData },
+        { new: true, runValidators: true }
+      );
+      
+      // Regenerate maintenance tasks based on updated home information
+      const { regenerateTasksForHome } = require('../services/maintenanceService');
+      await regenerateTasksForHome(updatedHome);
+      
+      // Return success response
+      res.status(200).json({
+        message: "Home updated successfully",
+        data: updatedHome
+      });
+    } catch (error) {
       next(error);
     }
   }

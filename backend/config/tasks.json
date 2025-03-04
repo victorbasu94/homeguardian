@@ -1,63 +1,418 @@
 {
   "rules": [
     {
-      "condition": {
-        "property": "year_built",
-        "operator": "<",
-        "value": 2000
-      },
+      "conditions": [
+        {
+          "property": "hvac_type",
+          "operator": "===",
+          "value": "central_hvac"
+        }
+      ],
       "task": {
-        "task_name": "Inspect Foundation",
-        "frequency": "yearly",
-        "why": "Older homes may have foundation issues that need regular inspection"
+        "task_name": "HVAC Filter Replacement",
+        "description": "Replace the air filter in your central HVAC system to ensure efficient heating and cooling.",
+        "frequency": "3 months",
+        "why": "Regular filter replacement improves air quality, reduces energy costs, and extends the life of your HVAC system.",
+        "estimated_time": 30,
+        "estimated_cost": 25,
+        "category": "maintenance",
+        "priority": "high",
+        "steps": [
+          {
+            "step_number": 1,
+            "description": "Turn off the HVAC system at the thermostat."
+          },
+          {
+            "step_number": 2,
+            "description": "Locate the filter (usually near the furnace or return vent)."
+          },
+          {
+            "step_number": 3,
+            "description": "Remove the old filter and note its size (e.g., 16x25x1)."
+          },
+          {
+            "step_number": 4,
+            "description": "Insert a new filter, ensuring the airflow arrow matches the system's direction."
+          },
+          {
+            "step_number": 5,
+            "description": "Turn the system back on and check airflow."
+          }
+        ]
       }
     },
     {
-      "condition": {
-        "property": "roof_type",
-        "operator": "===",
-        "value": "Asphalt Shingles"
-      },
+      "conditions": [
+        {
+          "property": "roof_type",
+          "operator": "===",
+          "value": "asphalt_shingles"
+        },
+        {
+          "property": "number_of_stories",
+          "operator": ">=",
+          "value": 1
+        }
+      ],
       "task": {
-        "task_name": "Replace Roof",
-        "frequency": "15 years",
-        "why": "Asphalt shingle roofs typically need replacement every 15 years"
-      }
-    },
-    {
-      "condition": {
-        "property": "hvac_type",
-        "operator": "===",
-        "value": "Central AC"
-      },
-      "task": {
-        "task_name": "Service AC",
-        "frequency": "yearly",
-        "why": "Central AC systems require annual maintenance for optimal performance"
-      }
-    },
-    {
-      "condition": {
-        "property": "always",
-        "operator": "true",
-        "value": null
-      },
-      "task": {
-        "task_name": "Clean Gutters",
-        "frequency": "yearly",
-        "why": "Regular gutter cleaning prevents water damage and extends roof life"
-      }
-    },
-    {
-      "condition": {
-        "property": "always",
-        "operator": "true",
-        "value": null
-      },
-      "task": {
-        "task_name": "Check Smoke Detectors",
+        "task_name": "Roof and Gutter Inspection",
+        "description": "Inspect your asphalt shingle roof and clean the gutters to prevent leaks and water damage.",
         "frequency": "6 months",
-        "why": "Regular smoke detector checks are essential for home safety"
+        "why": "Regular roof inspections can identify minor issues before they become major problems, and clean gutters prevent water damage to your home's foundation and walls.",
+        "estimated_time": 120,
+        "estimated_cost": 0,
+        "category": "maintenance",
+        "priority": "medium",
+        "steps": [
+          {
+            "step_number": 1,
+            "description": "Use a ladder to safely access the roof (or hire a professional if you're not comfortable with heights)."
+          },
+          {
+            "step_number": 2,
+            "description": "Check shingles for cracks, missing pieces, or wear."
+          },
+          {
+            "step_number": 3,
+            "description": "Inspect flashing around chimneys and vents for gaps."
+          },
+          {
+            "step_number": 4,
+            "description": "Clear gutters of leaves and debris using gloves or a scoop."
+          },
+          {
+            "step_number": 5,
+            "description": "Test downspouts with a hose to ensure proper drainage."
+          }
+        ]
+      }
+    },
+    {
+      "conditions": [
+        {
+          "property": "appliances",
+          "operator": "exists",
+          "value": null
+        }
+      ],
+      "task": {
+        "task_name": "Water Heater Flush",
+        "description": "Flush your water heater to remove sediment buildup, improving efficiency and extending its lifespan.",
+        "frequency": "yearly",
+        "why": "Sediment buildup in water heaters can reduce efficiency, increase energy costs, and shorten the appliance's lifespan.",
+        "estimated_time": 90,
+        "estimated_cost": 0,
+        "category": "maintenance",
+        "priority": "medium",
+        "steps": [
+          {
+            "step_number": 1,
+            "description": "Turn off the water heater (gas or electric) and let it cool."
+          },
+          {
+            "step_number": 2,
+            "description": "Shut off the cold water supply to the heater."
+          },
+          {
+            "step_number": 3,
+            "description": "Attach a hose to the drain valve and run it outside or to a bucket."
+          },
+          {
+            "step_number": 4,
+            "description": "Open the valve and drain until the water runs clear."
+          },
+          {
+            "step_number": 5,
+            "description": "Close the valve, remove the hose, and restore power/water supply."
+          }
+        ]
+      }
+    },
+    {
+      "conditions": [
+        {
+          "property": "foundation_type",
+          "operator": "===",
+          "value": "basement"
+        }
+      ],
+      "task": {
+        "task_name": "Basement Moisture Check",
+        "description": "Inspect your basement for signs of moisture or water intrusion to prevent mold and structural damage.",
+        "frequency": "3 months",
+        "why": "Early detection of moisture issues can prevent mold growth, structural damage, and expensive repairs.",
+        "estimated_time": 45,
+        "estimated_cost": 0,
+        "category": "safety",
+        "priority": "high",
+        "steps": [
+          {
+            "step_number": 1,
+            "description": "Check walls and floors for visible water or damp spots."
+          },
+          {
+            "step_number": 2,
+            "description": "Look for white mineral deposits (efflorescence) on walls, which indicate water seepage."
+          },
+          {
+            "step_number": 3,
+            "description": "Inspect for musty odors or visible mold growth."
+          },
+          {
+            "step_number": 4,
+            "description": "Check that sump pump is functioning properly (if applicable)."
+          },
+          {
+            "step_number": 5,
+            "description": "Ensure downspouts direct water away from foundation."
+          }
+        ]
+      }
+    },
+    {
+      "conditions": [
+        {
+          "property": "windows.type",
+          "operator": "===",
+          "value": "single_pane"
+        }
+      ],
+      "task": {
+        "task_name": "Window Weatherstripping Check",
+        "description": "Inspect and replace weatherstripping around single-pane windows to improve energy efficiency.",
+        "frequency": "yearly",
+        "why": "Single-pane windows often leak air, and proper weatherstripping can significantly reduce heating and cooling costs.",
+        "estimated_time": 60,
+        "estimated_cost": 30,
+        "category": "improvement",
+        "priority": "medium",
+        "steps": [
+          {
+            "step_number": 1,
+            "description": "Inspect current weatherstripping for cracks, gaps, or compression."
+          },
+          {
+            "step_number": 2,
+            "description": "Remove old weatherstripping if damaged."
+          },
+          {
+            "step_number": 3,
+            "description": "Clean the surface with rubbing alcohol."
+          },
+          {
+            "step_number": 4,
+            "description": "Measure and cut new weatherstripping to fit."
+          },
+          {
+            "step_number": 5,
+            "description": "Apply new weatherstripping according to package instructions."
+          }
+        ]
+      }
+    },
+    {
+      "conditions": [
+        {
+          "property": "yard_garden.exists",
+          "operator": "===",
+          "value": true
+        }
+      ],
+      "task": {
+        "task_name": "Seasonal Yard Maintenance",
+        "description": "Perform seasonal maintenance on your yard to keep it healthy and attractive.",
+        "frequency": "seasonal",
+        "why": "Regular yard maintenance prevents overgrowth, reduces pest issues, and maintains property value.",
+        "estimated_time": 180,
+        "estimated_cost": 50,
+        "category": "seasonal",
+        "priority": "medium",
+        "steps": [
+          {
+            "step_number": 1,
+            "description": "Mow lawn to appropriate height for the season."
+          },
+          {
+            "step_number": 2,
+            "description": "Trim bushes and hedges away from the house."
+          },
+          {
+            "step_number": 3,
+            "description": "Remove weeds from garden beds and lawn."
+          },
+          {
+            "step_number": 4,
+            "description": "Apply seasonal fertilizer if needed."
+          },
+          {
+            "step_number": 5,
+            "description": "Check irrigation system for leaks or damage."
+          }
+        ]
+      }
+    },
+    {
+      "conditions": [
+        {
+          "property": "always",
+          "operator": "true",
+          "value": null
+        }
+      ],
+      "task": {
+        "task_name": "Smoke and Carbon Monoxide Detector Test",
+        "description": "Test all smoke and carbon monoxide detectors to ensure they're functioning properly.",
+        "frequency": "3 months",
+        "why": "Functioning detectors are critical for early warning in case of fire or carbon monoxide leaks.",
+        "estimated_time": 15,
+        "estimated_cost": 0,
+        "category": "safety",
+        "priority": "high",
+        "steps": [
+          {
+            "step_number": 1,
+            "description": "Press the test button on each detector to ensure the alarm sounds."
+          },
+          {
+            "step_number": 2,
+            "description": "Replace batteries if the alarm sounds weak or doesn't sound at all."
+          },
+          {
+            "step_number": 3,
+            "description": "Check the manufacture date on each detector (usually on the back)."
+          },
+          {
+            "step_number": 4,
+            "description": "Replace detectors that are more than 10 years old (smoke) or 7 years old (CO)."
+          },
+          {
+            "step_number": 5,
+            "description": "Vacuum any dust from detector vents."
+          }
+        ]
+      }
+    },
+    {
+      "conditions": [
+        {
+          "property": "exterior_material",
+          "operator": "===",
+          "value": "vinyl_siding"
+        }
+      ],
+      "task": {
+        "task_name": "Vinyl Siding Cleaning",
+        "description": "Clean vinyl siding to remove dirt, mildew, and stains.",
+        "frequency": "yearly",
+        "why": "Regular cleaning maintains your home's appearance and prevents mold and mildew growth.",
+        "estimated_time": 240,
+        "estimated_cost": 20,
+        "category": "cleaning",
+        "priority": "low",
+        "steps": [
+          {
+            "step_number": 1,
+            "description": "Mix a cleaning solution of 70% water and 30% white vinegar."
+          },
+          {
+            "step_number": 2,
+            "description": "Apply solution with a soft-bristled brush or low-pressure sprayer."
+          },
+          {
+            "step_number": 3,
+            "description": "Work from bottom to top to prevent streaking."
+          },
+          {
+            "step_number": 4,
+            "description": "Rinse thoroughly with clean water."
+          },
+          {
+            "step_number": 5,
+            "description": "Inspect for any damaged or loose siding pieces."
+          }
+        ]
+      }
+    },
+    {
+      "conditions": [
+        {
+          "property": "garage.type",
+          "operator": "!==",
+          "value": "none"
+        }
+      ],
+      "task": {
+        "task_name": "Garage Door Maintenance",
+        "description": "Perform maintenance on your garage door and opener to ensure safe and reliable operation.",
+        "frequency": "6 months",
+        "why": "Regular maintenance prevents garage door failures and extends the life of the door and opener.",
+        "estimated_time": 60,
+        "estimated_cost": 10,
+        "category": "maintenance",
+        "priority": "medium",
+        "steps": [
+          {
+            "step_number": 1,
+            "description": "Inspect and tighten all hardware, including brackets, bolts, and roller wheels."
+          },
+          {
+            "step_number": 2,
+            "description": "Lubricate moving parts with garage door lubricant (not WD-40)."
+          },
+          {
+            "step_number": 3,
+            "description": "Test the door balance by disconnecting the opener and manually lifting the door."
+          },
+          {
+            "step_number": 4,
+            "description": "Test auto-reverse safety features by placing an object in the door's path."
+          },
+          {
+            "step_number": 5,
+            "description": "Inspect weather stripping for damage and replace if necessary."
+          }
+        ]
+      }
+    },
+    {
+      "conditions": [
+        {
+          "property": "plumbing.material",
+          "operator": "===",
+          "value": "copper"
+        }
+      ],
+      "task": {
+        "task_name": "Copper Pipe Inspection",
+        "description": "Inspect copper plumbing pipes for leaks, corrosion, or damage.",
+        "frequency": "yearly",
+        "why": "Copper pipes can develop pinhole leaks or corrosion over time, especially in areas with hard water.",
+        "estimated_time": 45,
+        "estimated_cost": 0,
+        "category": "maintenance",
+        "priority": "medium",
+        "steps": [
+          {
+            "step_number": 1,
+            "description": "Check exposed pipes in basement, under sinks, and in utility areas."
+          },
+          {
+            "step_number": 2,
+            "description": "Look for green discoloration, which indicates corrosion."
+          },
+          {
+            "step_number": 3,
+            "description": "Feel along pipes for moisture or water damage on nearby surfaces."
+          },
+          {
+            "step_number": 4,
+            "description": "Check water pressure at various faucets throughout the house."
+          },
+          {
+            "step_number": 5,
+            "description": "Listen for unusual sounds in pipes when water is running."
+          }
+        ]
       }
     }
   ]
