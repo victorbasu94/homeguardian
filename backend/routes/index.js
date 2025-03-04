@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const authRoutes = require('./auth');
+const homesRoutes = require('./homes');
+const tasksRoutes = require('./tasks');
 
 /**
  * @swagger
@@ -32,5 +34,11 @@ router.get('/', (req, res) => {
 
 // Mount authentication routes
 router.use('/api/auth', authRoutes);
+
+// Mount homes routes
+router.use('/api/homes', homesRoutes);
+
+// Mount tasks routes
+router.use('/api/tasks', tasksRoutes);
 
 module.exports = router; 
