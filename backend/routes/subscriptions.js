@@ -1156,19 +1156,19 @@ router.post('/checkout', verifyToken, async (req, res) => {
     }
 
     // Determine price ID based on plan and billing cycle
-    let priceId;
-    if (plan_type === 'basic') {
-      priceId = billing_cycle === 'monthly' 
-        ? process.env.STRIPE_PRICE_BASIC_MONTHLY 
-        : process.env.STRIPE_PRICE_BASIC_YEARLY;
-    } else if (plan_type === 'pro') {
-      priceId = billing_cycle === 'monthly' 
-        ? process.env.STRIPE_PRICE_PRO_MONTHLY 
-        : process.env.STRIPE_PRICE_PRO_YEARLY;
-    } else if (plan_type === 'premium') {
-      priceId = billing_cycle === 'monthly' 
-        ? process.env.STRIPE_PRICE_PREMIUM_MONTHLY 
-        : process.env.STRIPE_PRICE_PREMIUM_YEARLY;
+    let priceId = process.env.STRIPE_PRICE_ID; // Use the single price ID for now
+    
+    // Log the plan selection for future implementation
+    logger.info(`Selected plan: ${plan_type}, billing cycle: ${billing_cycle}`);
+    logger.info(`Using default price ID: ${priceId}`);
+
+    // Check if price ID is valid
+    if (!priceId || priceId === 'price_1234567890abcdefghijklmn' || priceId.includes('your_stripe_price_id')) {
+      logger.error('Invalid Stripe price ID. Please set a valid STRIPE_PRICE_ID in the .env file.');
+      return res.status(500).json({ 
+        message: 'Stripe configuration error. Please contact support.',
+        details: 'Invalid price ID configuration'
+      });
     }
 
     // Set success and cancel URLs

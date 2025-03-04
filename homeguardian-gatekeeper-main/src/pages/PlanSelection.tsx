@@ -157,13 +157,29 @@ const PlanSelection = () => {
       }
     } catch (error: any) {
       console.error('Subscription error:', error);
-      console.error('Error response:', error.response?.data);
+      
+      // Extract detailed error information
+      const errorMessage = error.response?.data?.message || 
+                          (error.message === 'Network Error' ? 
+                            'Unable to connect to the server. Please check your internet connection.' : 
+                            'An unexpected error occurred. Please try again.');
+      
+      console.error('Error details:', errorMessage);
       
       toast({
-        title: 'Subscription error',
-        description: error.response?.data?.message || 'An error occurred. Please try again.',
+        title: 'Subscription Error',
+        description: errorMessage,
         variant: 'destructive',
       });
+      
+      // If there's a server error, suggest contacting support
+      if (error.response?.status === 500) {
+        toast({
+          title: 'Server Error',
+          description: 'Our team has been notified. Please try again later or contact support.',
+          variant: 'destructive',
+        });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -250,14 +266,11 @@ const PlanSelection = () => {
         </div>
       </section>
       
-      {/* Skip for now option */}
+      {/* Footer note */}
       <div className="text-center pb-16">
-        <button 
-          onClick={() => navigate('/dashboard')}
-          className="text-gray-600 hover:text-primary underline font-medium"
-        >
-          Skip for now and go to dashboard
-        </button>
+        <p className="text-gray-600">
+          Select a plan to continue to your dashboard
+        </p>
       </div>
     </div>
   );

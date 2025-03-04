@@ -231,6 +231,19 @@ const createCheckoutSession = async (customerId, priceId, successUrl, cancelUrl)
   try {
     logger.info(`Creating checkout session for customer: ${customerId}, price: ${priceId}`);
     
+    // Validate inputs
+    if (!customerId) {
+      throw new Error('Customer ID is required');
+    }
+    
+    if (!priceId) {
+      throw new Error('Price ID is required');
+    }
+    
+    if (!successUrl || !cancelUrl) {
+      throw new Error('Success URL and cancel URL are required');
+    }
+    
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       payment_method_types: ['card'],
@@ -250,6 +263,14 @@ const createCheckoutSession = async (customerId, priceId, successUrl, cancelUrl)
     logger.info(`Checkout session created successfully: ${session.id}`);
     return session;
   } catch (error) {
+    // Check for specific Stripe errors
+    if (error.type === 'StripeInvalidRequestError') {
+      if (error.param === 'price') {
+        logger.error(`Invalid Stripe price ID: ${priceId}`, { error });
+        throw new Error(`Invalid price ID: ${priceId}. Please check your Stripe configuration.`);
+      }
+    }
+    
     logger.error(`Error creating checkout session: ${error.message}`, { error });
     throw error;
   }
