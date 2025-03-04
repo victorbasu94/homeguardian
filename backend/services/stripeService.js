@@ -1,5 +1,70 @@
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+// Check if we're in development mode
+const isDevelopment = process.env.NODE_ENV === 'development';
+
+// Initialize logger
 const logger = require('../utils/logger');
+
+// Mock Stripe implementation for development
+let stripe;
+if (isDevelopment) {
+  logger.info('Using mock Stripe implementation for development');
+  
+  // Mock Stripe implementation
+  stripe = {
+    customers: {
+      create: async (data) => {
+        logger.info(`[MOCK] Creating customer with email: ${data.email}`);
+        return { id: `cus_mock_${Date.now()}` };
+      }
+    },
+    checkout: {
+      sessions: {
+        create: async (data) => {
+          logger.info(`[MOCK] Creating checkout session for customer: ${data.customer}`);
+          // In development, redirect to dashboard with success parameter
+          const checkoutUrl = `${process.env.FRONTEND_URL}/dashboard?subscription=success&mock=true`;
+          return { 
+            id: `cs_mock_${Date.now()}`,
+            url: checkoutUrl
+          };
+        }
+      }
+    },
+    subscriptions: {
+      create: async (data) => {
+        logger.info(`[MOCK] Creating subscription for customer: ${data.customer}`);
+        return { 
+          id: `sub_mock_${Date.now()}`,
+          status: 'active',
+          customer: data.customer,
+          items: {
+            data: [{ price: { id: data.items[0].price } }]
+          }
+        };
+      },
+      cancel: async (subscriptionId) => {
+        logger.info(`[MOCK] Cancelling subscription: ${subscriptionId}`);
+        return { id: subscriptionId, status: 'canceled' };
+      }
+    },
+    billingPortal: {
+      sessions: {
+        create: async (data) => {
+          logger.info(`[MOCK] Creating billing portal session for customer: ${data.customer}`);
+          return { url: data.return_url };
+        }
+      }
+    }
+  };
+} else {
+  // Use real Stripe in production
+  if (!process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY.includes('your_stripe_secret_key')) {
+    console.error('ERROR: Stripe API key is not properly configured!');
+    console.error('Please set a valid STRIPE_SECRET_KEY in your .env file');
+  }
+  stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+  logger.info('Stripe service initialized with live API');
+}
 
 /**
  * Create a new Stripe customer
@@ -233,16 +298,29 @@ const createCheckoutSession = async (customerId, priceId, successUrl, cancelUrl)
     
     // Validate inputs
     if (!customerId) {
-      throw new Error('Customer ID is required');
+      const error = new Error('Customer ID is required');
+      logger.error(`Checkout session creation failed: ${error.message}`);
+      throw error;
     }
     
     if (!priceId) {
-      throw new Error('Price ID is required');
+      const error = new Error('Price ID is required');
+      logger.error(`Checkout session creation failed: ${error.message}`);
+      throw error;
     }
     
     if (!successUrl || !cancelUrl) {
-      throw new Error('Success URL and cancel URL are required');
+      const error = new Error('Success URL and cancel URL are required');
+      logger.error(`Checkout session creation failed: ${error.message}`);
+      throw error;
     }
+    
+    // Log the checkout session parameters
+    logger.info(`Creating checkout with params: 
+      - Customer ID: ${customerId}
+      - Price ID: ${priceId}
+      - Success URL: ${successUrl}
+      - Cancel URL: ${cancelUrl}`);
     
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
@@ -271,8 +349,18 @@ const createCheckoutSession = async (customerId, priceId, successUrl, cancelUrl)
       }
     }
     
-    logger.error(`Error creating checkout session: ${error.message}`, { error });
-    throw error;
+    // Log the full error for debugging
+    logger.error(`Error creating checkout session: ${error.message}`, { 
+      error,
+      customerId,
+      priceId,
+      errorType: error.type,
+      errorCode: error.code,
+      errorParam: error.param
+    });
+    
+    // Rethrow with a more descriptive message
+    throw new Error(`Failed to create checkout session: ${error.message}`);
   }
 };
 

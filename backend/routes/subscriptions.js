@@ -1096,7 +1096,7 @@ router.post('/create-portal-session', verifyToken, async (req, res) => {
  * @swagger
  * /api/subscriptions/checkout:
  *   post:
- *     summary: Create a Stripe checkout session for subscription
+ *     summary: Create a checkout session for subscription
  *     description: Creates a checkout session for the user to subscribe to a plan
  *     security:
  *       - bearerAuth: []
@@ -1132,6 +1132,9 @@ router.post('/checkout', verifyToken, async (req, res) => {
     const { plan_type, billing_cycle = 'monthly' } = req.body;
     const userId = req.user.id;
 
+    // Log the request
+    logger.info(`Subscription checkout request - User: ${userId}, Plan: ${plan_type}, Billing: ${billing_cycle}`);
+
     // Validate plan type
     if (!['basic', 'pro', 'premium'].includes(plan_type)) {
       return res.status(400).json({ message: 'Invalid plan type. Must be one of: basic, pro, premium' });
@@ -1150,9 +1153,22 @@ router.post('/checkout', verifyToken, async (req, res) => {
 
     // Create Stripe customer if not exists
     if (!user.stripe_customer_id) {
-      const customerId = await stripeService.createCustomer(user.email);
-      user.stripe_customer_id = customerId;
-      await user.save();
+      try {
+        const customerId = await stripeService.createCustomer(user.email);
+        user.stripe_customer_id = customerId;
+        await user.save();
+        logger.info(`Created Stripe customer for user ${userId}: ${customerId}`);
+      } catch (error) {
+        logger.error(`Failed to create Stripe customer for user ${userId}: ${error.message}`, { error });
+        // Continue with mock customer ID in development
+        if (process.env.NODE_ENV === 'development') {
+          user.stripe_customer_id = `cus_mock_${Date.now()}`;
+          await user.save();
+          logger.info(`Created mock Stripe customer for user ${userId}: ${user.stripe_customer_id}`);
+        } else {
+          throw error;
+        }
+      }
     }
 
     // Determine price ID based on plan and billing cycle
@@ -1160,10 +1176,11 @@ router.post('/checkout', verifyToken, async (req, res) => {
     
     // Log the plan selection for future implementation
     logger.info(`Selected plan: ${plan_type}, billing cycle: ${billing_cycle}`);
-    logger.info(`Using default price ID: ${priceId}`);
+    logger.info(`Using price ID: ${priceId}`);
 
-    // Check if price ID is valid
-    if (!priceId || priceId === 'price_1234567890abcdefghijklmn' || priceId.includes('your_stripe_price_id')) {
+    // Check if price ID is valid in production
+    if (process.env.NODE_ENV !== 'development' && 
+        (!priceId || priceId === 'price_1234567890abcdefghijklmn' || priceId.includes('your_stripe_price_id'))) {
       logger.error('Invalid Stripe price ID. Please set a valid STRIPE_PRICE_ID in the .env file.');
       return res.status(500).json({ 
         message: 'Stripe configuration error. Please contact support.',
@@ -1175,21 +1192,37 @@ router.post('/checkout', verifyToken, async (req, res) => {
     const successUrl = `${process.env.FRONTEND_URL}/dashboard?subscription=success`;
     const cancelUrl = `${process.env.FRONTEND_URL}/plan-selection?subscription=canceled`;
 
-    // Create checkout session
-    const session = await stripeService.createCheckoutSession(
-      user.stripe_customer_id,
-      priceId,
-      successUrl,
-      cancelUrl
-    );
+    try {
+      // Create checkout session
+      const session = await stripeService.createCheckoutSession(
+        user.stripe_customer_id,
+        priceId,
+        successUrl,
+        cancelUrl
+      );
 
-    logger.info(`Checkout session created for user ${userId}, plan: ${plan_type}, billing: ${billing_cycle}`);
+      logger.info(`Checkout session created for user ${userId}, plan: ${plan_type}, billing: ${billing_cycle}`);
 
-    // Return checkout URL
-    res.status(200).json({ checkout_url: session.url });
+      // Return checkout URL
+      res.status(200).json({ checkout_url: session.url });
+    } catch (error) {
+      logger.error(`Error creating checkout session: ${error.message}`, { error });
+      
+      // In development, create a mock checkout session
+      if (process.env.NODE_ENV === 'development') {
+        logger.info(`Creating mock checkout session for user ${userId} in development mode`);
+        const mockCheckoutUrl = `${process.env.FRONTEND_URL}/dashboard?subscription=success&mock=true`;
+        return res.status(200).json({ checkout_url: mockCheckoutUrl });
+      }
+      
+      res.status(500).json({ 
+        message: 'Failed to create checkout session',
+        details: error.message
+      });
+    }
   } catch (error) {
-    logger.error(`Error creating checkout session: ${error.message}`, { error });
-    res.status(500).json({ message: 'Failed to create checkout session' });
+    logger.error(`Unhandled error in checkout endpoint: ${error.message}`, { error });
+    res.status(500).json({ message: 'An unexpected error occurred', details: error.message });
   }
 });
 

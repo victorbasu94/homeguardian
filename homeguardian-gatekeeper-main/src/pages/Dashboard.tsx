@@ -49,12 +49,22 @@ const Dashboard = () => {
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
     const subscriptionStatus = searchParams.get('subscription');
+    const isMock = searchParams.get('mock') === 'true';
     
     if (subscriptionStatus === 'success') {
       toast({
         title: 'Subscription Activated',
-        description: 'Your subscription has been successfully activated. Welcome to HomeGuardian!',
+        description: isMock 
+          ? 'Your subscription has been activated in development mode.' 
+          : 'Your subscription has been successfully activated. Welcome to HomeGuardian!',
       });
+      
+      // If this is a mock subscription in development, update the user data
+      if (isMock) {
+        // Update user data with mock subscription
+        fetchUserData();
+        console.log('Mock subscription activated in development mode');
+      }
       
       // Remove the query parameter from the URL
       navigate('/dashboard', { replace: true });

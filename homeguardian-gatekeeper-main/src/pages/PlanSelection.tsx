@@ -153,24 +153,49 @@ const PlanSelection = () => {
       if (response.data.checkout_url) {
         window.location.href = response.data.checkout_url;
       } else {
-        throw new Error('No checkout URL returned');
+        console.error('Error details: No checkout URL returned');
+        throw new Error('No checkout URL returned from server');
       }
     } catch (error: any) {
       console.error('Subscription error:', error);
       
       // Extract detailed error information
-      const errorMessage = error.response?.data?.message || 
-                          (error.message === 'Network Error' ? 
-                            'Unable to connect to the server. Please check your internet connection.' : 
-                            'An unexpected error occurred. Please try again.');
+      let errorMessage = 'An unexpected error occurred. Please try again.';
+      let errorDetails = '';
       
-      console.error('Error details:', errorMessage);
+      if (error.response) {
+        // Server responded with an error
+        errorMessage = error.response.data?.message || 'Server error occurred';
+        errorDetails = error.response.data?.details || '';
+        console.error('Server error details:', error.response.data);
+      } else if (error.request) {
+        // Request was made but no response received
+        errorMessage = 'Unable to connect to the server. Please check your internet connection.';
+        console.error('Network error - no response received');
+      } else {
+        // Error in setting up the request
+        errorMessage = error.message || 'Error setting up the request';
+        console.error('Request setup error:', error.message);
+      }
       
+      // Log complete error for debugging
+      console.error('Complete error object:', error);
+      
+      // Show toast with error message
       toast({
         title: 'Subscription Error',
         description: errorMessage,
         variant: 'destructive',
       });
+      
+      // If there are additional details, show them in a separate toast
+      if (errorDetails) {
+        toast({
+          title: 'Error Details',
+          description: errorDetails,
+          variant: 'destructive',
+        });
+      }
       
       // If there's a server error, suggest contacting support
       if (error.response?.status === 500) {
