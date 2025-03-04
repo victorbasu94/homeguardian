@@ -27,7 +27,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   
   // Initialize auth state from localStorage on mount
   useEffect(() => {
-    const initializeAuth = () => {
+    const initializeAuth = async () => {
       try {
         // Check for token in localStorage
         const storedToken = localStorage.getItem('accessToken');
@@ -39,23 +39,33 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setAccessToken(storedToken);
           
           // Fetch user data
-          const fetchUser = async () => {
-            try {
-              const response = await api.get('/api/auth/me');
-              if (response.data.user) {
-                console.log('User data fetched successfully:', response.data.user);
-                setUser(response.data.user);
-              }
-            } catch (error) {
-              console.error('Error fetching user data:', error);
-              // If token is invalid, clear it
+          try {
+            const response = await api.get('/api/auth/me');
+            if (response.data.user) {
+              console.log('User data fetched successfully:', response.data.user);
+              setUser(response.data.user);
+            } else {
+              console.warn('User data response missing user object');
               localStorage.removeItem('accessToken');
               clearAccessToken();
               setUser(null);
             }
-          };
-          
-          fetchUser();
+          } catch (error) {
+            console.error('Error fetching user data:', error);
+            // Only clear token if it's an authentication error (401)
+            if (error.response && error.response.status === 401) {
+              localStorage.removeItem('accessToken');
+              clearAccessToken();
+              setUser(null);
+            } else {
+              // For other errors (like network issues), keep the token and set a retry
+              console.log('Non-auth error occurred, will retry authentication later');
+              // We'll keep the user logged in but in a loading state
+              setTimeout(() => {
+                initializeAuth();
+              }, 5000); // Retry after 5 seconds
+            }
+          }
         } else {
           console.log('No stored token found on initialization');
           setUser(null);
@@ -88,22 +98,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
   
   // Logout function
-  const logout = useCallback(async () => {
-    try {
-      // Call logout API
-      await api.post('/api/auth/logout');
-    } catch (error) {
-      console.error('Logout error:', error);
-    } finally {
-      // Remove token from localStorage
-      localStorage.removeItem('accessToken');
-      
-      // Remove token from axios headers
-      clearAccessToken();
-      
-      // Clear user data
-      setUser(null);
-    }
+  const logout = useCallback(() => {
+    console.log('Logout called');
+    
+    // Clear token from localStorage
+    localStorage.removeItem('accessToken');
+    
+    // Clear token from axios headers
+    clearAccessToken();
+    
+    // Clear user data
+    setUser(null);
+    
+    console.log('Logout completed');
   }, []);
   
   const contextValue: AuthContextType = {
@@ -129,6 +136,4 @@ export const useAuth = () => {
   }
   
   return context;
-};
-
-export default useAuth; 
+}; 

@@ -80,6 +80,17 @@ api.interceptors.request.use(
 // Response interceptor to handle token refresh and other errors
 api.interceptors.response.use(
   (response) => {
+    // For the homes endpoint, ensure we're returning data in the expected format
+    if (response.config.url?.includes('/api/homes') && response.data && !response.data.data && !Array.isArray(response.data)) {
+      // If the response doesn't have a data property and isn't an array, wrap it in a data property
+      console.log('Normalizing homes response format:', response.data);
+      return {
+        ...response,
+        data: {
+          data: Array.isArray(response.data) ? response.data : (response.data.data || [])
+        }
+      };
+    }
     return response;
   },
   async (error) => {
@@ -101,7 +112,9 @@ api.interceptors.response.use(
               if (!refreshToken) {
                 // No refresh token available, force logout
                 toast.error("Session expired. Please log in again.");
-                window.location.href = '/login';
+                // Don't redirect immediately, let the component handle it
+                localStorage.removeItem('accessToken');
+                clearAccessToken();
                 return Promise.reject(error);
               }
               
@@ -115,6 +128,7 @@ api.interceptors.response.use(
               
               // Update the access token
               setAccessToken(newAccessToken);
+              localStorage.setItem('accessToken', newAccessToken);
               
               // Retry the original request with the new token
               originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
@@ -124,7 +138,7 @@ api.interceptors.response.use(
               toast.error("Authentication failed. Please log in again.");
               Cookies.remove('refreshToken');
               clearAccessToken();
-              window.location.href = '/login';
+              localStorage.removeItem('accessToken');
               return Promise.reject(refreshError);
             }
           }

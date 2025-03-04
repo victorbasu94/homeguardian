@@ -103,15 +103,18 @@ const Dashboard = () => {
       setHomesError(null);
       
       const response = await api.get("/api/homes");
-      setHomes(response.data);
+      // Ensure homes is always an array
+      const homesData = response.data?.data || [];
+      setHomes(Array.isArray(homesData) ? homesData : []);
       
       // Select the first home by default if available
-      if (response.data.length > 0 && !selectedHome) {
-        setSelectedHome(response.data[0]);
+      if (Array.isArray(homesData) && homesData.length > 0 && !selectedHome) {
+        setSelectedHome(homesData[0]);
       }
     } catch (error) {
       console.error("Error fetching homes:", error);
       setHomesError("Failed to load your homes. Please try again later.");
+      setHomes([]); // Ensure homes is an empty array on error
     } finally {
       setLoadingHomes(false);
     }
@@ -121,8 +124,20 @@ const Dashboard = () => {
     try {
       setLoadingUserData(true);
       
-      const response = await api.get("/api/users/me");
-      setUserData(response.data);
+      // Use the auth/me endpoint instead of users/me
+      const response = await api.get("/api/auth/me");
+      if (response.data && response.data.user) {
+        setUserData({
+          id: response.data.user.id,
+          name: response.data.user.name || response.data.user.email.split('@')[0],
+          email: response.data.user.email,
+          subscription_status: response.data.user.subscription_status,
+          subscription_plan: response.data.user.subscription_plan,
+          subscription_end_date: response.data.user.subscription_end_date
+        });
+      } else {
+        console.error("Invalid user data format:", response.data);
+      }
     } catch (error) {
       console.error("Error fetching user data:", error);
       // We don't set an error state here as it's not critical for the main functionality
@@ -235,7 +250,7 @@ const Dashboard = () => {
       );
     }
     
-    if (homes.length === 0) {
+    if (!Array.isArray(homes) || homes.length === 0) {
       return (
         <div className="bg-muted/30 border border-border rounded-lg p-6 text-center">
           <HomeIcon className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
