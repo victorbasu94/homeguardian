@@ -29,6 +29,9 @@ const createTransporter = async () => {
   }
 };
 
+// Export the createTransporter function
+exports.createTransporter = createTransporter;
+
 /**
  * Send verification email to user
  * @param {Object} user - User object

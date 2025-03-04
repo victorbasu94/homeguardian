@@ -14,12 +14,16 @@ const connectDB = require('./config/db');
 const errorHandler = require('./middleware/errorHandler');
 const routes = require('./routes');
 const swaggerDocs = require('./config/swagger');
+const { initReminderService } = require('./services/reminderService');
 
 // Initialize Express app
 const app = express();
 
 // Connect to MongoDB
 connectDB();
+
+// Initialize reminder service
+initReminderService();
 
 // Security middleware
 app.use(helmet());

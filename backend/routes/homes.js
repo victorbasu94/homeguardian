@@ -4,6 +4,7 @@ const { body, query, validationResult } = require('express-validator');
 const sanitize = require('mongo-sanitize');
 const { verifyToken } = require('../middleware/auth');
 const Home = require('../models/Home');
+const Task = require('../models/Task');
 const logger = require('../utils/logger');
 const { generateMaintenancePlan } = require('../services/maintenanceService');
 
@@ -224,6 +225,68 @@ router.get('/:id',
       // Return home details
       res.status(200).json({ data: home });
     } catch (error) {
+      next(error);
+    }
+  }
+);
+
+/**
+ * @swagger
+ * /api/homes/{homeId}/health:
+ *   get:
+ *     summary: Get health score for a specific home
+ *     tags: [Homes]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: homeId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Home ID
+ *     responses:
+ *       200:
+ *         description: Health score for the home
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - home does not belong to user
+ *       404:
+ *         description: Home not found
+ */
+router.get('/:homeId/health',
+  verifyToken,
+  async (req, res, next) => {
+    try {
+      const homeId = sanitize(req.params.homeId);
+      
+      // Verify home exists and belongs to the authenticated user
+      const home = await Home.findById(homeId);
+      
+      if (!home) {
+        return res.status(404).json({ error: "Home not found" });
+      }
+      
+      if (home.user_id.toString() !== req.user.id) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
+      // Get all tasks for the home
+      const tasks = await Task.find({ home_id: homeId });
+      
+      // Calculate health score
+      let score = 0;
+      
+      if (tasks.length > 0) {
+        const completedTasks = tasks.filter(task => task.completed).length;
+        score = Math.round((completedTasks / tasks.length) * 100);
+      }
+      
+      // Return health score
+      res.status(200).json({ score });
+    } catch (error) {
+      logger.error('Error calculating health score:', error);
       next(error);
     }
   }
