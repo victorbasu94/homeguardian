@@ -4,6 +4,7 @@ const authRoutes = require('./auth');
 const homesRoutes = require('./homes');
 const tasksRoutes = require('./tasks');
 const subscriptionsRoutes = require('./subscriptions');
+const vendorsRoutes = require('./vendors');
 
 /**
  * @swagger
@@ -44,5 +45,8 @@ router.use('/api/tasks', tasksRoutes);
 
 // Mount subscriptions routes
 router.use('/api/subscriptions', subscriptionsRoutes);
+
+// Mount vendors routes
+router.use('/api/vendors', vendorsRoutes);
 
 module.exports = router; 

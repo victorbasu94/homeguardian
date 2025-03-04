@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import VendorList from '@/components/VendorList';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
@@ -67,6 +68,7 @@ interface Task {
   attachments: Attachment[];
   comments: Comment[];
   steps: TaskStep[];
+  location: string; // User's home location for vendor search
 }
 
 // Attachment interface
@@ -117,6 +119,7 @@ const mockTask: Task = {
   estimatedDuration: 30,
   estimatedCost: 25,
   progress: 60,
+  location: 'Denver, CO', // Location for vendor search
   attachments: [
     {
       id: 'att1',
@@ -473,6 +476,8 @@ const TaskDetail: React.FC = () => {
             </Button>
             
             <div className="flex items-center gap-3">
+              <VendorList task={task} />
+              
               <Button variant="outline" className="flex items-center gap-2">
                 <Edit className="h-4 w-4" /> Edit Task
               </Button>
