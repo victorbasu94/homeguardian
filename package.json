@@ -1,0 +1,22 @@
+{
+  "name": "homeguardian",
+  "version": "1.0.0",
+  "description": "HomeGuardian - AI-driven home maintenance application",
+  "main": "index.js",
+  "scripts": {
+    "backend": "cd backend && npm run dev",
+    "frontend": "cd homeguardian-gatekeeper-main && npm run dev",
+    "dev": "concurrently \"npm run backend\" \"npm run frontend\""
+  },
+  "keywords": [
+    "homeguardian",
+    "home",
+    "maintenance",
+    "ai"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+} 
