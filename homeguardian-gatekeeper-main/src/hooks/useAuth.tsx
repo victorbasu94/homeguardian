@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, createContext, useContext, ReactNode } from 'react';
-import api from '../lib/axios';
+import api from '@/lib/axios';
 
 interface User {
   id: string;
@@ -21,7 +21,7 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-export const AuthProvider = ({ children }: AuthProviderProps): JSX.Element => {
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   
@@ -82,16 +82,16 @@ export const AuthProvider = ({ children }: AuthProviderProps): JSX.Element => {
     }
   }, []);
   
+  const contextValue: AuthContextType = {
+    user,
+    isAuthenticated: !!user,
+    isLoading,
+    login,
+    logout
+  };
+  
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        isAuthenticated: !!user,
-        isLoading,
-        login,
-        logout
-      }}
-    >
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );
