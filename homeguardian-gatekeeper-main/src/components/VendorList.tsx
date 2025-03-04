@@ -1,9 +1,46 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Phone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import api from '@/lib/axios';
+import { Card, CardContent } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import { Separator } from '@/components/ui/separator';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import axiosInstance from '@/lib/axios';
 
-// Vendor interface
+// Mock vendor data for local development
+const mockVendors = [
+  {
+    name: "ABC Home Services",
+    address: "123 Main St, Anytown, CA 94123",
+    distance: 1.2,
+    phone: "555-123-4567"
+  },
+  {
+    name: "Quality Home Maintenance",
+    address: "456 Oak Ave, Anytown, CA 94123",
+    distance: 2.5,
+    phone: "555-234-5678"
+  },
+  {
+    name: "Professional Home Care",
+    address: "789 Pine Rd, Anytown, CA 94123",
+    distance: 3.1,
+    phone: "555-345-6789"
+  },
+  {
+    name: "Expert Home Solutions",
+    address: "101 Maple Dr, Anytown, CA 94123",
+    distance: 4.2,
+    phone: "555-456-7890"
+  },
+  {
+    name: "Premier Home Specialists",
+    address: "202 Cedar Ln, Anytown, CA 94123",
+    distance: 5.0,
+    phone: "555-567-8901"
+  }
+];
+
 interface Vendor {
   name: string;
   address: string;
@@ -11,147 +48,117 @@ interface Vendor {
   phone: string;
 }
 
-// Task interface (simplified version of what's in TaskDetail.tsx)
-interface Task {
-  id: string;
-  title: string;
-  description: string;
-  status: string;
-  priority: string;
-  dueDate: string;
-  homeName: string;
-  category: string;
-  estimatedDuration: number;
-  estimatedCost?: number;
-  progress: number;
-  location: string; // This is the user's home location (e.g., "Denver, CO")
-}
-
-interface VendorListProps {
-  task: Task;
-}
-
-const VendorList: React.FC<VendorListProps> = ({ task }) => {
+const VendorList: React.FC = () => {
   const [vendors, setVendors] = useState<Vendor[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [isExpanded, setIsExpanded] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [open, setOpen] = useState<boolean>(false);
 
-  /**
-   * Fetch vendors from the API
-   */
   const fetchVendors = async () => {
-    setIsLoading(true);
+    setLoading(true);
     setError(null);
-    setIsExpanded(true);
     
     try {
-      // Construct the API URL with query parameters
-      const params = new URLSearchParams({
-        location: task.location || 'Denver, CO', // Default to Denver if no location
-        task: task.title
-      });
-      
-      const response = await api.get(`/api/vendors?${params.toString()}`);
-      
-      setVendors(response.data);
-    } catch (error) {
-      console.error('Error fetching vendors:', error);
+      // In development mode, use mock data
+      if (process.env.NODE_ENV === 'development') {
+        // Simulate API delay
+        await new Promise(resolve => setTimeout(resolve, 500));
+        setVendors(mockVendors);
+      } else {
+        // In production, fetch from API
+        const response = await axiosInstance.get('/api/vendors');
+        setVendors(response.data);
+      }
+    } catch (err) {
+      console.error('Error fetching vendors:', err);
       setError('Failed to load vendors. Please try again later.');
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  /**
-   * Format phone number for display
-   */
-  const formatPhoneNumber = (phone: string) => {
-    if (phone === 'Phone not listed') {
-      return phone;
-    }
-    return phone;
-  };
-
-  /**
-   * Handle the button click to toggle vendor list
-   */
-  const handleToggleVendors = () => {
-    if (!isExpanded) {
+  useEffect(() => {
+    // Only fetch vendors when the dialog is opened
+    if (open) {
       fetchVendors();
-    } else {
-      setIsExpanded(false);
     }
-  };
+  }, [open]);
 
   return (
-    <div className="w-full">
-      {/* Connect to Vendors button */}
+    <div className="mt-4">
       <Button 
         variant="outline" 
-        className="flex items-center gap-2 border-blue-300 text-blue-600 hover:bg-blue-50"
-        onClick={handleToggleVendors}
+        className="w-full" 
+        onClick={() => setOpen(true)}
       >
-        <Phone className="h-4 w-4" />
-        {isExpanded ? 'Hide Vendors' : 'Connect to Vendors'}
+        Connect to Vendors
       </Button>
 
-      {/* Vendor list section */}
-      {isExpanded && (
-        <div className="mt-6 bg-neutral/5 rounded-lg p-4">
-          <h3 className="font-medium mb-4">Nearby Service Providers</h3>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Local Home Service Vendors</DialogTitle>
+            <DialogDescription>
+              Connect with trusted home service providers in your area.
+            </DialogDescription>
+          </DialogHeader>
           
-          {isLoading && (
-            <div className="text-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-              <p className="text-neutral/70">Loading vendors...</p>
-            </div>
-          )}
-          
-          {error && !isLoading && (
-            <div className="bg-red-50 text-red-700 p-4 rounded-lg">
-              {error}
-            </div>
-          )}
-          
-          {!isLoading && !error && vendors.length === 0 && (
-            <div className="text-center py-8 text-neutral/70">
-              No vendors found near your location.
-            </div>
-          )}
-          
-          {!isLoading && !error && vendors.length > 0 && (
-            <div className="space-y-3">
-              {vendors.map((vendor, index) => (
-                <div 
-                  key={index} 
-                  className="bg-white border border-neutral/10 rounded-lg p-4 hover:shadow-sm transition-shadow"
+          <div className="py-4">
+            {loading ? (
+              <div className="flex justify-center items-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            ) : error ? (
+              <div className="text-center py-8 text-destructive">
+                <p>{error}</p>
+                <Button 
+                  variant="outline" 
+                  className="mt-4" 
+                  onClick={fetchVendors}
                 >
-                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-                    <div>
-                      <h4 className="font-medium">{vendor.name}</h4>
-                      <p className="text-sm text-neutral/70 mt-1">{vendor.address}</p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm text-neutral/70">{vendor.distance} miles</span>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
-                        onClick={() => vendor.phone !== 'Phone not listed' && window.open(`tel:${vendor.phone}`)}
-                        disabled={vendor.phone === 'Phone not listed'}
-                      >
-                        <Phone className="h-3 w-3 mr-1" />
-                        {formatPhoneNumber(vendor.phone)}
-                      </Button>
-                    </div>
+                  Try Again
+                </Button>
+              </div>
+            ) : (
+              <ScrollArea className="h-[50vh] pr-4">
+                {vendors.map((vendor, index) => (
+                  <div key={index} className="mb-4">
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h3 className="font-semibold text-lg">{vendor.name}</h3>
+                            <p className="text-sm text-muted-foreground">{vendor.address}</p>
+                            <p className="text-sm mt-1">{vendor.distance} miles away</p>
+                          </div>
+                          <Button size="sm" variant="secondary" className="flex-shrink-0">
+                            Call
+                          </Button>
+                        </div>
+                        <p className="text-sm mt-2">
+                          <span className="font-medium">Phone:</span> {vendor.phone}
+                        </p>
+                      </CardContent>
+                    </Card>
+                    {index < vendors.length - 1 && <Separator className="my-2" />}
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+                ))}
+              </ScrollArea>
+            )}
+          </div>
+          
+          <DialogFooter className="sm:justify-between">
+            <DialogClose asChild>
+              <Button type="button" variant="secondary">
+                Close
+              </Button>
+            </DialogClose>
+            <Button type="button" variant="default">
+              View All Vendors
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

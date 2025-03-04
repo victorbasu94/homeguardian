@@ -207,24 +207,13 @@ const PlanSelection = () => {
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
       <div className="container mx-auto px-4 py-16 max-w-7xl">
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold mb-4">Choose Your Plan</h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+          <h1 className="text-3xl font-bold mb-3">Choose Your Plan</h1>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             Select the plan that best fits your home maintenance needs. All plans include our core features.
           </p>
-          
-          {/* Skip for now button */}
-          <div className="mt-6">
-            <Button 
-              variant="outline" 
-              onClick={() => navigate('/dashboard')}
-              className="mx-auto"
-            >
-              Skip for now
-            </Button>
-          </div>
         </div>
         
-        <ProgressBar currentStep={3} totalSteps={3} />
+        <ProgressBar value={100} max={100} size="sm" color="success" />
         
         {/* Billing toggle */}
         <div className="flex justify-center mb-12">
@@ -268,6 +257,17 @@ const PlanSelection = () => {
               />
             </div>
           ))}
+        </div>
+        
+        {/* Skip for now button - moved below pricing options */}
+        <div className="mt-8 text-center">
+          <Button 
+            variant="outline" 
+            onClick={() => navigate('/dashboard')}
+            className="mx-auto"
+          >
+            Skip for now
+          </Button>
         </div>
         
         {/* Money-back guarantee */}
