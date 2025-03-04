@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HomeGuardian Stripe Integration Example</title>
+  <script src="https://js.stripe.com/v3/"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      padding: 20px;
+      max-width: 800px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+    .container {
+      background-color: #f9f9f9;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    h1, h2 {
+      color: #333;
+    }
+    button {
+      background-color: #4CAF50;
+      border: none;
+      color: white;
+      padding: 10px 20px;
+      text-align: center;
+      text-decoration: none;
+      display: inline-block;
+      font-size: 16px;
+      margin: 10px 2px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    button:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+    .card-element {
+      border: 1px solid #ccc;
+      padding: 10px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+    }
+    .error {
+      color: #D0021B;
+      margin-top: 10px;
+    }
+    .success {
+      color: #4CAF50;
+      margin-top: 10px;
+    }
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>HomeGuardian Stripe Integration Example</h1>
+  
+  <div class="container">
+    <h2>1. Direct API Integration</h2>
+    <p>Create a subscription directly through the API.</p>
+    <button id="subscribe-button">Subscribe ($9/month)</button>
+    <div id="subscribe-result"></div>
+  </div>
+  
+  <div class="container">
+    <h2>2. Update Payment Method</h2>
+    <p>Add or update your payment method.</p>
+    <div id="card-element" class="card-element"></div>
+    <button id="update-payment-button">Update Payment Method</button>
+    <div id="update-payment-result"></div>
+  </div>
+  
+  <div class="container">
+    <h2>3. Stripe Checkout</h2>
+    <p>Use Stripe's hosted checkout page for subscription payment.</p>
+    <button id="checkout-button">Go to Checkout</button>
+  </div>
+  
+  <div class="container">
+    <h2>4. Stripe Customer Portal</h2>
+    <p>Manage your subscription in Stripe's customer portal.</p>
+    <button id="portal-button">Go to Customer Portal</button>
+  </div>
+  
+  <div class="container">
+    <h2>5. Cancel Subscription</h2>
+    <p>Cancel your current subscription.</p>
+    <button id="cancel-button">Cancel Subscription</button>
+    <div id="cancel-result"></div>
+  </div>
+  
+  <script>
+    // Replace with your Stripe publishable key
+    const stripe = Stripe('pk_test_your_publishable_key');
+    
+    // Replace with your API base URL
+    const API_BASE_URL = 'http://localhost:5000';
+    
+    // Replace with your authentication token
+    let authToken = 'your_auth_token';
+    
+    // Helper function for API calls
+    async function apiCall(endpoint, method = 'GET', data = null) {
+      const options = {
+        method,
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
+        }
+      };
+      
+      if (data) {
+        options.body = JSON.stringify(data);
+      }
+      
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
+      return await response.json();
+    }
+    
+    // 1. Direct API Integration
+    document.getElementById('subscribe-button').addEventListener('click', async function() {
+      try {
+        const result = document.getElementById('subscribe-result');
+        result.innerHTML = 'Processing...';
+        
+        const response = await apiCall('/api/subscriptions/subscribe', 'POST');
+        
+        if (response.status === 'success') {
+          result.innerHTML = `<div class="success">
+            Subscription activated successfully!<br>
+            Subscription ID: ${response.data.subscription_id}<br>
+            Status: ${response.data.status}<br>
+            Current period ends: ${new Date(response.data.current_period_end).toLocaleDateString()}
+          </div>`;
+        } else {
+          result.innerHTML = `<div class="error">Error: ${response.message}</div>`;
+        }
+      } catch (error) {
+        document.getElementById('subscribe-result').innerHTML = `<div class="error">Error: ${error.message}</div>`;
+      }
+    });
+    
+    // 2. Update Payment Method
+    const cardElement = stripe.elements().create('card');
+    cardElement.mount('#card-element');
+    
+    document.getElementById('update-payment-button').addEventListener('click', async function() {
+      try {
+        const result = document.getElementById('update-payment-result');
+        result.innerHTML = 'Processing...';
+        
+        // 1. Create a setup intent
+        const setupIntentResponse = await apiCall('/api/subscriptions/setup-intent', 'POST');
+        
+        if (setupIntentResponse.status !== 'success') {
+          result.innerHTML = `<div class="error">Error: ${setupIntentResponse.message}</div>`;
+          return;
+        }
+        
+        // 2. Confirm the setup with the card element
+        const { setupIntent, error } = await stripe.confirmCardSetup(
+          setupIntentResponse.data.client_secret,
+          {
+            payment_method: {
+              card: cardElement,
+              billing_details: {
+                name: 'HomeGuardian User',
+              },
+            },
+          }
+        );
+        
+        if (error) {
+          result.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+          return;
+        }
+        
+        // 3. Update the payment method
+        const updateResponse = await apiCall('/api/subscriptions/update-payment-method', 'POST', {
+          payment_method_id: setupIntent.payment_method
+        });
+        
+        if (updateResponse.status === 'success') {
+          result.innerHTML = `<div class="success">Payment method updated successfully!</div>`;
+        } else {
+          result.innerHTML = `<div class="error">Error: ${updateResponse.message}</div>`;
+        }
+      } catch (error) {
+        document.getElementById('update-payment-result').innerHTML = `<div class="error">Error: ${error.message}</div>`;
+      }
+    });
+    
+    // 3. Stripe Checkout
+    document.getElementById('checkout-button').addEventListener('click', async function() {
+      try {
+        const response = await apiCall('/api/subscriptions/create-checkout-session', 'POST', {
+          success_url: `${window.location.origin}/success.html`,
+          cancel_url: `${window.location.origin}/cancel.html`
+        });
+        
+        if (response.status === 'success') {
+          // Redirect to Stripe Checkout
+          window.location.href = response.data.checkout_url;
+        } else {
+          alert(`Error: ${response.message}`);
+        }
+      } catch (error) {
+        alert(`Error: ${error.message}`);
+      }
+    });
+    
+    // 4. Stripe Customer Portal
+    document.getElementById('portal-button').addEventListener('click', async function() {
+      try {
+        const response = await apiCall('/api/subscriptions/create-portal-session', 'POST', {
+          return_url: window.location.href
+        });
+        
+        if (response.status === 'success') {
+          // Redirect to Stripe Customer Portal
+          window.location.href = response.data.portal_url;
+        } else {
+          alert(`Error: ${response.message}`);
+        }
+      } catch (error) {
+        alert(`Error: ${error.message}`);
+      }
+    });
+    
+    // 5. Cancel Subscription
+    document.getElementById('cancel-button').addEventListener('click', async function() {
+      if (!confirm('Are you sure you want to cancel your subscription?')) {
+        return;
+      }
+      
+      try {
+        const result = document.getElementById('cancel-result');
+        result.innerHTML = 'Processing...';
+        
+        const response = await apiCall('/api/subscriptions/cancel', 'POST');
+        
+        if (response.status === 'success') {
+          result.innerHTML = `<div class="success">Subscription canceled successfully!</div>`;
+        } else {
+          result.innerHTML = `<div class="error">Error: ${response.message}</div>`;
+        }
+      } catch (error) {
+        document.getElementById('cancel-result').innerHTML = `<div class="error">Error: ${error.message}</div>`;
+      }
+    });
+    
+    // Initialize - Check subscription status
+    (async function() {
+      try {
+        const response = await apiCall('/api/subscriptions/status');
+        
+        if (response.status === 'success') {
+          const hasActiveSubscription = response.data.subscription_status === 'active';
+          
+          // Update UI based on subscription status
+          document.getElementById('subscribe-button').disabled = hasActiveSubscription;
+          document.getElementById('cancel-button').disabled = !hasActiveSubscription;
+          document.getElementById('portal-button').disabled = !hasActiveSubscription;
+          
+          if (hasActiveSubscription) {
+            document.getElementById('subscribe-result').innerHTML = `<div class="success">
+              You have an active subscription.<br>
+              ${response.data.subscription_details ? `Expires: ${new Date(response.data.subscription_details.current_period_end).toLocaleDateString()}` : ''}
+            </div>`;
+          }
+        }
+      } catch (error) {
+        console.error('Error checking subscription status:', error);
+      }
+    })();
+  </script>
+</body>
+</html> 

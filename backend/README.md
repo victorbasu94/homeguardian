@@ -25,6 +25,11 @@ A secure and scalable Node.js/Express backend for the HomeGuardian application, 
   - Rule-based system for determining appropriate maintenance schedules
   - Configurable task rules without code changes
   - Prevention of duplicate tasks
+- **Subscription Management**:
+  - Stripe integration for handling payments
+  - $9/month premium subscription plan
+  - Webhook handling for payment events
+  - User subscription status tracking
 
 ## Prerequisites
 
