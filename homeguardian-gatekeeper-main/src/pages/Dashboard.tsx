@@ -103,12 +103,29 @@ const Dashboard = () => {
       setHomesError(null);
       
       const response = await api.get("/api/homes");
+      console.log("Homes response:", response.data);
+      
       // Ensure homes is always an array
       const homesData = response.data?.data || [];
+      
+      // Log the actual structure of the homes data
+      console.log("Homes data structure:", JSON.stringify(homesData, null, 2));
+      
+      // Check if each home has an id property
+      if (Array.isArray(homesData)) {
+        homesData.forEach((home, index) => {
+          if (!home.id && home._id) {
+            console.log(`Converting _id to id for home at index ${index}`);
+            home.id = home._id;
+          }
+        });
+      }
+      
       setHomes(Array.isArray(homesData) ? homesData : []);
       
       // Select the first home by default if available
       if (Array.isArray(homesData) && homesData.length > 0 && !selectedHome) {
+        console.log("Setting selected home:", homesData[0]);
         setSelectedHome(homesData[0]);
       }
     } catch (error) {
@@ -147,12 +164,23 @@ const Dashboard = () => {
   };
   
   const fetchTasks = async (homeId: string) => {
+    // Skip if homeId is undefined or empty
+    if (!homeId) {
+      console.error("Cannot fetch tasks: homeId is undefined");
+      setTasksError("Cannot load tasks: home ID is missing");
+      setLoadingTasks(false);
+      return;
+    }
+    
     try {
       setLoadingTasks(true);
       setTasksError(null);
       
-      const response = await api.get(`/api/homes/${homeId}/tasks`);
-      setTasks(response.data);
+      console.log("Fetching tasks for homeId:", homeId);
+      const response = await api.get(`/api/tasks/${homeId}`);
+      console.log("Tasks response:", response.data);
+      
+      setTasks(response.data.data || []);
     } catch (error) {
       console.error("Error fetching tasks:", error);
       setTasksError("Failed to load tasks for this home. Please try again later.");

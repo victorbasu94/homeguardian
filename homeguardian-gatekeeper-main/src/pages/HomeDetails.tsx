@@ -34,6 +34,21 @@ const HomeDetails = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   
+  console.log("HomeDetails - homeId from params:", homeId);
+  
+  // Redirect to dashboard if homeId is undefined
+  useEffect(() => {
+    if (!homeId) {
+      console.error("HomeDetails - No homeId provided in URL");
+      toast({
+        title: "Error",
+        description: "No home ID provided. Redirecting to dashboard.",
+        variant: "destructive",
+      });
+      navigate("/dashboard");
+    }
+  }, [homeId, navigate, toast]);
+  
   // State
   const [home, setHome] = useState<ExtendedHomeData | null>(null);
   const [tasks, setTasks] = useState<TaskData[]>([]);
@@ -46,17 +61,40 @@ const HomeDetails = () => {
     if (!homeId) return;
     
     const fetchHomeDetails = async () => {
+      // Skip if homeId is undefined or empty
+      if (!homeId) {
+        console.error("Cannot fetch home details: homeId is undefined");
+        setError("Cannot load home details: home ID is missing");
+        setLoading(false);
+        return;
+      }
+      
       try {
         setLoading(true);
         setError(null);
         
+        console.log("Fetching home details for homeId:", homeId);
+        
         // Fetch home details
         const homeResponse = await api.get(`/api/homes/${homeId}`);
-        setHome(homeResponse.data);
+        console.log("Home details response:", homeResponse.data);
+        
+        if (!homeResponse.data || !homeResponse.data.data) {
+          throw new Error("Invalid home data format received from server");
+        }
+        
+        setHome(homeResponse.data.data);
         
         // Fetch tasks for this home
-        const tasksResponse = await api.get(`/api/homes/${homeId}/tasks`);
-        setTasks(tasksResponse.data);
+        const tasksResponse = await api.get(`/api/tasks/${homeId}`);
+        console.log("Tasks response:", tasksResponse.data);
+        
+        if (!tasksResponse.data || !tasksResponse.data.data) {
+          console.warn("Invalid tasks data format received from server");
+          setTasks([]);
+        } else {
+          setTasks(tasksResponse.data.data);
+        }
       } catch (error) {
         console.error("Error fetching home details:", error);
         setError("Failed to load home details. Please try again later.");
