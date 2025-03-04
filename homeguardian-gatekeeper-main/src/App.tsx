@@ -13,6 +13,7 @@ import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 import HowItWorks from "./pages/HowItWorks";
 import Pricing from "./pages/Pricing";
+import PlanSelection from "./pages/PlanSelection";
 import FAQ from "./pages/FAQ";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
@@ -42,6 +43,14 @@ const App = () => (
             <Route path="/register" element={<Register />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route
+              path="/plan-selection"
+              element={
+                <ProtectedRoute>
+                  <PlanSelection />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="/onboarding"
               element={

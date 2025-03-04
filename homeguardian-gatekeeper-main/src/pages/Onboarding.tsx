@@ -126,11 +126,11 @@ const Onboarding = () => {
       // Show success toast
       toast({
         title: 'Home registered successfully',
-        description: 'Your home has been registered. You can now manage it from your dashboard.',
+        description: 'Your home has been registered. Now let\'s select a subscription plan.',
       });
       
-      // Redirect to pricing page
-      navigate('/pricing');
+      // Redirect to plan selection page
+      navigate('/plan-selection');
     } catch (error: any) {
       console.error('Error registering home:', error);
       console.error('Error response:', error.response?.data);

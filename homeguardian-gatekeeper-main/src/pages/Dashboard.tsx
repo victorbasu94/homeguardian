@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -24,6 +24,7 @@ export interface UserData {
 const Dashboard = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   
   // State for homes
@@ -43,6 +44,22 @@ const Dashboard = () => {
   // Selected home and task
   const [selectedHome, setSelectedHome] = useState<HomeData | null>(null);
   const [selectedTask, setSelectedTask] = useState<TaskData | null>(null);
+  
+  // Check for subscription success parameter
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const subscriptionStatus = searchParams.get('subscription');
+    
+    if (subscriptionStatus === 'success') {
+      toast({
+        title: 'Subscription Activated',
+        description: 'Your subscription has been successfully activated. Welcome to HomeGuardian!',
+      });
+      
+      // Remove the query parameter from the URL
+      navigate('/dashboard', { replace: true });
+    }
+  }, [location, toast, navigate]);
   
   // Fetch homes
   useEffect(() => {

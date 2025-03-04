@@ -979,11 +979,15 @@ router.post('/create-checkout-session', verifyToken, async (req, res) => {
       await user.save();
     }
     
-    // Create a checkout session
+    // Set success and cancel URLs
+    const successUrl = `${process.env.FRONTEND_URL}/dashboard?subscription=success`;
+    const cancelUrl = `${process.env.FRONTEND_URL}/plan-selection?subscription=canceled`;
+
+    // Create checkout session
     const session = await stripeService.createCheckoutSession(
       user.stripe_customer_id,
-      success_url,
-      cancel_url
+      successUrl,
+      cancelUrl
     );
     
     return res.status(200).json({
@@ -1169,7 +1173,7 @@ router.post('/checkout', verifyToken, async (req, res) => {
 
     // Set success and cancel URLs
     const successUrl = `${process.env.FRONTEND_URL}/dashboard?subscription=success`;
-    const cancelUrl = `${process.env.FRONTEND_URL}/pricing?subscription=canceled`;
+    const cancelUrl = `${process.env.FRONTEND_URL}/plan-selection?subscription=canceled`;
 
     // Create checkout session
     const session = await stripeService.createCheckoutSession(
