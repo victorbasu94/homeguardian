@@ -24,9 +24,6 @@ const TaskSchema = new mongoose.Schema({
   }
 });
 
-// Add index for faster queries by home_id
-TaskSchema.index({ home_id: 1 });
-
 const Task = mongoose.model('Task', TaskSchema);
 
 module.exports = Task; 

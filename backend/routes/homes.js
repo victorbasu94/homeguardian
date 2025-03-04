@@ -5,6 +5,7 @@ const sanitize = require('mongo-sanitize');
 const { verifyToken } = require('../middleware/auth');
 const Home = require('../models/Home');
 const logger = require('../utils/logger');
+const { generateMaintenancePlan } = require('../services/maintenanceService');
 
 /**
  * @swagger
@@ -87,10 +88,13 @@ router.post('/',
       const home = new Home(sanitizedInput);
       await home.save();
 
+      // Generate maintenance plan for the new home
+      await generateMaintenancePlan(home);
+
       // Return success response
       res.status(201).json({
         id: home._id,
-        message: "Home created"
+        message: "Home created with maintenance plan"
       });
     } catch (error) {
       next(error);

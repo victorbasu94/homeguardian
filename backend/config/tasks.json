@@ -1,0 +1,64 @@
+{
+  "rules": [
+    {
+      "condition": {
+        "property": "year_built",
+        "operator": "<",
+        "value": 2000
+      },
+      "task": {
+        "task_name": "Inspect Foundation",
+        "frequency": "yearly",
+        "why": "Older homes may have foundation issues that need regular inspection"
+      }
+    },
+    {
+      "condition": {
+        "property": "roof_type",
+        "operator": "===",
+        "value": "Asphalt Shingles"
+      },
+      "task": {
+        "task_name": "Replace Roof",
+        "frequency": "15 years",
+        "why": "Asphalt shingle roofs typically need replacement every 15 years"
+      }
+    },
+    {
+      "condition": {
+        "property": "hvac_type",
+        "operator": "===",
+        "value": "Central AC"
+      },
+      "task": {
+        "task_name": "Service AC",
+        "frequency": "yearly",
+        "why": "Central AC systems require annual maintenance for optimal performance"
+      }
+    },
+    {
+      "condition": {
+        "property": "always",
+        "operator": "true",
+        "value": null
+      },
+      "task": {
+        "task_name": "Clean Gutters",
+        "frequency": "yearly",
+        "why": "Regular gutter cleaning prevents water damage and extends roof life"
+      }
+    },
+    {
+      "condition": {
+        "property": "always",
+        "operator": "true",
+        "value": null
+      },
+      "task": {
+        "task_name": "Check Smoke Detectors",
+        "frequency": "6 months",
+        "why": "Regular smoke detector checks are essential for home safety"
+      }
+    }
+  ]
+} 

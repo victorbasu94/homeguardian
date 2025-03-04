@@ -27,9 +27,6 @@ const HomeSchema = new mongoose.Schema({
   }
 });
 
-// Add index for faster queries by user_id
-HomeSchema.index({ user_id: 1 });
-
 const Home = mongoose.model('Home', HomeSchema);
 
 module.exports = Home; 

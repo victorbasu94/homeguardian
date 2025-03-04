@@ -20,6 +20,11 @@ A secure and scalable Node.js/Express backend for the HomeGuardian application, 
   - Email verification
   - Password reset functionality
   - Rate limiting for sensitive routes
+- **AI-Driven Maintenance Plans**:
+  - Automatic generation of personalized maintenance tasks based on home characteristics
+  - Rule-based system for determining appropriate maintenance schedules
+  - Configurable task rules without code changes
+  - Prevention of duplicate tasks
 
 ## Prerequisites
 
@@ -83,12 +88,17 @@ The backend provides the following authentication endpoints:
 ```
 backend/
 ├── config/         # Configuration files
+│   ├── db.js       # Database configuration
+│   ├── swagger.js  # API documentation config
+│   └── tasks.json  # Maintenance task rules
 ├── controllers/    # Route controllers
 ├── logs/           # Application logs
 ├── middleware/     # Custom middleware
 ├── models/         # Mongoose models
 ├── routes/         # API routes
-├── services/       # Service modules (email, etc.)
+├── services/       # Service modules
+│   ├── emailService.js      # Email functionality
+│   └── maintenanceService.js # AI maintenance plan generation
 ├── utils/          # Utility functions
 ├── .env.example    # Example environment variables
 ├── index.js        # Application entry point
@@ -104,6 +114,50 @@ backend/
 - Rate limiting is applied to login and password reset routes
 - Refresh tokens are stored in HttpOnly cookies
 - All sensitive routes are protected with JWT verification
+
+## AI-Driven Maintenance Plans
+
+The system includes an intelligent maintenance plan generator that creates personalized maintenance tasks for homes based on their characteristics.
+
+### How It Works
+
+1. When a new home is created, the system automatically analyzes its attributes (year built, roof type, HVAC system, etc.)
+2. Based on configurable rules, it generates appropriate maintenance tasks with due dates
+3. Tasks are stored in the database and associated with the specific home
+4. The system prevents duplicate tasks from being created
+
+### Task Rules Configuration
+
+Task rules are stored in `config/tasks.json` and can be modified without changing code. Each rule has:
+
+- **Condition**: Property to check, operator, and value to compare against
+- **Task**: Name, frequency, and explanation of why the task is important
+
+Example rule format:
+```json
+{
+  "condition": {
+    "property": "year_built",
+    "operator": "<",
+    "value": 2000
+  },
+  "task": {
+    "task_name": "Inspect Foundation",
+    "frequency": "yearly",
+    "why": "Older homes may have foundation issues that need regular inspection"
+  }
+}
+```
+
+### Adding New Rules
+
+To add new maintenance rules:
+
+1. Edit `config/tasks.json`
+2. Add a new rule object to the `rules` array
+3. Restart the server to apply changes
+
+The system supports various operators (`<`, `>`, `<=`, `>=`, `===`, `!==`) and can handle different frequency formats (yearly, 6 months, etc.).
 
 ## License
 
