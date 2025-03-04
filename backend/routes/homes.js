@@ -58,6 +58,10 @@ router.post('/',
       .notEmpty().withMessage('Location is required')
       .isString().withMessage('Location must be a string')
       .trim(),
+    body('name')
+      .optional()
+      .isString().withMessage('Name must be a string')
+      .trim(),
     body('roof_type')
       .optional()
       .isString().withMessage('Roof type must be a string')
@@ -80,6 +84,7 @@ router.post('/',
         year_built: sanitize(req.body.year_built),
         square_footage: sanitize(req.body.square_footage),
         location: sanitize(req.body.location),
+        name: req.body.name ? sanitize(req.body.name) : undefined,
         roof_type: req.body.roof_type ? sanitize(req.body.roof_type) : undefined,
         hvac_type: req.body.hvac_type ? sanitize(req.body.hvac_type) : undefined,
         user_id: req.user.id // Set from authenticated user

@@ -7,6 +7,10 @@ const HomeSchema = new mongoose.Schema({
     required: true, 
     index: true 
   },
+  name: {
+    type: String,
+    required: false
+  },
   year_built: { 
     type: Number, 
     required: true 

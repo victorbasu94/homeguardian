@@ -10,6 +10,7 @@ import api from "@/lib/axios";
 import HomeCard, { HomeData, HomeCardProps } from "@/components/dashboard/HomeCard";
 import TaskCard, { TaskData } from "@/components/dashboard/TaskCard";
 import TaskModal from "@/components/dashboard/TaskModal";
+import DashboardNavbar from "@/components/dashboard/DashboardNavbar";
 
 // Define interfaces
 export interface UserData {
@@ -413,42 +414,45 @@ const Dashboard = () => {
   };
   
   return (
-    <div className="container py-8 max-w-7xl">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-muted-foreground mt-1">
-            Manage your homes and maintenance tasks
-          </p>
+    <>
+      <DashboardNavbar />
+      <div className="container py-8 max-w-7xl">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+            <p className="text-muted-foreground mt-1">
+              Manage your homes and maintenance tasks
+            </p>
+          </div>
+          {renderSubscriptionStatus()}
         </div>
-        {renderSubscriptionStatus()}
-      </div>
-      
-      <div className="grid grid-cols-1 gap-8">
-        <section>
-          <h2 className="text-xl font-semibold mb-4">Your Homes</h2>
-          {renderHomes()}
-        </section>
         
-        {selectedHome && (
+        <div className="grid grid-cols-1 gap-8">
           <section>
-            <h2 className="text-xl font-semibold mb-4">
-              Tasks for {selectedHome.name}
-            </h2>
-            {renderTasks()}
+            <h2 className="text-xl font-semibold mb-4">Your Homes</h2>
+            {renderHomes()}
           </section>
+          
+          {selectedHome && (
+            <section>
+              <h2 className="text-xl font-semibold mb-4">
+                Tasks for {selectedHome.name}
+              </h2>
+              {renderTasks()}
+            </section>
+          )}
+        </div>
+        
+        {selectedTask && (
+          <TaskModal 
+            isOpen={!!selectedTask}
+            onClose={() => setSelectedTask(null)}
+            task={selectedTask}
+            onComplete={() => handleTaskComplete(selectedTask.id)}
+          />
         )}
       </div>
-      
-      {selectedTask && (
-        <TaskModal 
-          isOpen={!!selectedTask}
-          onClose={() => setSelectedTask(null)}
-          task={selectedTask}
-          onComplete={() => handleTaskComplete(selectedTask.id)}
-        />
-      )}
-    </div>
+    </>
   );
 };
 

@@ -87,9 +87,9 @@ const AddHome = () => {
       // Prepare home data
       const homeData = {
         name,
-        address,
+        location: address,
         year_built: yearBuiltNum,
-        square_feet: squareFeetNum,
+        square_footage: squareFeetNum,
         roof_type: roofType,
         hvac_type: hvacType
       };
