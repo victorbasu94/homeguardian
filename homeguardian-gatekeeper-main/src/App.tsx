@@ -77,6 +77,14 @@ const App = () => (
               }
             />
             <Route
+              path="/homes/:homeId/edit"
+              element={
+                <ProtectedRoute>
+                  <AddHome isEditing={true} />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/homes/add"
               element={
                 <ProtectedRoute>

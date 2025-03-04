@@ -173,8 +173,8 @@ const Onboarding: React.FC = () => {
         description: 'Your home has been set up and is ready to be managed.',
       });
       
-      // Navigate to dashboard
-      navigate('/dashboard');
+      // Navigate to plan selection instead of dashboard
+      navigate('/plan-selection');
     } catch (error: any) {
       console.error('Error adding home:', error);
       

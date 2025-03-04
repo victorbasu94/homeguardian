@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { PlusCircle, Home as HomeIcon, AlertCircle, Plus, ClipboardList, Bell, Settings, Search } from 'lucide-react';
+import { PlusCircle, Home as HomeIcon, AlertCircle, Plus, ClipboardList, Bell, Settings, Search, CheckCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { useAuth } from '@/hooks/useAuth';
 import api from '@/lib/axios';
@@ -160,7 +160,7 @@ const Dashboard = () => {
   
   // Search and UI state
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState('homes');
+  const [activeTab, setActiveTab] = useState('tasks');
   
   // Check for subscription success parameter
   useEffect(() => {
@@ -320,7 +320,7 @@ const Dashboard = () => {
       setIsUpdating(true);
       
       // Make the API call to update the task status
-      await api.patch(`/api/tasks/${taskId}`, { status: 'completed' });
+      await api.patch(`/api/tasks/${taskId}`, { completed: true });
       
       // Update the local state
       setTasks(prevTasks => 
@@ -574,22 +574,24 @@ const Dashboard = () => {
           </div>
         </div>
         
-        <SubscriptionStatus />
+        <SubscriptionStatus 
+          onUpgrade={() => navigate('/plan-selection')}
+        />
         
         <Tabs 
-          defaultValue="homes" 
+          defaultValue="tasks" 
           value={activeTab}
           onValueChange={setActiveTab}
           className="mt-8"
         >
           <TabsList className="mb-6">
+            <TabsTrigger value="tasks" className="flex items-center gap-2">
+              <CheckCircle className="h-4 w-4" />
+              <span>Tasks</span>
+            </TabsTrigger>
             <TabsTrigger value="homes" className="flex items-center gap-2">
               <HomeIcon className="h-4 w-4" />
               <span>My Homes</span>
-            </TabsTrigger>
-            <TabsTrigger value="tasks" className="flex items-center gap-2">
-              <ClipboardList className="h-4 w-4" />
-              <span>Tasks</span>
             </TabsTrigger>
             <TabsTrigger value="notifications" className="flex items-center gap-2">
               <Bell className="h-4 w-4" />

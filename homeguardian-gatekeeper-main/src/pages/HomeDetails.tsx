@@ -231,7 +231,12 @@ const HomeDetails = () => {
             </div>
             
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" className="flex items-center gap-1">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="flex items-center gap-1"
+                onClick={() => navigate(`/homes/${homeId}/edit`)}
+              >
                 <Pencil className="h-4 w-4" />
                 <span>Edit</span>
               </Button>

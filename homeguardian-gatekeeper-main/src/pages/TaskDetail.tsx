@@ -435,14 +435,12 @@ const TaskDetail: React.FC = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen flex flex-col bg-softWhite">
-        <Navbar />
         <div className="flex-grow container mx-auto py-12 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
             <p className="text-neutral/70">Loading task details...</p>
           </div>
         </div>
-        <Footer />
       </div>
     );
   }
@@ -450,7 +448,6 @@ const TaskDetail: React.FC = () => {
   if (!task) {
     return (
       <div className="min-h-screen flex flex-col bg-softWhite">
-        <Navbar />
         <div className="flex-grow container mx-auto py-12 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
           <div className="text-center">
             <AlertTriangle className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
@@ -461,15 +458,12 @@ const TaskDetail: React.FC = () => {
             </Button>
           </div>
         </div>
-        <Footer />
       </div>
     );
   }
   
   return (
     <div className="min-h-screen flex flex-col bg-softWhite">
-      <Navbar />
-      
       <div className="flex-grow container mx-auto py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-5xl mx-auto">
           {/* Back button and actions */}
@@ -747,8 +741,6 @@ const TaskDetail: React.FC = () => {
           </Tabs>
         </div>
       </div>
-      
-      <Footer />
     </div>
   );
 };
