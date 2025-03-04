@@ -52,11 +52,15 @@ const Dashboard = () => {
     const isMock = searchParams.get('mock') === 'true';
     
     if (subscriptionStatus === 'success') {
+      // Log the successful redirection
+      console.log('Subscription success redirect detected', { isMock });
+      
       toast({
         title: 'Subscription Activated',
         description: isMock 
           ? 'Your subscription has been activated in development mode.' 
           : 'Your subscription has been successfully activated. Welcome to HomeGuardian!',
+        variant: 'default',
       });
       
       // If this is a mock subscription in development, update the user data

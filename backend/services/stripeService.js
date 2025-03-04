@@ -22,7 +22,12 @@ if (isDevelopment) {
         create: async (data) => {
           logger.info(`[MOCK] Creating checkout session for customer: ${data.customer}`);
           // In development, redirect to dashboard with success parameter
-          const checkoutUrl = `${process.env.FRONTEND_URL}/dashboard?subscription=success&mock=true`;
+          // Use absolute URL with leading slash to ensure proper routing
+          const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:8080';
+          const checkoutUrl = `${frontendUrl}/dashboard?subscription=success&mock=true`;
+          
+          logger.info(`Generated mock checkout URL: ${checkoutUrl}`);
+          
           return { 
             id: `cs_mock_${Date.now()}`,
             url: checkoutUrl

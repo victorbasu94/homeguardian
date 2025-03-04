@@ -149,9 +149,21 @@ const PlanSelection = () => {
       
       console.log('Checkout response:', response.data);
       
-      // Redirect to Stripe Checkout
+      // Check if we have a checkout URL
       if (response.data.checkout_url) {
-        window.location.href = response.data.checkout_url;
+        const checkoutUrl = response.data.checkout_url;
+        console.log('Redirecting to checkout URL:', checkoutUrl);
+        
+        // Check if this is a mock URL (contains our frontend URL)
+        if (checkoutUrl.includes('localhost:8080') || checkoutUrl.includes('mock=true')) {
+          // For mock URLs, use React Router navigation
+          // Extract the path from the full URL
+          const url = new URL(checkoutUrl);
+          navigate(url.pathname + url.search);
+        } else {
+          // For real Stripe URLs, use window.location for external redirect
+          window.location.href = checkoutUrl;
+        }
       } else {
         console.error('Error details: No checkout URL returned');
         throw new Error('No checkout URL returned from server');

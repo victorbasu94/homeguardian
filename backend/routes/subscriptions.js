@@ -1211,7 +1211,11 @@ router.post('/checkout', verifyToken, async (req, res) => {
       // In development, create a mock checkout session
       if (process.env.NODE_ENV === 'development') {
         logger.info(`Creating mock checkout session for user ${userId} in development mode`);
-        const mockCheckoutUrl = `${process.env.FRONTEND_URL}/dashboard?subscription=success&mock=true`;
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:8080';
+        const mockCheckoutUrl = `${frontendUrl}/dashboard?subscription=success&mock=true`;
+        
+        logger.info(`Generated mock checkout URL: ${mockCheckoutUrl}`);
+        
         return res.status(200).json({ checkout_url: mockCheckoutUrl });
       }
       
