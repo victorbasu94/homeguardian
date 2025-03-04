@@ -1,72 +1,145 @@
-import { Calendar, ArrowRight } from 'lucide-react';
-import { format, isPast, isToday } from 'date-fns';
+import React from 'react';
+import { format, isPast, isToday, isTomorrow, addDays } from 'date-fns';
+import { Calendar, Clock, AlertTriangle, CheckCircle, ArrowRight } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 export interface TaskData {
   id: string;
-  task_name: string;
+  title: string;
+  description: string;
   due_date: string;
-  why: string;
-  completed: boolean;
+  status: 'pending' | 'completed' | 'overdue';
+  priority: 'low' | 'medium' | 'high';
   home_id: string;
+  category: string;
+  estimated_time?: number;
   estimated_cost?: number;
 }
 
-export interface TaskCardProps {
+interface TaskCardProps {
   task: TaskData;
-  onClick: () => void;
+  onComplete: (taskId: string) => void;
+  onViewDetails: (taskId: string) => void;
 }
 
-const TaskCard = ({ task, onClick }: TaskCardProps) => {
-  // Format the due date
-  const formattedDate = format(new Date(task.due_date), 'MMM d, yyyy');
+const TaskCard: React.FC<TaskCardProps> = ({ task, onComplete, onViewDetails }) => {
+  const dueDate = new Date(task.due_date);
+  const isOverdue = isPast(dueDate) && !isToday(dueDate);
+  const isDueToday = isToday(dueDate);
+  const isDueTomorrow = isTomorrow(dueDate);
+  const isDueSoon = !isOverdue && !isDueToday && !isDueTomorrow && dueDate <= addDays(new Date(), 7);
   
-  // Determine status text and color
-  let statusText = 'Upcoming';
-  let statusColor = 'text-blue-600 bg-blue-50';
+  const getPriorityColor = () => {
+    switch (task.priority) {
+      case 'high':
+        return 'text-secondary';
+      case 'medium':
+        return 'text-tertiary';
+      default:
+        return 'text-primary';
+    }
+  };
   
-  if (task.completed) {
-    statusText = 'Completed';
-    statusColor = 'text-green-600 bg-green-50';
-  } else if (isPast(new Date(task.due_date)) && !isToday(new Date(task.due_date))) {
-    statusText = 'Overdue';
-    statusColor = 'text-red-600 bg-red-50';
-  } else if (isToday(new Date(task.due_date))) {
-    statusText = 'Due Today';
-    statusColor = 'text-amber-600 bg-amber-50';
-  }
+  const getStatusBadge = () => {
+    if (task.status === 'completed') {
+      return (
+        <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full flex items-center gap-1">
+          <CheckCircle className="w-3 h-3" /> Completed
+        </span>
+      );
+    }
+    
+    if (isOverdue) {
+      return (
+        <span className="bg-secondary/10 text-secondary text-xs font-medium px-2.5 py-0.5 rounded-full flex items-center gap-1">
+          <AlertTriangle className="w-3 h-3" /> Overdue
+        </span>
+      );
+    }
+    
+    if (isDueToday) {
+      return (
+        <span className="bg-tertiary/10 text-tertiary-dark text-xs font-medium px-2.5 py-0.5 rounded-full flex items-center gap-1">
+          <Clock className="w-3 h-3" /> Due Today
+        </span>
+      );
+    }
+    
+    if (isDueTomorrow) {
+      return (
+        <span className="bg-tertiary/10 text-tertiary-dark text-xs font-medium px-2.5 py-0.5 rounded-full flex items-center gap-1">
+          <Clock className="w-3 h-3" /> Due Tomorrow
+        </span>
+      );
+    }
+    
+    if (isDueSoon) {
+      return (
+        <span className="bg-primary/10 text-primary text-xs font-medium px-2.5 py-0.5 rounded-full flex items-center gap-1">
+          <Calendar className="w-3 h-3" /> Due Soon
+        </span>
+      );
+    }
+    
+    return (
+      <span className="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded-full flex items-center gap-1">
+        <Calendar className="w-3 h-3" /> Upcoming
+      </span>
+    );
+  };
   
   return (
-    <div 
-      className={`group relative bg-white border border-border/50 shadow-sm rounded-lg p-4 transition-all hover:shadow-md hover:border-primary/20 cursor-pointer ${task.completed ? 'opacity-70' : ''}`}
-      onClick={onClick}
-    >
-      <div className="flex justify-between items-start mb-2">
-        <h3 className="font-medium line-clamp-1">{task.task_name}</h3>
-        <span className={`text-xs px-2 py-1 rounded-full ${statusColor}`}>
-          {statusText}
-        </span>
+    <div className="task-card">
+      <div className="flex justify-between items-start mb-4">
+        <div>
+          <h3 className={`text-xl font-bold mb-1 ${getPriorityColor()}`}>{task.title}</h3>
+          <div className="flex items-center gap-2 mb-2">
+            {getStatusBadge()}
+            <span className="text-neutral/60 text-sm">
+              {format(dueDate, 'MMM d, yyyy')}
+            </span>
+          </div>
+        </div>
+        
+        {task.status !== 'completed' && (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="h-8 rounded-full"
+            onClick={() => onComplete(task.id)}
+          >
+            Complete
+          </Button>
+        )}
       </div>
       
-      <div className="flex items-center text-sm text-muted-foreground mb-3">
-        <Calendar className="h-3.5 w-3.5 mr-1.5" />
-        <span>{formattedDate}</span>
-      </div>
+      <p className="text-neutral/80 mb-6 line-clamp-3">{task.description}</p>
       
-      <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
-        {task.why}
-      </p>
-      
-      <div className="flex justify-end">
-        <button 
-          className="inline-flex items-center text-xs font-medium text-primary hover:text-primary/80 transition-colors"
-          onClick={(e) => {
-            e.stopPropagation();
-            onClick();
-          }}
+      <div className="mt-auto">
+        <div className="flex justify-between items-center text-sm text-neutral/70 mb-4">
+          <div className="flex items-center gap-1">
+            <Clock className="w-4 h-4" />
+            <span>{task.estimated_time || '30'} min</span>
+          </div>
+          
+          {task.estimated_cost && (
+            <div>
+              <span>${task.estimated_cost}</span>
+            </div>
+          )}
+          
+          <div>
+            <span className="capitalize">{task.category}</span>
+          </div>
+        </div>
+        
+        <Button 
+          variant="ghost" 
+          className="w-full justify-between hover:bg-primary/5 hover:text-primary"
+          onClick={() => onViewDetails(task.id)}
         >
-          View details
-          <ArrowRight className="ml-1 h-3 w-3" />
-        </button>
+          View Details <ArrowRight className="w-4 h-4" />
+        </Button>
       </div>
     </div>
   );

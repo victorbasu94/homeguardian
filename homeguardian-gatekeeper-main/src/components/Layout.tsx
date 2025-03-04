@@ -1,15 +1,16 @@
-
 import { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { Shield, LogOut } from 'lucide-react';
+import { Shield, LogOut, User, Settings, Home, Bell } from 'lucide-react';
 import { handleLogout } from '@/lib/auth';
 import { useToast } from '@/hooks/use-toast';
+import StickyCallToAction from './StickyCallToAction';
 
 interface LayoutProps {
   children: ReactNode;
+  showStickyCallToAction?: boolean;
 }
 
-const Layout = ({ children }: LayoutProps) => {
+const Layout = ({ children, showStickyCallToAction = false }: LayoutProps) => {
   const { toast } = useToast();
   
   const onLogout = () => {
@@ -22,31 +23,56 @@ const Layout = ({ children }: LayoutProps) => {
   };
   
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <header className="border-b border-border/40 backdrop-blur-sm bg-background/80 sticky top-0 z-10">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+    <div className="min-h-screen flex flex-col bg-softWhite">
+      <header className="border-b border-gray-100 backdrop-blur-sm bg-white/90 sticky top-0 z-10 shadow-sm">
+        <div className="container mx-auto px-4 h-20 flex items-center justify-between">
           <Link to="/" className="flex items-center space-x-2">
-            <Shield className="h-6 w-6 text-primary" />
-            <span className="text-lg font-medium">HomeGuardian</span>
+            <Shield className="h-7 w-7 text-primary" />
+            <span className="text-xl font-bold font-poppins text-primary">HomeGuardian</span>
           </Link>
           
-          <button
-            onClick={onLogout}
-            className="flex items-center space-x-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <LogOut className="h-4 w-4" />
-            <span>Logout</span>
-          </button>
+          <div className="flex items-center space-x-6">
+            <Link to="/dashboard" className="text-neutral hover:text-primary transition-colors duration-300 flex items-center gap-2">
+              <Home className="h-5 w-5" />
+              <span className="hidden md:inline">Dashboard</span>
+            </Link>
+            
+            <Link to="/notifications" className="text-neutral hover:text-primary transition-colors duration-300 flex items-center gap-2 relative">
+              <Bell className="h-5 w-5" />
+              <span className="hidden md:inline">Notifications</span>
+              <span className="absolute -top-1 -right-1 bg-secondary text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">3</span>
+            </Link>
+            
+            <Link to="/profile" className="text-neutral hover:text-primary transition-colors duration-300 flex items-center gap-2">
+              <User className="h-5 w-5" />
+              <span className="hidden md:inline">Profile</span>
+            </Link>
+            
+            <Link to="/settings" className="text-neutral hover:text-primary transition-colors duration-300 flex items-center gap-2">
+              <Settings className="h-5 w-5" />
+              <span className="hidden md:inline">Settings</span>
+            </Link>
+            
+            <button
+              onClick={onLogout}
+              className="flex items-center gap-2 text-neutral hover:text-secondary transition-colors duration-300 ml-2"
+            >
+              <LogOut className="h-5 w-5" />
+              <span className="hidden md:inline">Logout</span>
+            </button>
+          </div>
         </div>
       </header>
       
       <main className="flex-1">
         {children}
+        
+        {showStickyCallToAction && <StickyCallToAction />}
       </main>
       
-      <footer className="py-6 border-t border-border/40 bg-muted/30">
-        <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-          <p>© {new Date().getFullYear()} HomeGuardian. All rights reserved.</p>
+      <footer className="py-8 border-t border-gray-100 bg-white">
+        <div className="container mx-auto px-4 text-center text-base text-neutral">
+          <p className="font-inter">© {new Date().getFullYear()} HomeGuardian. All rights reserved.</p>
         </div>
       </footer>
     </div>

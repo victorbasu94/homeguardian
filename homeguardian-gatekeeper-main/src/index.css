@@ -1,7 +1,8 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400,500,600,700&family=Poppins:wght@500,600,700&display=swap');
 
 @layer base {
   :root {
@@ -14,11 +15,11 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
 
-    --primary: 210 100% 50%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 174 100% 38%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222 47% 11%;
+    --secondary: 5 100% 69%;
+    --secondary-foreground: 0 0% 100%;
 
     --muted: 210 40% 96%;
     --muted-foreground: 215 16% 47%;
@@ -31,18 +32,18 @@
 
     --border: 214 32% 91%;
     --input: 214 32% 91%;
-    --ring: 222 84% 50%;
+    --ring: 174 100% 38%;
 
     --radius: 0.75rem;
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5% 26%;
-    --sidebar-primary: 240 6% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-primary: 174 100% 38%;
+    --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 240 5% 96%;
     --sidebar-accent-foreground: 240 6% 10%;
     --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217 91% 60%;
+    --sidebar-ring: 174 100% 38%;
   }
 
   .dark {
@@ -55,11 +56,11 @@
     --popover: 222 47% 11%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 210 100% 50%;
-    --primary-foreground: 222 47% 11%;
+    --primary: 174 100% 38%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 217 33% 18%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 5 100% 69%;
+    --secondary-foreground: 0 0% 100%;
 
     --muted: 217 33% 18%;
     --muted-foreground: 215 20% 65%;
@@ -72,16 +73,16 @@
 
     --border: 217 33% 18%;
     --input: 217 33% 18%;
-    --ring: 213 27% 84%;
+    --ring: 174 100% 38%;
     
     --sidebar-background: 240 6% 10%;
     --sidebar-foreground: 240 5% 96%;
-    --sidebar-primary: 224 76% 48%;
+    --sidebar-primary: 174 100% 38%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 240 4% 16%;
     --sidebar-accent-foreground: 240 5% 96%;
     --sidebar-border: 240 4% 16%;
-    --sidebar-ring: 217 91% 60%;
+    --sidebar-ring: 174 100% 38%;
   }
 }
 
@@ -91,38 +92,61 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-softWhite text-neutral font-inter;
     font-feature-settings: "rlig" 1, "calt" 1;
+    font-size: 18px;
+    line-height: 1.6;
   }
   
   h1, h2, h3, h4, h5, h6 {
-    @apply font-outfit;
+    @apply font-poppins font-bold text-primary;
+    line-height: 1.2;
+  }
+  
+  h1 {
+    @apply text-4xl md:text-5xl;
+  }
+  
+  h2 {
+    @apply text-3xl md:text-4xl;
+  }
+  
+  h3 {
+    @apply text-2xl md:text-3xl;
+  }
+  
+  h4 {
+    @apply text-xl md:text-2xl;
   }
   
   p, span, a, button, input, textarea {
-    @apply font-manrope;
+    @apply font-inter;
+  }
+  
+  a {
+    @apply text-primary hover:text-primary-dark transition-colors duration-300;
   }
 }
 
 @layer components {
   .btn-primary {
-    @apply bg-primary text-primary-foreground font-medium py-2 px-4 rounded-md hover:opacity-90 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none;
+    @apply bg-primary text-white font-medium py-3 px-6 rounded-full h-12 hover:bg-primary-dark transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none shadow-button hover:shadow-button-hover transform hover:scale-105;
   }
   
   .btn-secondary {
-    @apply bg-secondary text-secondary-foreground font-medium py-2 px-4 rounded-md hover:bg-secondary/80 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-secondary/50 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none;
+    @apply bg-secondary text-white font-medium py-3 px-6 rounded-full h-12 hover:bg-secondary-dark transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-secondary/50 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none transform hover:scale-105;
   }
   
   .btn-outline {
-    @apply border border-input bg-background hover:bg-accent hover:text-accent-foreground font-medium py-2 px-4 rounded-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none;
+    @apply border-2 border-primary bg-transparent text-primary hover:bg-primary/5 font-medium py-3 px-6 rounded-full h-12 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none;
   }
   
   .input-field {
-    @apply h-10 w-full px-3 py-2 rounded-md border border-input bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-200;
+    @apply h-12 w-full px-4 py-3 rounded-lg border border-input bg-white text-base placeholder:text-neutral/60 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-300;
   }
   
   .label {
-    @apply text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 mb-2 block;
+    @apply text-base font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 mb-2 block text-neutral;
   }
   
   .form-error {
@@ -130,7 +154,7 @@
   }
   
   .card-glass {
-    @apply bg-white/80 backdrop-blur-sm border border-white/20 shadow-lg rounded-lg;
+    @apply bg-white/90 backdrop-blur-sm border border-white/20 shadow-card hover:shadow-card-hover rounded-xl transition-all duration-300;
   }
   
   .animate-in {
@@ -146,15 +170,47 @@
   }
   
   .feature-card {
-    @apply bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-all duration-300 hover:translate-y-[-5px];
+    @apply bg-white rounded-xl shadow-card p-8 hover:shadow-card-hover transition-all duration-300 hover:translate-y-[-5px];
   }
   
   .gradient-text {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary;
+    @apply bg-clip-text text-transparent bg-teal-coral-gradient;
   }
   
   .cta-button {
-    @apply bg-secondary text-white px-8 py-3 rounded-full font-medium hover:bg-secondary-dark transition-colors transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-secondary/50 focus:ring-offset-2;
+    @apply bg-primary text-white px-8 py-3 rounded-full font-medium text-xl hover:bg-primary-dark transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 shadow-button hover:shadow-button-hover;
+  }
+  
+  .sticky-cta {
+    @apply fixed bottom-16 md:bottom-64 right-4 md:right-64 z-50 shadow-xl;
+  }
+  
+  .progress-bar-container {
+    @apply h-2 bg-gray-200 rounded-full overflow-hidden w-full;
+  }
+  
+  .progress-bar-fill {
+    @apply h-full bg-primary/80 transition-all duration-300;
+  }
+  
+  .task-card {
+    @apply bg-white rounded-xl shadow-card p-8 border border-gray-100 hover:shadow-card-hover transition-all duration-300 hover:translate-y-[-5px] flex flex-col h-full;
+  }
+  
+  .task-due-date {
+    @apply text-xl font-poppins font-bold text-primary;
+  }
+  
+  .task-urgent {
+    @apply text-secondary font-bold border-b-2 border-secondary;
+  }
+  
+  .money-back-badge {
+    @apply bg-tertiary text-tertiary-foreground text-sm font-bold px-3 py-1 rounded-full inline-flex items-center gap-1;
+  }
+  
+  .grid-container {
+    @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6;
   }
   
   @keyframes fadeIn {

@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
-import { CheckCircle, Shield, X } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { CheckCircle, X, ArrowRight, Shield, Zap, Home } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/useAuth';
-import api from '@/lib/axios';
+import StickyCallToAction from '@/components/StickyCallToAction';
+import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 
 type PricingPlan = 'monthly' | 'yearly';
 type SubscriptionTier = 'basic' | 'pro' | 'premium';
@@ -25,306 +25,476 @@ interface PricingTierProps {
   plan: PricingPlan;
   tier: SubscriptionTier;
   onSubscribe: (tier: SubscriptionTier) => void;
-  isLoading: boolean;
+  icon: React.ReactNode;
+  homes: number;
 }
 
-const PricingTier = ({ 
+const PricingTier: React.FC<PricingTierProps> = ({ 
   title, 
   price, 
   description, 
   features, 
   highlighted = false, 
-  plan, 
+  plan,
   tier,
   onSubscribe,
-  isLoading
-}: PricingTierProps) => {
-  const currentPrice = price[plan];
-  const yearlyDiscount = plan === 'yearly' ? 'Save 20%' : '';
+  icon,
+  homes
+}) => {
+  const yearlyDiscount = Math.round((1 - (price.yearly / 12) / price.monthly) * 100);
   
   return (
-    <div 
-      className={`rounded-xl p-8 border transition-all duration-300 h-full flex flex-col ${
-        highlighted 
-          ? 'border-secondary bg-white shadow-xl scale-105 z-10' 
-          : 'border-gray-200 bg-white shadow-lg hover:shadow-xl'
-      }`}
-    >
-      <div className="mb-6">
-        {highlighted && (
-          <span className="bg-secondary text-white text-xs font-bold px-3 py-1 rounded-full mb-4 inline-block">
-            Most Popular
-          </span>
-        )}
-        <h3 className="text-2xl font-bold mb-2 font-outfit">{title}</h3>
-        <div className="flex items-end gap-2 mb-2">
-          <span className="text-4xl font-bold">${currentPrice}</span>
-          <span className="text-gray-500 mb-1">/ {plan === 'monthly' ? 'month' : 'year'}</span>
+    <div className={`
+      relative rounded-2xl overflow-hidden transition-all duration-300
+      ${highlighted 
+        ? 'border-2 border-primary shadow-xl scale-105 z-10 bg-white' 
+        : 'border border-gray-200 shadow-card bg-white hover:shadow-card-hover'}
+    `}>
+      {highlighted && (
+        <div className="absolute top-0 left-0 right-0 bg-primary text-white text-center py-2 font-medium">
+          Most Popular
         </div>
-        {yearlyDiscount && (
-          <span className="text-green-600 text-sm font-medium">{yearlyDiscount}</span>
-        )}
-        <p className="text-gray-600 mt-3 font-manrope">{description}</p>
-      </div>
+      )}
       
-      <ul className="space-y-4 mb-8 flex-grow">
-        {features.map((feature, index) => (
-          <li key={index} className="flex items-start gap-2">
-            {feature.included ? (
-              <CheckCircle className="text-green-500 h-5 w-5 mt-0.5 flex-shrink-0" />
-            ) : (
-              <X className="text-gray-400 h-5 w-5 mt-0.5 flex-shrink-0" />
-            )}
-            <span className={`font-manrope ${feature.included ? 'text-gray-700' : 'text-gray-400'}`}>
-              {feature.text}
+      <div className={`p-8 ${highlighted ? 'pt-14' : 'pt-8'}`}>
+        <div className="flex items-center gap-4 mb-4">
+          <div className={`
+            p-3 rounded-full 
+            ${highlighted ? 'bg-primary/10 text-primary' : 'bg-gray-100 text-neutral/70'}
+          `}>
+            {icon}
+          </div>
+          <h3 className="text-2xl font-bold">{title}</h3>
+        </div>
+        
+        <p className="text-neutral/70 mb-6">{description}</p>
+        
+        <div className="mb-6">
+          <div className="flex items-end gap-2">
+            <span className="text-4xl font-bold">
+              ${plan === 'monthly' ? price.monthly : Math.round(price.yearly / 12)}
             </span>
-          </li>
-        ))}
-      </ul>
-      
-      <button 
-        className={`w-full py-3 px-6 rounded-full font-medium transition-all ${
-          highlighted 
-            ? 'bg-secondary text-white hover:bg-secondary-dark' 
-            : 'bg-primary text-white hover:bg-primary-dark'
-        } ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
-        onClick={() => onSubscribe(tier)}
-        disabled={isLoading}
-      >
-        {isLoading ? 'Processing...' : 'Choose Plan'}
-      </button>
+            <span className="text-neutral/70 mb-1">/month</span>
+          </div>
+          
+          {plan === 'yearly' && (
+            <div className="text-sm mt-1 text-primary font-medium">
+              Save {yearlyDiscount}% with annual billing
+            </div>
+          )}
+          
+          <div className="text-sm text-neutral/70 mt-1">
+            {plan === 'yearly' 
+              ? `$${price.yearly} billed annually` 
+              : 'Billed monthly'}
+          </div>
+        </div>
+        
+        <div className="mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <Home className="h-4 w-4 text-neutral/70" />
+            <span className="text-neutral/70">Up to {homes} {homes === 1 ? 'home' : 'homes'}</span>
+          </div>
+          
+          <Button 
+            onClick={() => onSubscribe(tier)} 
+            className={`w-full ${highlighted ? '' : 'bg-primary/10 text-primary hover:bg-primary/20'}`}
+            variant={highlighted ? 'default' : 'outline'}
+            size="lg"
+          >
+            Get Started <ArrowRight className="ml-2 h-5 w-5" />
+          </Button>
+        </div>
+        
+        <div className="space-y-4">
+          <div className="text-sm font-medium">Includes:</div>
+          {features.map((feature, i) => (
+            <div key={i} className="flex items-start gap-3">
+              {feature.included ? (
+                <CheckCircle className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+              ) : (
+                <X className="h-5 w-5 text-neutral/30 mt-0.5 flex-shrink-0" />
+              )}
+              <span className={feature.included ? 'text-neutral/80' : 'text-neutral/50'}>
+                {feature.text}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 };
 
-const Pricing = () => {
+const Pricing: React.FC = () => {
   const [plan, setPlan] = useState<PricingPlan>('monthly');
-  const [isLoading, setIsLoading] = useState(false);
-  const { toast } = useToast();
-  const navigate = useNavigate();
-  const { user, isAuthenticated } = useAuth();
   
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
-
-  const basicFeatures = [
-    { text: 'Basic Home Assessment', included: true },
-    { text: 'Seasonal Maintenance Reminders', included: true },
-    { text: 'DIY Maintenance Guides', included: true },
-    { text: 'Email Support', included: true },
-    { text: 'Custom Maintenance Schedule', included: false },
-    { text: 'Professional Advice', included: false },
-    { text: 'Priority Support', included: false },
-    { text: 'Home Systems Monitoring', included: false },
-  ];
-  
-  const proFeatures = [
-    { text: 'Comprehensive Home Assessment', included: true },
-    { text: 'Seasonal Maintenance Reminders', included: true },
-    { text: 'DIY Maintenance Guides', included: true },
-    { text: 'Email & Phone Support', included: true },
-    { text: 'Custom Maintenance Schedule', included: true },
-    { text: 'Professional Advice', included: true },
-    { text: 'Priority Support', included: true },
-    { text: 'Home Systems Monitoring', included: false },
-  ];
-  
-  const premiumFeatures = [
-    { text: 'Advanced Home Assessment', included: true },
-    { text: 'Seasonal Maintenance Reminders', included: true },
-    { text: 'DIY Maintenance Guides', included: true },
-    { text: 'Email, Phone & Chat Support', included: true },
-    { text: 'Custom Maintenance Schedule', included: true },
-    { text: 'Professional Advice', included: true },
-    { text: 'Priority Support', included: true },
-    { text: 'Home Systems Monitoring', included: true },
-  ];
-
-  const handleSubscribe = async (tier: SubscriptionTier) => {
-    if (!isAuthenticated) {
-      // Redirect to login if not authenticated
-      toast({
-        title: 'Authentication required',
-        description: 'Please log in or create an account to subscribe.',
-      });
-      navigate('/login');
-      return;
-    }
-    
-    setIsLoading(true);
-    
-    try {
-      // Call the subscribe API endpoint
-      const response = await api.post('/api/subscriptions/checkout', {
-        plan_type: tier,
-        billing_cycle: plan
-      });
-      
-      // Redirect to Stripe Checkout
-      if (response.data.checkout_url) {
-        window.location.href = response.data.checkout_url;
-      } else {
-        throw new Error('No checkout URL returned');
-      }
-    } catch (error: any) {
-      console.error('Subscription error:', error);
-      
-      toast({
-        title: 'Subscription error',
-        description: error.response?.data?.message || 'An error occurred. Please try again.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsLoading(false);
-    }
+  const handlePlanToggle = () => {
+    setPlan(plan === 'monthly' ? 'yearly' : 'monthly');
   };
-
+  
+  const handleSubscribe = (tier: SubscriptionTier) => {
+    // In a real app, this would navigate to checkout with the selected tier
+    console.log(`Subscribing to ${tier} plan`);
+    window.location.href = `/register?plan=${tier}&billing=${plan}`;
+  };
+  
+  const pricingTiers = [
+    {
+      title: 'Basic',
+      tier: 'basic' as SubscriptionTier,
+      icon: <Shield className="h-6 w-6" />,
+      price: {
+        monthly: 9.99,
+        yearly: 99.99,
+      },
+      description: 'Essential home maintenance for single-home owners',
+      homes: 1,
+      highlighted: false,
+      features: [
+        { text: 'Personalized maintenance schedule', included: true },
+        { text: 'Basic task reminders', included: true },
+        { text: 'DIY maintenance guides', included: true },
+        { text: 'Seasonal checklists', included: true },
+        { text: 'Maintenance history tracking', included: true },
+        { text: 'Professional service recommendations', included: false },
+        { text: 'Priority support', included: false },
+        { text: 'Multiple homes', included: false },
+        { text: 'Advanced reporting', included: false },
+      ],
+    },
+    {
+      title: 'Pro',
+      tier: 'pro' as SubscriptionTier,
+      icon: <Zap className="h-6 w-6" />,
+      price: {
+        monthly: 19.99,
+        yearly: 199.99,
+      },
+      description: 'Advanced features for serious homeowners',
+      homes: 2,
+      highlighted: true,
+      features: [
+        { text: 'Personalized maintenance schedule', included: true },
+        { text: 'Advanced task reminders', included: true },
+        { text: 'DIY maintenance guides', included: true },
+        { text: 'Seasonal checklists', included: true },
+        { text: 'Maintenance history tracking', included: true },
+        { text: 'Professional service recommendations', included: true },
+        { text: 'Priority support', included: true },
+        { text: 'Multiple homes', included: true },
+        { text: 'Advanced reporting', included: false },
+      ],
+    },
+    {
+      title: 'Premium',
+      tier: 'premium' as SubscriptionTier,
+      icon: <Home className="h-6 w-6" />,
+      price: {
+        monthly: 29.99,
+        yearly: 299.99,
+      },
+      description: 'Complete solution for multiple properties',
+      homes: 5,
+      highlighted: false,
+      features: [
+        { text: 'Personalized maintenance schedule', included: true },
+        { text: 'Advanced task reminders', included: true },
+        { text: 'DIY maintenance guides', included: true },
+        { text: 'Seasonal checklists', included: true },
+        { text: 'Maintenance history tracking', included: true },
+        { text: 'Professional service recommendations', included: true },
+        { text: 'Priority support', included: true },
+        { text: 'Multiple homes', included: true },
+        { text: 'Advanced reporting', included: true },
+      ],
+    },
+  ];
+  
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
       
       {/* Hero Section */}
-      <section className="pt-32 pb-20 bg-primary-gradient text-white">
-        <div className="container mx-auto px-4 md:px-6">
+      <section className="relative pt-32 pb-20 md:pt-40 md:pb-32 overflow-hidden bg-primary-gradient text-white">
+        <div className="container-width relative z-10">
           <div className="max-w-3xl mx-auto text-center">
-            <h1 className="text-4xl md:text-5xl font-bold mb-6 font-outfit leading-tight">Simple Pricing for Every Home</h1>
-            <p className="text-xl md:text-2xl mb-8 font-manrope text-white/90">
-              Choose the perfect plan to protect your home and give you peace of mind.
+            <h1 className="text-white mb-6">
+              Simple, Transparent Pricing
+            </h1>
+            <p className="text-white/90 text-xl mb-8 max-w-2xl mx-auto">
+              Choose the plan that's right for your home maintenance needs. All plans include our core AI-powered maintenance technology.
             </p>
+          </div>
+        </div>
+        
+        {/* Decorative elements */}
+        <div className="absolute top-20 right-10 w-64 h-64 rounded-full bg-white/10 blur-3xl"></div>
+        <div className="absolute bottom-10 left-10 w-80 h-80 rounded-full bg-white/5 blur-3xl"></div>
+      </section>
+      
+      {/* Pricing Toggle */}
+      <section className="py-12 -mt-16 relative z-20">
+        <div className="container-width">
+          <div className="bg-white rounded-2xl shadow-xl p-6 max-w-xs mx-auto flex items-center justify-center gap-4">
+            <span className={`font-medium ${plan === 'monthly' ? 'text-primary' : 'text-neutral/70'}`}>
+              Monthly
+            </span>
             
-            {/* Pricing Toggle */}
-            <div className="inline-flex items-center bg-white/10 p-1 rounded-full">
-              <button
-                onClick={() => setPlan('monthly')}
-                className={`py-2 px-6 rounded-full transition-colors ${
-                  plan === 'monthly' 
-                    ? 'bg-white text-primary font-medium' 
-                    : 'text-white hover:bg-white/10'
-                }`}
-              >
-                Monthly
-              </button>
-              <button
-                onClick={() => setPlan('yearly')}
-                className={`py-2 px-6 rounded-full transition-colors ${
-                  plan === 'yearly' 
-                    ? 'bg-white text-primary font-medium' 
-                    : 'text-white hover:bg-white/10'
-                }`}
-              >
+            <Switch 
+              checked={plan === 'yearly'} 
+              onCheckedChange={handlePlanToggle} 
+              className="data-[state=checked]:bg-primary"
+            />
+            
+            <div className="flex items-center gap-2">
+              <span className={`font-medium ${plan === 'yearly' ? 'text-primary' : 'text-neutral/70'}`}>
                 Yearly
-              </button>
+              </span>
+              <span className="bg-tertiary/20 text-tertiary text-xs font-bold px-2 py-1 rounded-full">
+                Save 20%
+              </span>
             </div>
           </div>
         </div>
       </section>
       
       {/* Pricing Tiers */}
-      <section className="py-20 -mt-10">
-        <div className="container mx-auto px-4 md:px-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            <PricingTier
-              title="Basic"
-              price={{ monthly: 9, yearly: 95.88 }}
-              description="Essential maintenance tracking."
-              features={basicFeatures}
-              plan={plan}
-              tier="basic"
-              onSubscribe={handleSubscribe}
-              isLoading={isLoading}
-            />
-            
-            <PricingTier
-              title="Pro"
-              price={{ monthly: 19, yearly: 191.88 }}
-              description="Includes AI insights and reminders."
-              features={proFeatures}
-              highlighted={true}
-              plan={plan}
-              tier="pro"
-              onSubscribe={handleSubscribe}
-              isLoading={isLoading}
-            />
-            
-            <PricingTier
-              title="Premium"
-              price={{ monthly: 29, yearly: 287.88 }}
-              description="Full access with priority support."
-              features={premiumFeatures}
-              plan={plan}
-              tier="premium"
-              onSubscribe={handleSubscribe}
-              isLoading={isLoading}
-            />
+      <section className="section-padding bg-softWhite -mt-12 pt-24">
+        <div className="container-width">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {pricingTiers.map((tier) => (
+              <PricingTier
+                key={tier.tier}
+                title={tier.title}
+                price={tier.price}
+                description={tier.description}
+                features={tier.features}
+                highlighted={tier.highlighted}
+                plan={plan}
+                tier={tier.tier}
+                onSubscribe={handleSubscribe}
+                icon={tier.icon}
+                homes={tier.homes}
+              />
+            ))}
+          </div>
+          
+          <div className="mt-12 text-center">
+            <p className="text-neutral/70 mb-2">All plans include a 30-day money-back guarantee</p>
+            <p className="text-neutral/70">Have questions? <Link to="/contact" className="text-primary hover:underline">Contact our team</Link></p>
           </div>
         </div>
       </section>
       
       {/* FAQ Section */}
-      <section className="py-20 bg-gray-50">
-        <div className="container mx-auto px-4 md:px-6">
-          <div className="max-w-3xl mx-auto text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-6 font-outfit text-primary">Frequently Asked Questions</h2>
-            <p className="text-lg text-gray-600 font-manrope">
-              Have questions about our pricing? Find quick answers below.
+      <section className="section-padding bg-white">
+        <div className="container-width">
+          <div className="text-center mb-16">
+            <h2 className="mb-4">Frequently Asked Questions</h2>
+            <p className="text-neutral/80 max-w-2xl mx-auto text-lg">
+              Find answers to common questions about our pricing and plans
             </p>
           </div>
           
           <div className="max-w-3xl mx-auto space-y-6">
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h3 className="text-xl font-bold mb-3 font-outfit">Can I change plans later?</h3>
-              <p className="text-gray-600 font-manrope">
-                Yes, you can upgrade or downgrade your plan at any time. Changes will be reflected in your next billing cycle.
-              </p>
-            </div>
-            
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h3 className="text-xl font-bold mb-3 font-outfit">Is there a free trial available?</h3>
-              <p className="text-gray-600 font-manrope">
-                We offer a 14-day free trial for all new users, allowing you to experience HomeGuardian before committing.
-              </p>
-            </div>
-            
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h3 className="text-xl font-bold mb-3 font-outfit">What payment methods do you accept?</h3>
-              <p className="text-gray-600 font-manrope">
-                We accept all major credit cards, PayPal, and Apple Pay for your convenience.
-              </p>
-            </div>
-            
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h3 className="text-xl font-bold mb-3 font-outfit">Can I cancel my subscription?</h3>
-              <p className="text-gray-600 font-manrope">
-                Yes, you can cancel your subscription at any time. You'll continue to have access until the end of your current billing period.
-              </p>
-            </div>
+            {[
+              {
+                question: "Can I change plans later?",
+                answer: "Yes! You can upgrade or downgrade your plan at any time. If you upgrade, you'll be charged the prorated difference for the remainder of your billing cycle. If you downgrade, you'll receive credit toward your next billing cycle."
+              },
+              {
+                question: "What happens after my trial ends?",
+                answer: "After your 30-day trial, you'll be automatically billed for the plan you selected during registration. We'll send you a reminder email 3 days before your trial ends, so you'll have time to make any changes or cancel if needed."
+              },
+              {
+                question: "Is there a contract or commitment?",
+                answer: "No long-term contracts or commitments. You can cancel your subscription at any time from your account settings. If you cancel, you'll maintain access until the end of your current billing period."
+              },
+              {
+                question: "Do you offer refunds?",
+                answer: "Yes, we offer a 30-day money-back guarantee on all our plans. If you're not completely satisfied with HomeGuardian within the first 30 days, simply contact our support team for a full refund."
+              },
+              {
+                question: "What payment methods do you accept?",
+                answer: "We accept all major credit cards (Visa, Mastercard, American Express, Discover) as well as PayPal. All payments are securely processed and your information is never stored on our servers."
+              }
+            ].map((faq, i) => (
+              <div key={i} className="bg-softWhite p-6 rounded-xl border border-gray-100 shadow-card">
+                <button className="flex justify-between items-center w-full text-left">
+                  <h3 className="text-lg font-bold">{faq.question}</h3>
+                  <ArrowRight className="h-5 w-5 text-primary flex-shrink-0" />
+                </button>
+                <div className="mt-4 text-neutral/80">
+                  <p>{faq.answer}</p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
       
-      {/* Call to Action */}
-      <section className="py-16 bg-teal-coral-gradient text-white">
-        <div className="container mx-auto px-4 md:px-6">
-          <div className="max-w-4xl mx-auto text-center">
-            <div className="flex items-center justify-center mb-6">
-              <Shield className="h-12 w-12 text-white" />
-            </div>
-            <h2 className="text-3xl md:text-4xl font-bold mb-6 font-outfit">Ready to protect your biggest investment?</h2>
-            <p className="text-xl mb-8 font-manrope">
+      {/* Comparison Table (Mobile Hidden) */}
+      <section className="section-padding bg-softWhite hidden lg:block">
+        <div className="container-width">
+          <div className="text-center mb-16">
+            <h2 className="mb-4">Plan Comparison</h2>
+            <p className="text-neutral/80 max-w-2xl mx-auto text-lg">
+              Compare all features across our different plans
+            </p>
+          </div>
+          
+          <div className="bg-white rounded-xl shadow-card overflow-hidden">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-200">
+                  <th className="text-left p-6 font-medium text-neutral/70">Features</th>
+                  <th className="p-6 text-center">
+                    <div className="font-bold text-xl mb-1">Basic</div>
+                    <div className="text-primary font-bold">${plan === 'monthly' ? '9.99' : '8.33'}/mo</div>
+                  </th>
+                  <th className="p-6 text-center bg-primary/5 border-x border-primary/10">
+                    <div className="font-bold text-xl mb-1">Pro</div>
+                    <div className="text-primary font-bold">${plan === 'monthly' ? '19.99' : '16.67'}/mo</div>
+                  </th>
+                  <th className="p-6 text-center">
+                    <div className="font-bold text-xl mb-1">Premium</div>
+                    <div className="text-primary font-bold">${plan === 'monthly' ? '29.99' : '24.99'}/mo</div>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="border-b border-gray-200">
+                  <td className="p-6 font-medium">Homes</td>
+                  <td className="p-6 text-center">1 home</td>
+                  <td className="p-6 text-center bg-primary/5 border-x border-primary/10">2 homes</td>
+                  <td className="p-6 text-center">5 homes</td>
+                </tr>
+                <tr className="border-b border-gray-200">
+                  <td className="p-6 font-medium">Maintenance Tasks</td>
+                  <td className="p-6 text-center">Unlimited</td>
+                  <td className="p-6 text-center bg-primary/5 border-x border-primary/10">Unlimited</td>
+                  <td className="p-6 text-center">Unlimited</td>
+                </tr>
+                <tr className="border-b border-gray-200">
+                  <td className="p-6 font-medium">Task Reminders</td>
+                  <td className="p-6 text-center">Basic (Email)</td>
+                  <td className="p-6 text-center bg-primary/5 border-x border-primary/10">Advanced (Email, SMS)</td>
+                  <td className="p-6 text-center">Advanced (Email, SMS)</td>
+                </tr>
+                <tr className="border-b border-gray-200">
+                  <td className="p-6 font-medium">DIY Guides</td>
+                  <td className="p-6 text-center">
+                    <CheckCircle className="h-5 w-5 text-primary mx-auto" />
+                  </td>
+                  <td className="p-6 text-center bg-primary/5 border-x border-primary/10">
+                    <CheckCircle className="h-5 w-5 text-primary mx-auto" />
+                  </td>
+                  <td className="p-6 text-center">
+                    <CheckCircle className="h-5 w-5 text-primary mx-auto" />
+                  </td>
+                </tr>
+                <tr className="border-b border-gray-200">
+                  <td className="p-6 font-medium">Professional Recommendations</td>
+                  <td className="p-6 text-center">
+                    <X className="h-5 w-5 text-neutral/30 mx-auto" />
+                  </td>
+                  <td className="p-6 text-center bg-primary/5 border-x border-primary/10">
+                    <CheckCircle className="h-5 w-5 text-primary mx-auto" />
+                  </td>
+                  <td className="p-6 text-center">
+                    <CheckCircle className="h-5 w-5 text-primary mx-auto" />
+                  </td>
+                </tr>
+                <tr className="border-b border-gray-200">
+                  <td className="p-6 font-medium">Priority Support</td>
+                  <td className="p-6 text-center">
+                    <X className="h-5 w-5 text-neutral/30 mx-auto" />
+                  </td>
+                  <td className="p-6 text-center bg-primary/5 border-x border-primary/10">
+                    <CheckCircle className="h-5 w-5 text-primary mx-auto" />
+                  </td>
+                  <td className="p-6 text-center">
+                    <CheckCircle className="h-5 w-5 text-primary mx-auto" />
+                  </td>
+                </tr>
+                <tr>
+                  <td className="p-6 font-medium">Advanced Reporting</td>
+                  <td className="p-6 text-center">
+                    <X className="h-5 w-5 text-neutral/30 mx-auto" />
+                  </td>
+                  <td className="p-6 text-center bg-primary/5 border-x border-primary/10">
+                    <X className="h-5 w-5 text-neutral/30 mx-auto" />
+                  </td>
+                  <td className="p-6 text-center">
+                    <CheckCircle className="h-5 w-5 text-primary mx-auto" />
+                  </td>
+                </tr>
+              </tbody>
+              <tfoot>
+                <tr className="border-t border-gray-200 bg-gray-50">
+                  <td className="p-6"></td>
+                  <td className="p-6 text-center">
+                    <Button 
+                      onClick={() => handleSubscribe('basic')} 
+                      variant="outline"
+                      className="bg-primary/10 text-primary hover:bg-primary/20"
+                    >
+                      Choose Basic
+                    </Button>
+                  </td>
+                  <td className="p-6 text-center bg-primary/5 border-x border-primary/10">
+                    <Button 
+                      onClick={() => handleSubscribe('pro')}
+                    >
+                      Choose Pro
+                    </Button>
+                  </td>
+                  <td className="p-6 text-center">
+                    <Button 
+                      onClick={() => handleSubscribe('premium')} 
+                      variant="outline"
+                      className="bg-primary/10 text-primary hover:bg-primary/20"
+                    >
+                      Choose Premium
+                    </Button>
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      </section>
+      
+      {/* CTA Section */}
+      <section className="section-padding bg-primary text-white">
+        <div className="container-width">
+          <div className="text-center max-w-3xl mx-auto">
+            <h2 className="text-white mb-6">Start Protecting Your Home Today</h2>
+            <p className="text-white/90 text-xl mb-8">
               Join thousands of homeowners who trust HomeGuardian to keep their homes in perfect condition.
             </p>
-            <a 
-              href={isAuthenticated ? "/dashboard" : "/register"} 
-              className="bg-white text-primary px-8 py-3 rounded-full font-medium hover:bg-white/90 transition-colors inline-block animate-pulse-glow"
-            >
-              {isAuthenticated ? "Go to Dashboard" : "Start Your Free Trial"}
-            </a>
+            
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link to="/register" className="bg-white text-primary hover:bg-white/90 px-8 py-3 rounded-full font-medium text-xl transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transform hover:scale-105">
+                Get Started Now <ArrowRight className="w-5 h-5" />
+              </Link>
+              <Link to="/how-it-works" className="bg-white/10 text-white hover:bg-white/20 px-8 py-3 rounded-full font-medium text-xl transition-all duration-300 flex items-center justify-center gap-2">
+                Learn More
+              </Link>
+            </div>
+            
+            <div className="mt-8 text-white/80">
+              <span className="flex items-center justify-center gap-2">
+                <CheckCircle className="h-5 w-5" /> 30-day money-back guarantee
+              </span>
+            </div>
           </div>
         </div>
       </section>
       
       <Footer />
+      <StickyCallToAction />
     </div>
   );
 };

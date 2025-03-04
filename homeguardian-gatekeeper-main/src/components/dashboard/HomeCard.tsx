@@ -1,75 +1,111 @@
-import { Home as HomeIcon, ArrowRight } from "lucide-react";
-import { Link } from "react-router-dom";
-import { cn } from "@/lib/utils";
+import React from 'react';
+import { Home, MapPin, Calendar, CheckCircle2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 export interface HomeData {
   id: string;
-  name: string;
-  address: string;
+  name?: string;
+  location: string;
   year_built: number;
-  square_feet: number;
-  image_url?: string;
-  location?: string;
+  square_footage: number;
+  roof_type?: string;
+  hvac_type?: string;
+  last_maintenance?: string;
+  next_maintenance?: string;
+  tasks_count?: number;
+  completed_tasks_count?: number;
 }
 
 export interface HomeCardProps {
   home: HomeData;
-  className?: string;
-  isSelected?: boolean;
-  onClick?: () => void;
+  isSelected: boolean;
+  onClick: () => void;
+  onEdit: () => void;
 }
 
-const HomeCard = ({ home, className, isSelected = false, onClick }: HomeCardProps) => {
+const HomeCard: React.FC<HomeCardProps> = ({ 
+  home, 
+  isSelected, 
+  onClick, 
+  onEdit 
+}) => {
+  const completionRate = home.tasks_count && home.completed_tasks_count 
+    ? Math.round((home.completed_tasks_count / home.tasks_count) * 100) 
+    : 0;
+  
+  const homeName = home.name || `Home in ${home.location}`;
+  
   return (
     <div 
-      className={cn(
-        "group relative bg-white border shadow-sm rounded-lg overflow-hidden transition-all cursor-pointer",
+      className={`rounded-xl p-6 border transition-all duration-300 cursor-pointer ${
         isSelected 
-          ? "border-primary shadow-md ring-2 ring-primary/20" 
-          : "border-border/50 hover:shadow-md hover:border-primary/20",
-        className
-      )}
+          ? 'border-primary bg-primary/5 shadow-card' 
+          : 'border-gray-200 bg-white hover:border-primary/30 hover:shadow-card'
+      }`}
       onClick={onClick}
     >
-      <div className="aspect-video bg-muted/30 relative">
-        {home.image_url ? (
-          <img 
-            src={home.image_url} 
-            alt={home.name} 
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-            <HomeIcon className="w-12 h-12 opacity-50" />
+      <div className="flex justify-between items-start mb-4">
+        <div className="flex items-center gap-3">
+          <div className={`p-2 rounded-full ${isSelected ? 'bg-primary text-white' : 'bg-primary/10 text-primary'}`}>
+            <Home className="h-5 w-5" />
           </div>
-        )}
-      </div>
-      
-      <div className="p-4">
-        <h3 className="text-lg font-semibold line-clamp-1 mb-1">{home.name}</h3>
-        <p className="text-sm text-muted-foreground line-clamp-1 mb-3">{home.address}</p>
-        
-        <div className="grid grid-cols-2 gap-2 text-sm mb-4">
-          <div className="flex flex-col">
-            <span className="text-muted-foreground">Built</span>
-            <span className="font-medium">{home.year_built}</span>
-          </div>
-          <div className="flex flex-col">
-            <span className="text-muted-foreground">Size</span>
-            <span className="font-medium">{home.square_feet} sq ft</span>
+          <div>
+            <h3 className="text-lg font-bold text-neutral">{homeName}</h3>
+            <div className="flex items-center text-neutral/70 text-sm">
+              <MapPin className="h-3.5 w-3.5 mr-1" />
+              <span>{home.location}</span>
+            </div>
           </div>
         </div>
         
-        <Link 
-          to={`/homes/${home.id}`} 
-          className="inline-flex items-center text-sm font-medium text-primary hover:text-primary/80 transition-colors"
-          aria-label={`View details for ${home.name}`}
-          onClick={(e) => e.stopPropagation()}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-8 px-2"
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit();
+          }}
         >
-          View details
-          <ArrowRight className="ml-1 h-4 w-4" />
-        </Link>
+          Edit
+        </Button>
       </div>
+      
+      <div className="grid grid-cols-2 gap-4 mb-4">
+        <div className="bg-white/80 p-3 rounded-lg border border-gray-100">
+          <div className="text-sm text-neutral/70 mb-1">Year Built</div>
+          <div className="font-semibold">{home.year_built}</div>
+        </div>
+        <div className="bg-white/80 p-3 rounded-lg border border-gray-100">
+          <div className="text-sm text-neutral/70 mb-1">Square Feet</div>
+          <div className="font-semibold">{home.square_footage.toLocaleString()}</div>
+        </div>
+      </div>
+      
+      {home.next_maintenance && (
+        <div className="flex items-center gap-2 text-sm mb-4">
+          <Calendar className="h-4 w-4 text-primary" />
+          <span>Next maintenance: <span className="font-medium">{home.next_maintenance}</span></span>
+        </div>
+      )}
+      
+      {home.tasks_count !== undefined && (
+        <div className="mt-4">
+          <div className="flex justify-between items-center mb-1">
+            <div className="text-sm text-neutral/70">Maintenance Progress</div>
+            <div className="text-sm font-medium flex items-center gap-1">
+              <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
+              {home.completed_tasks_count || 0}/{home.tasks_count}
+            </div>
+          </div>
+          <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-primary rounded-full transition-all duration-500"
+              style={{ width: `${completionRate}%` }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

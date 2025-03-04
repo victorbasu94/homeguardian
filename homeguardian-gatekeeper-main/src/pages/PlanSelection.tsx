@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { CheckCircle, Shield, X } from 'lucide-react';
+import { CheckCircle, Shield, X, ArrowRight, Clock, Calendar, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import api from '@/lib/axios';
+import ProgressBar from '@/components/ProgressBar';
 
 type PricingPlan = 'monthly' | 'yearly';
 type SubscriptionTier = 'basic' | 'pro' | 'premium';
@@ -44,36 +45,36 @@ const PricingTier = ({
     <div 
       className={`rounded-xl p-8 border transition-all duration-300 h-full flex flex-col ${
         highlighted 
-          ? 'border-secondary bg-white shadow-xl scale-105 z-10' 
-          : 'border-gray-200 bg-white shadow-lg hover:shadow-xl'
+          ? 'border-primary bg-white shadow-card-hover scale-105 z-10' 
+          : 'border-gray-200 bg-white shadow-card hover:shadow-card-hover'
       }`}
     >
       <div className="mb-6">
         {highlighted && (
-          <span className="bg-secondary text-white text-xs font-bold px-3 py-1 rounded-full mb-4 inline-block">
+          <span className="bg-primary text-white text-xs font-bold px-3 py-1 rounded-full mb-4 inline-block">
             Most Popular
           </span>
         )}
-        <h3 className="text-2xl font-bold mb-2 font-outfit">{title}</h3>
+        <h3 className="text-2xl font-bold mb-2 font-poppins text-primary">{title}</h3>
         <div className="flex items-end gap-2 mb-2">
-          <span className="text-4xl font-bold">${currentPrice}</span>
-          <span className="text-gray-500 mb-1">/ {plan === 'monthly' ? 'month' : 'year'}</span>
+          <span className="text-4xl font-bold text-neutral">${currentPrice}</span>
+          <span className="text-neutral/70 mb-1">/ {plan === 'monthly' ? 'month' : 'year'}</span>
         </div>
         {yearlyDiscount && (
-          <span className="text-green-600 text-sm font-medium">{yearlyDiscount}</span>
+          <span className="text-secondary text-sm font-medium">{yearlyDiscount}</span>
         )}
-        <p className="text-gray-600 mt-3 font-manrope">{description}</p>
+        <p className="text-neutral/80 mt-3 font-inter">{description}</p>
       </div>
       
       <ul className="space-y-4 mb-8 flex-grow">
         {features.map((feature, index) => (
           <li key={index} className="flex items-start gap-2">
             {feature.included ? (
-              <CheckCircle className="text-green-500 h-5 w-5 mt-0.5 flex-shrink-0" />
+              <CheckCircle className="text-primary h-5 w-5 mt-0.5 flex-shrink-0" />
             ) : (
-              <X className="text-gray-400 h-5 w-5 mt-0.5 flex-shrink-0" />
+              <X className="text-neutral/40 h-5 w-5 mt-0.5 flex-shrink-0" />
             )}
-            <span className={`font-manrope ${feature.included ? 'text-gray-700' : 'text-gray-400'}`}>
+            <span className={`font-inter ${feature.included ? 'text-neutral' : 'text-neutral/40'}`}>
               {feature.text}
             </span>
           </li>
@@ -81,15 +82,15 @@ const PricingTier = ({
       </ul>
       
       <button 
-        className={`w-full py-3 px-6 rounded-full font-medium transition-all ${
+        className={`w-full py-3 px-6 rounded-full font-medium transition-all duration-300 flex items-center justify-center gap-2 ${
           highlighted 
-            ? 'bg-secondary text-white hover:bg-secondary-dark' 
-            : 'bg-primary text-white hover:bg-primary-dark'
+            ? 'bg-primary text-white hover:bg-primary-dark shadow-button hover:shadow-button-hover transform hover:scale-105' 
+            : 'bg-white text-primary border-2 border-primary hover:bg-primary/5 transform hover:scale-105'
         } ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
         onClick={() => onSubscribe(tier)}
         disabled={isLoading}
       >
-        {isLoading ? 'Processing...' : 'Select Plan'}
+        {isLoading ? 'Processing...' : 'Select Plan'} {highlighted && <ArrowRight className="w-5 h-5" />}
       </button>
     </div>
   );
@@ -98,216 +99,191 @@ const PricingTier = ({
 const PlanSelection = () => {
   const [plan, setPlan] = useState<PricingPlan>('monthly');
   const [isLoading, setIsLoading] = useState(false);
+  const [processingTier, setProcessingTier] = useState<SubscriptionTier | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
   const { user } = useAuth();
   
-  const basicFeatures = [
-    { text: 'Basic Home Assessment', included: true },
-    { text: 'Seasonal Maintenance Reminders', included: true },
-    { text: 'DIY Maintenance Guides', included: true },
-    { text: 'Email Support', included: true },
-    { text: 'Custom Maintenance Schedule', included: false },
-    { text: 'Professional Advice', included: false },
-    { text: 'Priority Support', included: false },
-    { text: 'Home Systems Monitoring', included: false },
-  ];
+  const handlePlanToggle = (newPlan: PricingPlan) => {
+    setPlan(newPlan);
+  };
   
-  const proFeatures = [
-    { text: 'Comprehensive Home Assessment', included: true },
-    { text: 'Seasonal Maintenance Reminders', included: true },
-    { text: 'DIY Maintenance Guides', included: true },
-    { text: 'Email & Phone Support', included: true },
-    { text: 'Custom Maintenance Schedule', included: true },
-    { text: 'Professional Advice', included: true },
-    { text: 'Priority Support', included: true },
-    { text: 'Home Systems Monitoring', included: false },
-  ];
-  
-  const premiumFeatures = [
-    { text: 'Advanced Home Assessment', included: true },
-    { text: 'Seasonal Maintenance Reminders', included: true },
-    { text: 'DIY Maintenance Guides', included: true },
-    { text: 'Email, Phone & Chat Support', included: true },
-    { text: 'Custom Maintenance Schedule', included: true },
-    { text: 'Professional Advice', included: true },
-    { text: 'Priority Support', included: true },
-    { text: 'Home Systems Monitoring', included: true },
-  ];
-
   const handleSubscribe = async (tier: SubscriptionTier) => {
-    setIsLoading(true);
-    
-    try {
-      console.log('Initiating subscription checkout for tier:', tier, 'with billing cycle:', plan);
-      
-      // Call the subscribe API endpoint
-      const response = await api.post('/api/subscriptions/checkout', {
-        plan_type: tier,
-        billing_cycle: plan
-      });
-      
-      console.log('Checkout response:', response.data);
-      
-      // Check if we have a checkout URL
-      if (response.data.checkout_url) {
-        const checkoutUrl = response.data.checkout_url;
-        console.log('Redirecting to checkout URL:', checkoutUrl);
-        
-        // Check if this is a mock URL (contains our frontend URL)
-        if (checkoutUrl.includes('localhost:8080') || checkoutUrl.includes('mock=true')) {
-          // For mock URLs, use React Router navigation
-          // Extract the path from the full URL
-          const url = new URL(checkoutUrl);
-          navigate(url.pathname + url.search);
-        } else {
-          // For real Stripe URLs, use window.location for external redirect
-          window.location.href = checkoutUrl;
-        }
-      } else {
-        console.error('Error details: No checkout URL returned');
-        throw new Error('No checkout URL returned from server');
-      }
-    } catch (error: any) {
-      console.error('Subscription error:', error);
-      
-      // Extract detailed error information
-      let errorMessage = 'An unexpected error occurred. Please try again.';
-      let errorDetails = '';
-      
-      if (error.response) {
-        // Server responded with an error
-        errorMessage = error.response.data?.message || 'Server error occurred';
-        errorDetails = error.response.data?.details || '';
-        console.error('Server error details:', error.response.data);
-      } else if (error.request) {
-        // Request was made but no response received
-        errorMessage = 'Unable to connect to the server. Please check your internet connection.';
-        console.error('Network error - no response received');
-      } else {
-        // Error in setting up the request
-        errorMessage = error.message || 'Error setting up the request';
-        console.error('Request setup error:', error.message);
-      }
-      
-      // Log complete error for debugging
-      console.error('Complete error object:', error);
-      
-      // Show toast with error message
+    if (!user) {
       toast({
-        title: 'Subscription Error',
-        description: errorMessage,
+        title: 'Authentication required',
+        description: 'Please log in to subscribe to a plan.',
         variant: 'destructive',
       });
+      navigate('/login');
+      return;
+    }
+    
+    setIsLoading(true);
+    setProcessingTier(tier);
+    
+    try {
+      // In a real app, this would create a subscription with Stripe or another payment processor
+      // For this demo, we'll simulate a successful subscription
       
-      // If there are additional details, show them in a separate toast
-      if (errorDetails) {
-        toast({
-          title: 'Error Details',
-          description: errorDetails,
-          variant: 'destructive',
-        });
-      }
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1500));
       
-      // If there's a server error, suggest contacting support
-      if (error.response?.status === 500) {
-        toast({
-          title: 'Server Error',
-          description: 'Our team has been notified. Please try again later or contact support.',
-          variant: 'destructive',
-        });
-      }
+      // Redirect to dashboard with success message
+      navigate('/dashboard?subscription=success&mock=true');
+    } catch (error) {
+      console.error('Error creating subscription:', error);
+      toast({
+        title: 'Subscription failed',
+        description: 'There was a problem processing your subscription. Please try again.',
+        variant: 'destructive',
+      });
     } finally {
       setIsLoading(false);
+      setProcessingTier(null);
     }
   };
-
+  
+  const pricingTiers = [
+    {
+      title: 'Basic',
+      price: {
+        monthly: 9.99,
+        yearly: 7.99,
+      },
+      description: 'Essential home maintenance for budget-conscious homeowners.',
+      features: [
+        { text: 'Seasonal maintenance reminders', included: true },
+        { text: 'Basic home maintenance guide', included: true },
+        { text: 'Email support', included: true },
+        { text: 'Personalized maintenance schedule', included: true },
+        { text: 'Priority support', included: false },
+        { text: 'Professional consultation', included: false },
+      ],
+      tier: 'basic' as SubscriptionTier,
+      icon: <Clock className="h-8 w-8 text-primary" />,
+    },
+    {
+      title: 'Pro',
+      price: {
+        monthly: 19.99,
+        yearly: 15.99,
+      },
+      description: 'Comprehensive coverage for proactive homeowners.',
+      features: [
+        { text: 'All Basic features', included: true },
+        { text: 'Detailed maintenance tutorials', included: true },
+        { text: 'Priority email support', included: true },
+        { text: 'Maintenance cost estimator', included: true },
+        { text: 'Service provider recommendations', included: true },
+        { text: 'Professional consultation', included: false },
+      ],
+      tier: 'pro' as SubscriptionTier,
+      highlighted: true,
+      icon: <Calendar className="h-8 w-8 text-primary" />,
+    },
+    {
+      title: 'Premium',
+      price: {
+        monthly: 29.99,
+        yearly: 23.99,
+      },
+      description: 'Ultimate protection for your valuable home investment.',
+      features: [
+        { text: 'All Pro features', included: true },
+        { text: 'Phone support', included: true },
+        { text: 'Quarterly professional consultation', included: true },
+        { text: 'Emergency maintenance guidance', included: true },
+        { text: 'Custom maintenance alerts', included: true },
+        { text: 'Home value protection report', included: true },
+      ],
+      tier: 'premium' as SubscriptionTier,
+      icon: <Zap className="h-8 w-8 text-primary" />,
+    },
+  ];
+  
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      {/* Header Section */}
-      <section className="pt-20 pb-16 bg-primary-gradient text-white">
-        <div className="container mx-auto px-4 md:px-6">
-          <div className="max-w-3xl mx-auto text-center">
-            <h1 className="text-3xl md:text-4xl font-bold mb-4 font-outfit leading-tight">
-              Choose Your HomeGuardian Plan
-            </h1>
-            <p className="text-lg md:text-xl mb-6 font-manrope text-white/90">
-              Your home has been registered successfully! Now select a plan that fits your needs.
+    <div className="min-h-screen bg-softWhite">
+      <div className="container mx-auto px-4 py-12 md:py-20">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-10">
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <Shield className="h-8 w-8 text-primary" />
+              <h1 className="text-3xl font-bold font-poppins text-primary">HomeGuardian</h1>
+            </div>
+            <h2 className="text-2xl md:text-3xl font-bold mb-3 text-neutral">Choose Your Protection Plan</h2>
+            <p className="text-neutral/80 max-w-xl mx-auto">
+              Select the perfect plan to keep your home in top condition year-round. All plans include our 30-day money-back guarantee.
             </p>
-            
-            {/* Pricing Toggle */}
-            <div className="inline-flex items-center bg-white/10 p-1 rounded-full">
+          </div>
+          
+          <ProgressBar currentStep={3} totalSteps={3} />
+          
+          {/* Billing toggle */}
+          <div className="flex justify-center mb-12">
+            <div className="bg-white rounded-full p-1 inline-flex shadow-sm border border-gray-100">
               <button
-                onClick={() => setPlan('monthly')}
-                className={`py-2 px-6 rounded-full transition-colors ${
+                onClick={() => handlePlanToggle('monthly')}
+                className={`px-6 py-2 rounded-full text-sm font-medium transition-all ${
                   plan === 'monthly' 
-                    ? 'bg-white text-primary font-medium' 
-                    : 'text-white hover:bg-white/10'
+                    ? 'bg-primary text-white shadow-sm' 
+                    : 'text-neutral hover:text-primary'
                 }`}
               >
                 Monthly
               </button>
               <button
-                onClick={() => setPlan('yearly')}
-                className={`py-2 px-6 rounded-full transition-colors ${
+                onClick={() => handlePlanToggle('yearly')}
+                className={`px-6 py-2 rounded-full text-sm font-medium transition-all ${
                   plan === 'yearly' 
-                    ? 'bg-white text-primary font-medium' 
-                    : 'text-white hover:bg-white/10'
+                    ? 'bg-primary text-white shadow-sm' 
+                    : 'text-neutral hover:text-primary'
                 }`}
               >
-                Yearly
+                Yearly <span className="text-secondary font-medium ml-1">Save 20%</span>
               </button>
             </div>
           </div>
-        </div>
-      </section>
-      
-      {/* Pricing Tiers */}
-      <section className="py-16 -mt-10">
-        <div className="container mx-auto px-4 md:px-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            <PricingTier
-              title="Basic"
-              price={{ monthly: 9, yearly: 95.88 }}
-              description="Essential maintenance tracking."
-              features={basicFeatures}
-              plan={plan}
-              tier="basic"
-              onSubscribe={handleSubscribe}
-              isLoading={isLoading}
-            />
-            
-            <PricingTier
-              title="Pro"
-              price={{ monthly: 19, yearly: 191.88 }}
-              description="Includes AI insights and reminders."
-              features={proFeatures}
-              highlighted={true}
-              plan={plan}
-              tier="pro"
-              onSubscribe={handleSubscribe}
-              isLoading={isLoading}
-            />
-            
-            <PricingTier
-              title="Premium"
-              price={{ monthly: 29, yearly: 287.88 }}
-              description="Complete home management solution."
-              features={premiumFeatures}
-              plan={plan}
-              tier="premium"
-              onSubscribe={handleSubscribe}
-              isLoading={isLoading}
-            />
+          
+          {/* Pricing tiers */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+            {pricingTiers.map((tier) => (
+              <div key={tier.tier} className="flex flex-col">
+                <div className="flex items-center gap-3 mb-4 px-2">
+                  {tier.icon}
+                  <h3 className="text-xl font-semibold text-primary">{tier.title} Plan</h3>
+                </div>
+                <PricingTier
+                  {...tier}
+                  plan={plan}
+                  onSubscribe={handleSubscribe}
+                  isLoading={isLoading && processingTier === tier.tier}
+                />
+              </div>
+            ))}
+          </div>
+          
+          {/* Money-back guarantee */}
+          <div className="mt-12 bg-tertiary/10 rounded-xl p-6 border border-tertiary/20 max-w-2xl mx-auto">
+            <div className="flex items-center gap-4">
+              <div className="bg-tertiary rounded-full p-2 flex-shrink-0">
+                <Shield className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold mb-1 text-neutral">30-Day Money-Back Guarantee</h3>
+                <p className="text-neutral/80">
+                  Not satisfied with our service? Get a full refund within 30 days, no questions asked.
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="mt-8 text-center">
+            <p className="text-neutral/60 text-sm">
+              All plans are billed according to your selected billing cycle. You can cancel anytime.
+            </p>
           </div>
         </div>
-      </section>
-      
-      {/* Footer note */}
-      <div className="text-center pb-16">
-        <p className="text-gray-600">
-          Select a plan to continue to your dashboard
-        </p>
       </div>
     </div>
   );

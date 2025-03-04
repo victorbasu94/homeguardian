@@ -21,6 +21,7 @@ import Onboarding from "./pages/Onboarding";
 import AddTask from "./pages/AddTask";
 import AddHome from "./pages/AddHome";
 import HomeDetails from "./pages/HomeDetails";
+import TaskDetail from "./pages/TaskDetail";
 import { AuthProvider } from "./hooks/useAuth.tsx";
 
 const queryClient = new QueryClient();
@@ -88,6 +89,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <AddTask />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/tasks/:taskId"
+              element={
+                <ProtectedRoute>
+                  <TaskDetail />
                 </ProtectedRoute>
               }
             />

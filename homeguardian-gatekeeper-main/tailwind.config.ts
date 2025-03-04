@@ -1,5 +1,7 @@
-
 import type { Config } from "tailwindcss";
+
+// @ts-ignore
+const tailwindcssAnimate = require("tailwindcss-animate");
 
 export default {
 	darkMode: ["class"],
@@ -15,14 +17,14 @@ export default {
 			center: true,
 			padding: '2rem',
 			screens: {
-				'2xl': '1400px'
+				'2xl': '1200px'
 			}
 		},
 		extend: {
 			fontFamily: {
-				sans: ['Inter', 'Helvetica Neue', 'Arial', 'sans-serif'],
-				outfit: ['Outfit', 'sans-serif'],
-				manrope: ['Manrope', 'sans-serif'],
+				sans: ['Inter', 'sans-serif'],
+				poppins: ['Poppins', 'sans-serif'],
+				inter: ['Inter', 'sans-serif'],
 			},
 			colors: {
 				border: 'hsl(var(--border))',
@@ -31,16 +33,22 @@ export default {
 				background: 'hsl(var(--background))',
 				foreground: 'hsl(var(--foreground))',
 				primary: {
-					DEFAULT: '#0D3B66', // Midnight teal
-					light: '#1A4873',
-					dark: '#0A2D4F',
-					foreground: 'hsl(var(--primary-foreground))'
+					DEFAULT: '#00C4B4', // Teal
+					light: '#33D1C4',
+					dark: '#00A396',
+					foreground: '#FFFFFF'
 				},
 				secondary: {
-					DEFAULT: '#F28C38', // Vibrant coral
-					light: '#F7A55F',
-					dark: '#E47520',
-					foreground: 'hsl(var(--secondary-foreground))'
+					DEFAULT: '#FF6F61', // Coral
+					light: '#FF8F84',
+					dark: '#E5584A',
+					foreground: '#FFFFFF'
+				},
+				tertiary: {
+					DEFAULT: '#FBBF24', // Yellow
+					light: '#FCCC55',
+					dark: '#E5A91F',
+					foreground: '#4A5568'
 				},
 				destructive: {
 					DEFAULT: 'hsl(var(--destructive))',
@@ -72,12 +80,27 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
-				charcoal: '#2D2D2D',
+				neutral: '#4A5568', // Gray for text
+				softWhite: '#F8FAFC', // Soft white for backgrounds
 			},
 			borderRadius: {
-				lg: 'var(--radius)',
-				md: 'calc(var(--radius) - 2px)',
-				sm: 'calc(var(--radius) - 4px)'
+				lg: '1rem',
+				md: '0.75rem',
+				sm: '0.5rem',
+				xl: '1.25rem',
+				'2xl': '1.5rem',
+				'3xl': '1.75rem',
+				'4xl': '2rem',
+				full: '9999px',
+			},
+			spacing: {
+				'4.5': '1.125rem',
+				'13': '3.25rem',
+				'15': '3.75rem',
+				'18': '4.5rem',
+				'22': '5.5rem',
+				'26': '6.5rem',
+				'30': '7.5rem',
 			},
 			keyframes: {
 				'accordion-down': {
@@ -121,9 +144,21 @@ export default {
                     '50%': { transform: 'translateY(-10px)' }
                 },
                 'pulse-glow': {
-                    '0%, 100%': { boxShadow: '0 0 0 0 rgba(242, 140, 56, 0.4)' },
-                    '50%': { boxShadow: '0 0 20px 10px rgba(242, 140, 56, 0.2)' }
-                }
+                    '0%, 100%': { boxShadow: '0 0 0 0 rgba(0, 196, 180, 0.4)' },
+                    '50%': { boxShadow: '0 0 20px 10px rgba(0, 196, 180, 0.2)' }
+                },
+				'bounce-subtle': {
+					'0%, 100%': { transform: 'translateY(0)' },
+					'50%': { transform: 'translateY(-5px)' }
+				},
+				'spin-slow': {
+					'0%': { transform: 'rotate(0deg)' },
+					'100%': { transform: 'rotate(360deg)' }
+				},
+				'wiggle': {
+					'0%, 100%': { transform: 'rotate(-3deg)' },
+					'50%': { transform: 'rotate(3deg)' }
+				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
@@ -134,21 +169,37 @@ export default {
                 'scale-in': 'scale-in 0.3s ease-out',
                 'pulse-soft': 'pulse-soft 2s infinite ease-in-out',
                 'float': 'float 6s infinite ease-in-out',
-                'pulse-glow': 'pulse-glow 2s infinite'
+                'pulse-glow': 'pulse-glow 2s infinite',
+				'bounce-subtle': 'bounce-subtle 2s infinite ease-in-out',
+				'spin-slow': 'spin-slow 8s linear infinite',
+				'wiggle': 'wiggle 1s ease-in-out infinite'
 			},
             transitionDuration: {
                 '400': '400ms',
+				'300': '300ms',
+				'200': '200ms',
             },
             backgroundImage: {
-                'auth-gradient': 'linear-gradient(to right bottom, rgb(236, 242, 248), rgb(250, 250, 252))',
-                'primary-gradient': 'linear-gradient(to right, #0D3B66, #1A4873)',
-                'secondary-gradient': 'linear-gradient(to right, #F28C38, #F7A55F)',
-                'teal-coral-gradient': 'linear-gradient(135deg, #0D3B66 0%, #F28C38 100%)',
+                'auth-gradient': 'linear-gradient(to right bottom, #F8FAFC, #FFFFFF)',
+                'primary-gradient': 'linear-gradient(to right, #00C4B4, #33D1C4)',
+                'secondary-gradient': 'linear-gradient(to right, #FF6F61, #FF8F84)',
+                'teal-coral-gradient': 'linear-gradient(135deg, #00C4B4 0%, #FF6F61 100%)',
+				'soft-gradient': 'linear-gradient(to bottom right, #F8FAFC, #FFFFFF)',
             },
             backdropBlur: {
                 'xs': '2px',
-            }
+            },
+			gridTemplateColumns: {
+				'auto-fill-card': 'repeat(auto-fill, minmax(300px, 1fr))',
+				'auto-fit-card': 'repeat(auto-fit, minmax(300px, 1fr))',
+			},
+			boxShadow: {
+				'card': '0 4px 20px rgba(0, 0, 0, 0.05)',
+				'card-hover': '0 10px 30px rgba(0, 0, 0, 0.08)',
+				'button': '0 4px 10px rgba(0, 196, 180, 0.2)',
+				'button-hover': '0 6px 15px rgba(0, 196, 180, 0.3)',
+			}
 		}
 	},
-	plugins: [require("tailwindcss-animate")],
+	plugins: [tailwindcssAnimate],
 } satisfies Config;

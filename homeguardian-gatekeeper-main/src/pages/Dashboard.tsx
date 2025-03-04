@@ -1,16 +1,21 @@
-import { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import { useToast } from "@/components/ui/use-toast";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { PlusCircle, Home as HomeIcon, AlertCircle } from "lucide-react";
-import { format } from "date-fns";
-import { useAuth } from "@/hooks/useAuth";
-import api from "@/lib/axios";
-import HomeCard, { HomeData, HomeCardProps } from "@/components/dashboard/HomeCard";
-import TaskCard, { TaskData } from "@/components/dashboard/TaskCard";
-import TaskModal from "@/components/dashboard/TaskModal";
-import DashboardNavbar from "@/components/dashboard/DashboardNavbar";
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useToast } from '@/components/ui/use-toast';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { PlusCircle, Home as HomeIcon, AlertCircle, Plus, ClipboardList, Bell, Settings, Search } from 'lucide-react';
+import { format } from 'date-fns';
+import { useAuth } from '@/hooks/useAuth';
+import api from '@/lib/axios';
+import HomeCard, { HomeData, HomeCardProps } from '@/components/dashboard/HomeCard';
+import TaskCard, { TaskData } from '@/components/dashboard/TaskCard';
+import TaskModal, { TaskData as TaskModalData } from '@/components/dashboard/TaskModal';
+import DashboardNavbar from '@/components/dashboard/DashboardNavbar';
+import { Input } from '@/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import HomesEmptyState from '@/components/dashboard/HomesEmptyState';
+import HomesLoading from '@/components/dashboard/HomesLoading';
+import SubscriptionStatus from '@/components/dashboard/SubscriptionStatus';
 
 // Define interfaces
 export interface UserData {
@@ -21,6 +26,112 @@ export interface UserData {
   subscription_plan?: "basic" | "pro" | "premium";
   subscription_end_date?: string;
 }
+
+// Mock data - would come from API in real app
+const mockHomes: HomeData[] = [
+  {
+    id: '1',
+    name: 'Mountain View Residence',
+    location: 'Boulder, CO',
+    year_built: 2015,
+    square_footage: 2450,
+    roof_type: 'Asphalt Shingle',
+    hvac_type: 'Central Air',
+    last_maintenance: '2023-05-15',
+    next_maintenance: 'June 15, 2024',
+    tasks_count: 12,
+    completed_tasks_count: 8,
+  },
+  {
+    id: '2',
+    name: 'Lakeside Cottage',
+    location: 'Lake Tahoe, CA',
+    year_built: 1998,
+    square_footage: 1850,
+    roof_type: 'Metal',
+    hvac_type: 'Heat Pump',
+    last_maintenance: '2023-08-22',
+    next_maintenance: 'August 22, 2024',
+    tasks_count: 9,
+    completed_tasks_count: 3,
+  },
+  {
+    id: '3',
+    name: 'Urban Loft',
+    location: 'Portland, OR',
+    year_built: 2008,
+    square_footage: 1200,
+    roof_type: 'Flat/Built-up',
+    hvac_type: 'Ductless Mini-Split',
+    last_maintenance: '2023-11-10',
+    next_maintenance: 'May 10, 2024',
+    tasks_count: 7,
+    completed_tasks_count: 7,
+  }
+];
+
+const mockTasks: TaskData[] = [
+  {
+    id: '1',
+    title: 'Replace HVAC Filter',
+    description: 'Replace the air filter in the HVAC system to maintain air quality and system efficiency.',
+    due_date: '2024-05-15',
+    status: 'pending',
+    priority: 'high',
+    home_id: '1',
+    category: 'maintenance',
+    estimated_time: 30,
+    estimated_cost: 25,
+  },
+  {
+    id: '2',
+    title: 'Clean Gutters',
+    description: 'Remove debris from gutters to prevent water damage and maintain proper drainage.',
+    due_date: '2024-05-20',
+    status: 'pending',
+    priority: 'medium',
+    home_id: '1',
+    category: 'maintenance',
+    estimated_time: 120,
+    estimated_cost: 0,
+  },
+  {
+    id: '3',
+    title: 'Inspect Roof',
+    description: 'Check for damaged or missing shingles and signs of leaks.',
+    due_date: '2024-06-01',
+    status: 'pending',
+    priority: 'high',
+    home_id: '2',
+    category: 'inspection',
+    estimated_time: 60,
+    estimated_cost: 0,
+  },
+  {
+    id: '4',
+    title: 'Service Water Heater',
+    description: 'Flush the water heater to remove sediment and check for proper operation.',
+    due_date: '2024-05-10',
+    status: 'overdue',
+    priority: 'medium',
+    home_id: '3',
+    category: 'maintenance',
+    estimated_time: 90,
+    estimated_cost: 50,
+  },
+  {
+    id: '5',
+    title: 'Test Smoke Detectors',
+    description: 'Test all smoke detectors and replace batteries if needed.',
+    due_date: '2024-05-05',
+    status: 'completed',
+    priority: 'high',
+    home_id: '1',
+    category: 'safety',
+    estimated_time: 30,
+    estimated_cost: 15,
+  }
+];
 
 const Dashboard = () => {
   const { toast } = useToast();
@@ -41,10 +152,15 @@ const Dashboard = () => {
   const [tasks, setTasks] = useState<TaskData[]>([]);
   const [loadingTasks, setLoadingTasks] = useState(false);
   const [tasksError, setTasksError] = useState<string | null>(null);
+  const [isUpdating, setIsUpdating] = useState(false);
   
   // Selected home and task
   const [selectedHome, setSelectedHome] = useState<HomeData | null>(null);
-  const [selectedTask, setSelectedTask] = useState<TaskData | null>(null);
+  const [selectedTask, setSelectedTask] = useState<TaskModalData | null>(null);
+  
+  // Search and UI state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState('homes');
   
   // Check for subscription success parameter
   useEffect(() => {
@@ -195,22 +311,33 @@ const Dashboard = () => {
   };
   
   const handleTaskClick = (task: TaskData) => {
-    setSelectedTask(task);
+    // Navigate to the task detail page
+    navigate(`/tasks/${task.id}`);
   };
   
   const handleTaskComplete = async (taskId: string) => {
     try {
-      await api.patch(`/api/tasks/${taskId}`, { completed: true });
+      setIsUpdating(true);
       
-      // Update the tasks list
+      // Make the API call to update the task status
+      await api.patch(`/api/tasks/${taskId}`, { status: 'completed' });
+      
+      // Update the local state
       setTasks(prevTasks => 
         prevTasks.map(task => 
-          task.id === taskId ? { ...task, completed: true } : task
+          task.id === taskId 
+            ? { ...task, status: 'completed' } 
+            : task
         )
       );
       
-      // Close the modal
-      setSelectedTask(null);
+      // If the completed task is the selected task, update it
+      if (selectedTask && selectedTask.id === taskId) {
+        setSelectedTask({
+          ...selectedTask,
+          completed: true
+        });
+      }
       
       toast({
         title: "Task completed",
@@ -220,9 +347,11 @@ const Dashboard = () => {
       console.error("Error completing task:", error);
       toast({
         title: "Error",
-        description: "Failed to mark the task as completed. Please try again.",
+        description: "Failed to complete the task. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsUpdating(false);
     }
   };
   
@@ -303,6 +432,7 @@ const Dashboard = () => {
             home={home} 
             isSelected={selectedHome?.id === home.id}
             onClick={() => handleHomeSelect(home)}
+            onEdit={() => navigate(`/homes/${home.id}/edit`)}
           />
         ))}
         <div className="flex items-center justify-center h-full min-h-[200px] border border-dashed border-border rounded-lg bg-muted/20 hover:bg-muted/30 transition-colors">
@@ -368,20 +498,21 @@ const Dashboard = () => {
     }
     
     // Filter tasks by completion status
-    const upcomingTasks = tasks.filter(task => !task.completed);
-    const completedTasks = tasks.filter(task => task.completed);
+    const pendingTasks = tasks.filter(task => task.status === 'pending');
+    const completedTasks = tasks.filter(task => task.status === 'completed');
     
     return (
       <div className="space-y-6">
-        {upcomingTasks.length > 0 && (
+        {pendingTasks.length > 0 && (
           <div>
             <h3 className="text-lg font-medium mb-3">Upcoming Tasks</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {upcomingTasks.map(task => (
+              {pendingTasks.map(task => (
                 <TaskCard 
                   key={task.id} 
                   task={task} 
-                  onClick={() => handleTaskClick(task)}
+                  onComplete={() => handleTaskComplete(task.id)}
+                  onViewDetails={() => handleTaskClick(task)}
                 />
               ))}
             </div>
@@ -396,7 +527,8 @@ const Dashboard = () => {
                 <TaskCard 
                   key={task.id} 
                   task={task} 
-                  onClick={() => handleTaskClick(task)}
+                  onComplete={() => handleTaskComplete(task.id)}
+                  onViewDetails={() => handleTaskClick(task)}
                 />
               ))}
             </div>
@@ -414,45 +546,177 @@ const Dashboard = () => {
   };
   
   return (
-    <>
+    <div className="min-h-screen bg-gray-50">
       <DashboardNavbar />
-      <div className="container py-8 max-w-7xl">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+      
+      <main className="container mx-auto px-4 py-8">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-            <p className="text-muted-foreground mt-1">
-              Manage your homes and maintenance tasks
-            </p>
+            <h1 className="text-3xl font-bold text-neutral">Dashboard</h1>
+            <p className="text-neutral/70">Manage your homes and maintenance tasks</p>
           </div>
-          {renderSubscriptionStatus()}
-        </div>
-        
-        <div className="grid grid-cols-1 gap-8">
-          <section>
-            <h2 className="text-xl font-semibold mb-4">Your Homes</h2>
-            {renderHomes()}
-          </section>
           
-          {selectedHome && (
-            <section>
-              <h2 className="text-xl font-semibold mb-4">
-                Tasks for {selectedHome.name}
-              </h2>
-              {renderTasks()}
-            </section>
-          )}
+          <div className="flex items-center gap-3">
+            <div className="relative w-full md:w-64">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-neutral/50" />
+              <Input
+                type="text"
+                placeholder="Search..."
+                className="pl-10"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <Button onClick={() => navigate("/homes/add")}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Home
+            </Button>
+          </div>
         </div>
         
-        {selectedTask && (
-          <TaskModal 
-            isOpen={!!selectedTask}
-            onClose={() => setSelectedTask(null)}
-            task={selectedTask}
-            onComplete={() => handleTaskComplete(selectedTask.id)}
-          />
-        )}
-      </div>
-    </>
+        <SubscriptionStatus />
+        
+        <Tabs 
+          defaultValue="homes" 
+          value={activeTab}
+          onValueChange={setActiveTab}
+          className="mt-8"
+        >
+          <TabsList className="mb-6">
+            <TabsTrigger value="homes" className="flex items-center gap-2">
+              <HomeIcon className="h-4 w-4" />
+              <span>My Homes</span>
+            </TabsTrigger>
+            <TabsTrigger value="tasks" className="flex items-center gap-2">
+              <ClipboardList className="h-4 w-4" />
+              <span>Tasks</span>
+            </TabsTrigger>
+            <TabsTrigger value="notifications" className="flex items-center gap-2">
+              <Bell className="h-4 w-4" />
+              <span>Notifications</span>
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              <span>Settings</span>
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="homes">
+            {loadingHomes ? (
+              <HomesLoading />
+            ) : homes.length === 0 ? (
+              <HomesEmptyState onAddHome={() => navigate("/homes/add")} />
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {homes.map(home => (
+                  <HomeCard
+                    key={home.id}
+                    home={home}
+                    isSelected={home.id === selectedHome?.id}
+                    onClick={() => handleHomeSelect(home)}
+                    onEdit={() => navigate(`/homes/${home.id}/edit`)}
+                  />
+                ))}
+              </div>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="tasks">
+            {loadingTasks ? (
+              <div className="flex justify-center py-12">
+                <div className="animate-pulse space-y-4 w-full max-w-3xl">
+                  {[1, 2, 3].map(i => (
+                    <div key={i} className="h-32 bg-gray-200 rounded-lg"></div>
+                  ))}
+                </div>
+              </div>
+            ) : tasks.length === 0 ? (
+              <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
+                <ClipboardList className="h-12 w-12 mx-auto text-neutral/30 mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No tasks found</h3>
+                <p className="text-neutral/70 mb-6">
+                  {searchQuery 
+                    ? "No tasks match your search criteria." 
+                    : selectedHome 
+                      ? "This home doesn't have any tasks yet." 
+                      : "You don't have any tasks yet."}
+                </p>
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Task
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {tasks.map(task => (
+                  <TaskCard
+                    key={task.id}
+                    task={task}
+                    onComplete={() => handleTaskComplete(task.id)}
+                    onViewDetails={() => navigate(`/tasks/${task.id}`)}
+                  />
+                ))}
+              </div>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="notifications">
+            <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
+              <Bell className="h-12 w-12 mx-auto text-neutral/30 mb-4" />
+              <h3 className="text-lg font-semibold mb-2">No notifications</h3>
+              <p className="text-neutral/70">
+                You're all caught up! We'll notify you when there are updates.
+              </p>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="settings">
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <h2 className="text-xl font-semibold mb-6">Account Settings</h2>
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-lg font-medium mb-4">Profile Information</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-neutral/70 mb-1">
+                        Full Name
+                      </label>
+                      <Input defaultValue="John Doe" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-neutral/70 mb-1">
+                        Email Address
+                      </label>
+                      <Input defaultValue="john.doe@example.com" />
+                    </div>
+                  </div>
+                </div>
+                
+                <div>
+                  <h3 className="text-lg font-medium mb-4">Notification Preferences</h3>
+                  <div className="space-y-3">
+                    {/* Notification preferences would go here */}
+                  </div>
+                </div>
+                
+                <div className="pt-4 border-t border-gray-200">
+                  <Button>Save Changes</Button>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
+      </main>
+      
+      {selectedTask && (
+        <TaskModal 
+          isOpen={!!selectedTask}
+          onClose={() => setSelectedTask(null)}
+          task={selectedTask}
+          onComplete={() => handleTaskComplete(selectedTask.id)}
+        />
+      )}
+    </div>
   );
 };
 
