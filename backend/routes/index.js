@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const authRoutes = require('./auth');
 
 /**
  * @swagger
@@ -28,5 +29,8 @@ router.get('/', (req, res) => {
     message: 'HomeGuardian Backend v1'
   });
 });
+
+// Mount authentication routes
+router.use('/api/auth', authRoutes);
 
 module.exports = router; 

@@ -5,6 +5,7 @@ const morgan = require('morgan');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const mongoSanitize = require('mongo-sanitize');
+const cookieParser = require('cookie-parser');
 const path = require('path');
 
 // Import custom modules
@@ -35,6 +36,9 @@ app.use(morgan('combined', { stream: logger.stream }));
 // Body parser
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Cookie parser
+app.use(cookieParser());
 
 // Rate limiting
 const limiter = rateLimit({
