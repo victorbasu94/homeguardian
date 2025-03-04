@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -7,10 +6,10 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Mail, Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import api from '@/lib/axios';
-import { handleLoginSuccess } from '@/lib/auth';
 import { loginSchema } from '@/lib/validation';
 import AuthCard from '@/components/auth/AuthCard';
 import FormInput from '@/components/ui/FormInput';
+import { useAuth } from '@/hooks/useAuth';
 
 // Type definition inferred from the schema
 type LoginFormValues = z.infer<typeof loginSchema>;
@@ -20,6 +19,7 @@ const Login = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
+  const { login } = useAuth();
   
   // Get the redirect path from location state or default to dashboard
   const from = (location.state as any)?.from?.pathname || '/dashboard';
@@ -35,19 +35,26 @@ const Login = () => {
   
   const onSubmit = async (data: LoginFormValues) => {
     setIsLoading(true);
+    console.log('Starting login process...');
     
     try {
       // Send login request to API
+      console.log('Sending login request with email:', data.email);
       const response = await api.post('/api/auth/login', {
         email: data.email,
         password: data.password
       });
       
-      // Extract tokens from response
-      const { accessToken, refreshToken } = response.data;
+      console.log('Login response:', response.data);
       
-      // Handle successful login
-      handleLoginSuccess(accessToken, refreshToken);
+      // Extract tokens and user data from response
+      const { accessToken, user } = response.data;
+      
+      console.log('Access token received:', accessToken);
+      
+      // Handle successful login using useAuth hook
+      login(accessToken, user);
+      console.log('Login function called with token and user data');
       
       // Show success toast
       toast({
@@ -56,10 +63,12 @@ const Login = () => {
       });
       
       // Redirect to the original requested page or dashboard
+      console.log('Redirecting to:', from);
       navigate(from);
     } catch (error: any) {
       // Handle login error
       console.error('Login error:', error);
+      console.error('Error response:', error.response?.data);
       
       toast({
         title: 'Login failed',

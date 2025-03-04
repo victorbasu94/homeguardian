@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -9,6 +9,7 @@ import api from '@/lib/axios';
 import Layout from '@/components/Layout';
 import FormInput from '@/components/ui/FormInput';
 import FormSelect from '@/components/ui/FormSelect';
+import { useAuth } from '@/hooks/useAuth';
 
 // Define the validation schema for Step 1
 const step1Schema = z.object({
@@ -45,6 +46,19 @@ const Onboarding = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!isAuthenticated && !authLoading) {
+      toast({
+        title: 'Authentication required',
+        description: 'Please log in to access this page.',
+        variant: 'destructive',
+      });
+      navigate('/login');
+    }
+  }, [isAuthenticated, authLoading, navigate, toast]);
   
   // Initialize form with react-hook-form
   const {
@@ -101,23 +115,29 @@ const Onboarding = () => {
     setIsLoading(true);
     
     try {
+      // Debug: Check if token is set
+      const token = localStorage.getItem('accessToken');
+      console.log('Token before API call:', token);
+      console.log('Making API call to /api/homes with data:', data);
+      
       // Send home data to API
       await api.post('/api/homes', data);
       
       // Show success toast
       toast({
-        title: 'Home profile created',
-        description: 'Your home has been registered successfully.',
+        title: 'Home registered successfully',
+        description: 'Your home has been registered. You can now manage it from your dashboard.',
       });
       
       // Redirect to pricing page
       navigate('/pricing');
     } catch (error: any) {
-      console.error('Error creating home:', error);
+      console.error('Error registering home:', error);
+      console.error('Error response:', error.response?.data);
       
       toast({
-        title: 'Failed to create home profile',
-        description: error.response?.data?.message || 'An error occurred. Please try again.',
+        title: 'Registration failed',
+        description: error.response?.data?.message || 'An error occurred during home registration. Please try again.',
         variant: 'destructive',
       });
     } finally {

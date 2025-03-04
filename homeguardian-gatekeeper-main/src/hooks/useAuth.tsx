@@ -25,34 +25,56 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   
-  // Check for existing token on mount
+  // Initialize auth state from localStorage on mount
   useEffect(() => {
-    const checkAuth = async () => {
-      const token = localStorage.getItem('accessToken');
-      
-      if (token) {
-        try {
-          // Set the token in axios headers
-          setAccessToken(token);
+    const initializeAuth = () => {
+      try {
+        // Check for token in localStorage
+        const storedToken = localStorage.getItem('accessToken');
+        
+        if (storedToken) {
+          console.log('Found stored token on initialization:', storedToken);
+          
+          // Set token in axios headers
+          setAccessToken(storedToken);
           
           // Fetch user data
-          const response = await api.get('/api/auth/me');
-          setUser(response.data);
-        } catch (error) {
-          console.error('Auth check failed:', error);
-          localStorage.removeItem('accessToken');
-          clearAccessToken();
+          const fetchUser = async () => {
+            try {
+              const response = await api.get('/api/auth/me');
+              if (response.data.user) {
+                console.log('User data fetched successfully:', response.data.user);
+                setUser(response.data.user);
+              }
+            } catch (error) {
+              console.error('Error fetching user data:', error);
+              // If token is invalid, clear it
+              localStorage.removeItem('accessToken');
+              clearAccessToken();
+              setUser(null);
+            }
+          };
+          
+          fetchUser();
+        } else {
+          console.log('No stored token found on initialization');
+          setUser(null);
         }
+      } catch (error) {
+        console.error('Error initializing auth:', error);
+        setUser(null);
+      } finally {
+        setIsLoading(false);
       }
-      
-      setIsLoading(false);
     };
     
-    checkAuth();
+    initializeAuth();
   }, []);
   
   // Login function
   const login = useCallback((token: string, userData: User) => {
+    console.log('Login called with token:', token);
+    
     // Save token to localStorage
     localStorage.setItem('accessToken', token);
     
@@ -61,6 +83,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     
     // Set user data
     setUser(userData);
+    
+    console.log('Login completed, user set:', userData);
   }, []);
   
   // Logout function

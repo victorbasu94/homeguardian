@@ -26,6 +26,9 @@ if (typeof window !== 'undefined') {
 // Function to set the access token
 export const setAccessToken = (token: string) => {
   accessToken = token;
+  // Also set it directly in the headers for immediate use
+  api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+  console.log('Access token set:', token);
 };
 
 // Function to get the current access token
@@ -43,12 +46,30 @@ if (typeof window !== 'undefined') {
   (window as any).getAccessToken = getAccessToken;
 }
 
-// Request interceptor to add auth header
+// Add request interceptor
 api.interceptors.request.use(
   (config) => {
+    // Add authorization header if we have a token
     if (accessToken) {
+      console.log('Request with token:', accessToken);
       config.headers.Authorization = `Bearer ${accessToken}`;
+      
+      // Debug: Check if the header was actually set
+      console.log('Authorization header set:', config.headers.Authorization);
+    } else {
+      console.log('Request without token');
+      
+      // Debug: Check if there's a token in localStorage that wasn't set in memory
+      const storedToken = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+      if (storedToken) {
+        console.log('Found token in localStorage but not in memory:', storedToken);
+        // Set the token in memory and in the request
+        accessToken = storedToken;
+        config.headers.Authorization = `Bearer ${storedToken}`;
+        console.log('Authorization header set from localStorage:', config.headers.Authorization);
+      }
     }
+    
     return config;
   },
   (error) => {

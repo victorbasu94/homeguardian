@@ -35,18 +35,25 @@ const Register = () => {
   
   const onSubmit = async (data: RegisterFormValues) => {
     setIsLoading(true);
+    console.log('Starting registration process...');
     
     try {
       // Send registration request to API
+      console.log('Sending registration request with email:', data.email);
       const response = await api.post('/api/auth/register', {
         email: data.email,
         password: data.password
       });
       
+      console.log('Registration response:', response.data);
+      
       // Handle automatic login
       if (response.data.accessToken) {
+        console.log('Access token received:', response.data.accessToken);
+        
         // Store the token and user data
         login(response.data.accessToken, response.data.user);
+        console.log('Login function called with token and user data');
         
         // Show success toast
         toast({
@@ -55,8 +62,10 @@ const Register = () => {
         });
         
         // Redirect to onboarding page
+        console.log('Redirecting to onboarding page...');
         navigate('/onboarding');
       } else {
+        console.log('No access token in response, redirecting to login');
         // Fallback to login page if auto-login fails
         toast({
           title: 'Registration successful',
@@ -68,6 +77,7 @@ const Register = () => {
     } catch (error: any) {
       // Handle registration error
       console.error('Registration error:', error);
+      console.error('Error response:', error.response?.data);
       
       toast({
         title: 'Registration failed',
