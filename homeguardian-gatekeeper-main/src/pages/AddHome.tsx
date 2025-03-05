@@ -1,1286 +1,951 @@
-import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { useToast } from "@/components/ui/use-toast";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Switch } from "@/components/ui/switch";
-import { ArrowLeft, Home as HomeIcon, MapPin, Calendar, Ruler, Thermometer, Droplets, Construction, Layers, Warehouse, Loader2 } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
-import api from "@/lib/axios";
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { useMaintenance } from "@/contexts/MaintenanceContext";
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { z } from 'zod';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Home, MapPin, Calendar, Ruler, ArrowRight, ArrowLeft, CheckCircle, Shield, Layers, Thermometer, Wrench, Droplets, Construction, Trees, Warehouse, Clock } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Card, CardContent } from '@/components/ui/card';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Progress } from '@/components/ui/progress';
+import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
+import api from '@/lib/axios';
 
-interface AddHomeProps {
-  isEditing?: boolean;
-}
+// Step 1: Basic Home Information Schema
+const homeBasicSchema = z.object({
+  name: z.string().min(2, 'Home name must be at least 2 characters'),
+  home_type: z.enum(['single_family', 'apartment', 'townhouse', 'condo', 'mobile_home', 'other'], {
+    required_error: 'Please select a home type',
+  }),
+  address: z.string().min(5, 'Please enter a valid address'),
+  city: z.string().min(2, 'City must be at least 2 characters'),
+  state: z.string().min(2, 'State must be at least 2 characters'),
+  zipCode: z.string().min(5, 'Please enter a valid ZIP code'),
+});
 
-// Function to generate maintenance plan using OpenAI API
-const generateMaintenancePlan = async (homeData: any) => {
-  try {
-    const response = await api.post('/api/tasks/generate-plan', homeData);
-    return response.data;
-  } catch (error) {
-    console.error('Error calling OpenAI API:', error);
-    throw error;
-  }
-};
+// Step 2: Mandatory Home Details Schema
+const mandatoryDetailsSchema = z.object({
+  year_built: z.string()
+    .min(1, { message: 'Year built is required' })
+    .refine(val => !isNaN(Number(val)), { message: 'Year must be a number' })
+    .refine(val => Number(val) >= 1800 && Number(val) <= new Date().getFullYear(), {
+      message: `Year must be between 1800 and ${new Date().getFullYear()}`,
+    }),
+  square_footage: z.string()
+    .min(1, { message: 'Square footage is required' })
+    .refine(val => !isNaN(Number(val)), { message: 'Square footage must be a number' })
+    .refine(val => Number(val) > 0, { message: 'Square footage must be greater than 0' }),
+  number_of_stories: z.string()
+    .min(1, { message: 'Number of stories is required' })
+    .refine(val => !isNaN(Number(val)), { message: 'Number of stories must be a number' })
+    .refine(val => Number(val) > 0, { message: 'Number of stories must be greater than 0' }),
+  roof_type: z.enum(['asphalt_shingles', 'metal', 'tile', 'flat', 'slate', 'wood_shingles', 'other'], {
+    required_error: 'Roof type is required'
+  }),
+  hvac_type: z.enum(['central_hvac', 'radiator', 'window_ac', 'heat_pump', 'ductless_mini_split', 'boiler', 'other'], {
+    required_error: 'HVAC type is required'
+  }),
+});
 
-const AddHome = ({ isEditing = false }: AddHomeProps) => {
-  const navigate = useNavigate();
+// Step 3: Optional Home Details Schema
+const optionalDetailsSchema = z.object({
+  exterior_material: z.enum(['brick', 'vinyl_siding', 'wood', 'stucco', 'fiber_cement', 'stone', 'aluminum', 'other']).optional(),
+  foundation_type: z.enum(['slab', 'crawlspace', 'basement', 'pier_and_beam', 'other']).optional(),
+  windows_count: z.string().optional(),
+  windows_type: z.enum(['single_pane', 'double_pane', 'triple_pane', 'other']).optional(),
+  windows_year: z.string().optional(),
+  plumbing_age: z.string().optional(),
+  plumbing_material: z.enum(['copper', 'pvc', 'pex', 'galvanized', 'cast_iron', 'other']).optional(),
+  has_yard: z.boolean().optional(),
+  yard_size: z.enum(['small', 'medium', 'large']).optional(),
+  yard_features: z.string().optional(),
+  garage_type: z.enum(['attached', 'detached', 'none']).optional(),
+  garage_size: z.enum(['1_car', '2_car', '3_car', 'other']).optional(),
+  recent_renovations: z.string().optional(),
+  occupancy: z.enum(['primary_residence', 'rental', 'vacation_home', 'other']).optional(),
+  appliances: z.string().optional(),
+});
+
+// Step 4: Maintenance Preferences Schema
+const maintenancePrefsSchema = z.object({
+  maintenance_level: z.enum(['minimal', 'standard', 'comprehensive'], {
+    required_error: 'Please select a maintenance level',
+  }),
+  reminder_frequency: z.enum(['weekly', 'biweekly', 'monthly'], {
+    required_error: 'Please select a reminder frequency',
+  }),
+  notes: z.string().optional(),
+});
+
+// Combined schema types
+type HomeBasicFormValues = z.infer<typeof homeBasicSchema>;
+type MandatoryDetailsFormValues = z.infer<typeof mandatoryDetailsSchema>;
+type OptionalDetailsFormValues = z.infer<typeof optionalDetailsSchema>;
+type MaintenancePrefsFormValues = z.infer<typeof maintenancePrefsSchema>;
+
+// Combined form data
+interface CombinedFormData extends HomeBasicFormValues, MandatoryDetailsFormValues, OptionalDetailsFormValues, MaintenancePrefsFormValues {}
+
+const AddHome: React.FC = () => {
+  const [step, setStep] = useState<number>(1);
+  const [formData, setFormData] = useState<Partial<CombinedFormData>>({});
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
   const { user } = useAuth();
-  const { homeId } = useParams<{ homeId: string }>();
-  const { setMaintenanceTasks, setIsLoading, setError } = useMaintenance();
   
-  // Form state
-  const [name, setName] = useState("");
-  const [type, setType] = useState("");
-  const [address, setAddress] = useState("");
-  const [city, setCity] = useState("");
-  const [state, setState] = useState("");
-  const [zipCode, setZipCode] = useState("");
-  const [yearBuilt, setYearBuilt] = useState("");
-  const [squareFeet, setSquareFeet] = useState("");
-  const [bedrooms, setBedrooms] = useState("");
-  const [bathrooms, setBathrooms] = useState("");
-  const [roofType, setRoofType] = useState("");
-  const [hvacType, setHvacType] = useState("");
-  const [maintenanceLevel, setMaintenanceLevel] = useState("");
-  const [reminderFrequency, setReminderFrequency] = useState("");
-  const [notes, setNotes] = useState("");
+  // Step 1 form
+  const {
+    register: registerStep1,
+    handleSubmit: handleSubmitStep1,
+    formState: { errors: errorsStep1 },
+    setValue: setValueStep1,
+  } = useForm<HomeBasicFormValues>({
+    resolver: zodResolver(homeBasicSchema),
+    defaultValues: {
+      name: formData.name || '',
+      home_type: formData.home_type || undefined,
+      address: formData.address || '',
+      city: formData.city || '',
+      state: formData.state || '',
+      zipCode: formData.zipCode || '',
+    },
+  });
   
-  // New form state variables
-  const [numberOfStories, setNumberOfStories] = useState("");
-  const [exteriorMaterial, setExteriorMaterial] = useState("");
-  const [foundationType, setFoundationType] = useState("");
-  const [basementType, setBasementType] = useState("");
-  const [atticType, setAtticType] = useState("");
-  const [windowsCount, setWindowsCount] = useState("");
-  const [windowType, setWindowType] = useState("");
-  const [plumbingType, setPlumbingType] = useState("");
-  const [plumbingAge, setPlumbingAge] = useState("");
-  const [electricalPanelAge, setElectricalPanelAge] = useState("");
-  const [electricalPanelType, setElectricalPanelType] = useState("");
-  const [hasGarage, setHasGarage] = useState(false);
-  const [garageType, setGarageType] = useState("");
-  const [hasPool, setHasPool] = useState(false);
-  const [poolType, setPoolType] = useState("");
-  const [hasSolarPanels, setHasSolarPanels] = useState(false);
-  const [solarPanelType, setSolarPanelType] = useState("");
-  const [hasBackupGenerator, setHasBackupGenerator] = useState(false);
-  const [generatorType, setGeneratorType] = useState("");
-  const [hasIrrigationSystem, setHasIrrigationSystem] = useState(false);
-  const [irrigationType, setIrrigationType] = useState("");
-  const [hasSecuritySystem, setHasSecuritySystem] = useState(false);
-  const [securitySystemType, setSecuritySystemType] = useState("");
-  const [hasSmartHomeDevices, setHasSmartHomeDevices] = useState(false);
-  const [smartHomeDeviceTypes, setSmartHomeDeviceTypes] = useState<string[]>([]);
+  // Step 2 form
+  const {
+    register: registerStep2,
+    handleSubmit: handleSubmitStep2,
+    formState: { errors: errorsStep2 },
+    setValue: setValueStep2,
+    watch: watchStep2,
+  } = useForm<MandatoryDetailsFormValues>({
+    resolver: zodResolver(mandatoryDetailsSchema),
+    defaultValues: {
+      year_built: formData.year_built || '',
+      square_footage: formData.square_footage || '',
+      number_of_stories: formData.number_of_stories || '',
+      roof_type: formData.roof_type || undefined,
+      hvac_type: formData.hvac_type || undefined,
+    },
+  });
   
-  const [loading, setLoading] = useState(false);
-  const [fetchingHome, setFetchingHome] = useState(false);
-  const [generatingPlan, setGeneratingPlan] = useState(false);
-  const [planError, setPlanError] = useState<string | null>(null);
+  // Step 3 form
+  const {
+    register: registerStep3,
+    handleSubmit: handleSubmitStep3,
+    formState: { errors: errorsStep3 },
+    setValue: setValueStep3,
+    watch: watchStep3,
+  } = useForm<OptionalDetailsFormValues>({
+    resolver: zodResolver(optionalDetailsSchema),
+    defaultValues: {
+      exterior_material: formData.exterior_material || undefined,
+      foundation_type: formData.foundation_type || undefined,
+      windows_count: formData.windows_count || '',
+      windows_type: formData.windows_type || undefined,
+      windows_year: formData.windows_year || '',
+      plumbing_age: formData.plumbing_age || '',
+      plumbing_material: formData.plumbing_material || undefined,
+      has_yard: formData.has_yard || false,
+      yard_size: formData.yard_size || undefined,
+      yard_features: formData.yard_features || '',
+      garage_type: formData.garage_type || undefined,
+      garage_size: formData.garage_size || undefined,
+      recent_renovations: formData.recent_renovations || '',
+      occupancy: formData.occupancy || undefined,
+      appliances: formData.appliances || '',
+    },
+  });
   
-  // Fetch home data if editing
-  useEffect(() => {
-    if (isEditing && homeId) {
-      const fetchHomeData = async () => {
-        setFetchingHome(true);
-        try {
-          const response = await api.get(`/api/homes/${homeId}`);
-          const homeData = response.data;
-          
-          // Parse location into components
-          const locationParts = homeData.location?.split(', ') || [];
-          const addressParts = locationParts[0] || '';
-          const cityPart = locationParts[1] || '';
-          const stateZipParts = locationParts[2]?.split(' ') || [];
-          const statePart = stateZipParts[0] || '';
-          const zipPart = stateZipParts[1] || '';
-          
-          // Set form values
-          setName(homeData.name || '');
-          setType(homeData.type || '');
-          setAddress(addressParts);
-          setCity(cityPart);
-          setState(statePart);
-          setZipCode(zipPart);
-          setYearBuilt(homeData.year_built?.toString() || '');
-          setSquareFeet(homeData.square_footage?.toString() || '');
-          setBedrooms(homeData.bedrooms?.toString() || '');
-          setBathrooms(homeData.bathrooms?.toString() || '');
-          setRoofType(homeData.roof_type || '');
-          setHvacType(homeData.hvac_type || '');
-          setMaintenanceLevel(homeData.maintenance_level || '');
-          setReminderFrequency(homeData.reminder_frequency || '');
-          setNotes(homeData.notes || '');
-          
-          // Set new form state variables
-          setNumberOfStories(homeData.number_of_stories || '');
-          setExteriorMaterial(homeData.exterior_material || '');
-          setFoundationType(homeData.foundation_type || '');
-          setBasementType(homeData.basement_type || '');
-          setAtticType(homeData.attic_type || '');
-          setWindowsCount(homeData.windows_count || '');
-          setWindowType(homeData.window_type || '');
-          setPlumbingType(homeData.plumbing_type || '');
-          setPlumbingAge(homeData.plumbing_age || '');
-          setElectricalPanelAge(homeData.electrical_panel_age || '');
-          setElectricalPanelType(homeData.electrical_panel_type || '');
-          setHasGarage(homeData.has_garage || false);
-          setGarageType(homeData.garage_type || '');
-          setHasPool(homeData.has_pool || false);
-          setPoolType(homeData.pool_type || '');
-          setHasSolarPanels(homeData.has_solar_panels || false);
-          setSolarPanelType(homeData.solar_panel_type || '');
-          setHasBackupGenerator(homeData.has_backup_generator || false);
-          setGeneratorType(homeData.generator_type || '');
-          setHasIrrigationSystem(homeData.has_irrigation_system || false);
-          setIrrigationType(homeData.irrigation_type || '');
-          setHasSecuritySystem(homeData.has_security_system || false);
-          setSecuritySystemType(homeData.security_system_type || '');
-          setHasSmartHomeDevices(homeData.has_smart_home_devices || false);
-          setSmartHomeDeviceTypes(homeData.smart_home_device_types || []);
-        } catch (error) {
-          console.error("Error fetching home data:", error);
-          toast({
-            title: "Error",
-            description: "Failed to load home data. Please try again.",
-            variant: "destructive",
-          });
-          navigate("/dashboard");
-        } finally {
-          setFetchingHome(false);
-        }
-      };
-      
-      fetchHomeData();
-    }
-  }, [isEditing, homeId, navigate, toast]);
+  // Step 4 form
+  const {
+    register: registerStep4,
+    handleSubmit: handleSubmitStep4,
+    formState: { errors: errorsStep4 },
+    setValue: setValueStep4,
+    watch: watchStep4,
+  } = useForm<MaintenancePrefsFormValues>({
+    resolver: zodResolver(maintenancePrefsSchema),
+    defaultValues: {
+      maintenance_level: formData.maintenance_level || undefined,
+      reminder_frequency: formData.reminder_frequency || undefined,
+      notes: formData.notes || '',
+    },
+  });
   
-  // Current year for validation
-  const currentYear = new Date().getFullYear();
+  // Watch values for radio buttons
+  const maintenanceLevel = watchStep4('maintenance_level');
+  const reminderFrequency = watchStep4('reminder_frequency');
   
-  // Home type options
-  const homeTypes = [
-    { value: "house", label: "House" },
-    { value: "apartment", label: "Apartment" },
-    { value: "condo", label: "Condo" },
-    { value: "townhouse", label: "Townhouse" },
-    { value: "other", label: "Other" }
-  ];
+  // Handle step 1 submission
+  const onSubmitStep1 = (data: HomeBasicFormValues) => {
+    setFormData({ ...formData, ...data });
+    setStep(2);
+    window.scrollTo(0, 0);
+  };
   
-  // Roof type options
-  const roofTypes = [
-    { value: "asphalt", label: "Asphalt Shingles" },
-    { value: "metal", label: "Metal Roof" },
-    { value: "tile", label: "Tile Roof" },
-    { value: "slate", label: "Slate Roof" },
-    { value: "wood", label: "Wood Shingles" },
-    { value: "flat", label: "Flat/Built-up Roof" }
-  ];
+  // Handle step 2 submission
+  const onSubmitStep2 = (data: MandatoryDetailsFormValues) => {
+    setFormData({ ...formData, ...data });
+    setStep(3);
+    window.scrollTo(0, 0);
+  };
   
-  // HVAC type options
-  const hvacTypes = [
-    { value: "central", label: "Central Air" },
-    { value: "window", label: "Window Units" },
-    { value: "split", label: "Split System" },
-    { value: "heat_pump", label: "Heat Pump" },
-    { value: "radiant", label: "Radiant Heating" },
-    { value: "geothermal", label: "Geothermal" }
-  ];
+  // Handle step 3 submission
+  const onSubmitStep3 = (data: OptionalDetailsFormValues) => {
+    setFormData({ ...formData, ...data });
+    setStep(4);
+    window.scrollTo(0, 0);
+  };
   
-  // New option arrays
-  const exteriorMaterialTypes = [
-    { value: "vinyl", label: "Vinyl Siding" },
-    { value: "wood", label: "Wood Siding" },
-    { value: "brick", label: "Brick" },
-    { value: "stucco", label: "Stucco" },
-    { value: "fiber_cement", label: "Fiber Cement" },
-    { value: "stone", label: "Stone" },
-    { value: "aluminum", label: "Aluminum Siding" },
-    { value: "other", label: "Other" }
-  ];
-  
-  const foundationTypes = [
-    { value: "concrete_slab", label: "Concrete Slab" },
-    { value: "crawl_space", label: "Crawl Space" },
-    { value: "basement", label: "Full Basement" },
-    { value: "pier_beam", label: "Pier and Beam" },
-    { value: "other", label: "Other" }
-  ];
-  
-  const basementTypes = [
-    { value: "none", label: "No Basement" },
-    { value: "unfinished", label: "Unfinished" },
-    { value: "finished", label: "Finished" },
-    { value: "partially_finished", label: "Partially Finished" },
-    { value: "walkout", label: "Walkout" }
-  ];
-  
-  const atticTypes = [
-    { value: "none", label: "No Attic" },
-    { value: "unfinished", label: "Unfinished" },
-    { value: "finished", label: "Finished" },
-    { value: "partially_finished", label: "Partially Finished" }
-  ];
-  
-  const windowTypes = [
-    { value: "single_pane", label: "Single Pane" },
-    { value: "double_pane", label: "Double Pane" },
-    { value: "triple_pane", label: "Triple Pane" },
-    { value: "low_e", label: "Low-E Glass" },
-    { value: "mixed", label: "Mixed Types" }
-  ];
-  
-  const plumbingTypes = [
-    { value: "copper", label: "Copper" },
-    { value: "pex", label: "PEX" },
-    { value: "galvanized", label: "Galvanized" },
-    { value: "pvc", label: "PVC/CPVC" },
-    { value: "mixed", label: "Mixed Types" }
-  ];
-  
-  const electricalPanelTypes = [
-    { value: "circuit_breaker", label: "Circuit Breaker" },
-    { value: "fuse_box", label: "Fuse Box" },
-    { value: "smart_panel", label: "Smart Panel" }
-  ];
-  
-  const garageTypes = [
-    { value: "attached", label: "Attached" },
-    { value: "detached", label: "Detached" },
-    { value: "carport", label: "Carport" },
-    { value: "none", label: "None" }
-  ];
-  
-  const poolTypes = [
-    { value: "inground", label: "In-ground" },
-    { value: "above_ground", label: "Above Ground" },
-    { value: "hot_tub", label: "Hot Tub/Spa" },
-    { value: "none", label: "None" }
-  ];
-  
-  const solarPanelTypes = [
-    { value: "roof_mounted", label: "Roof Mounted" },
-    { value: "ground_mounted", label: "Ground Mounted" },
-    { value: "none", label: "None" }
-  ];
-  
-  const generatorTypes = [
-    { value: "standby", label: "Standby (Permanent)" },
-    { value: "portable", label: "Portable" },
-    { value: "none", label: "None" }
-  ];
-  
-  const irrigationTypes = [
-    { value: "in_ground", label: "In-ground Sprinkler System" },
-    { value: "drip", label: "Drip Irrigation" },
-    { value: "manual", label: "Manual/Hose-based" },
-    { value: "none", label: "None" }
-  ];
-  
-  const securitySystemTypes = [
-    { value: "monitored", label: "Professionally Monitored" },
-    { value: "self_monitored", label: "Self-Monitored" },
-    { value: "local_alarm", label: "Local Alarm Only" },
-    { value: "none", label: "None" }
-  ];
-  
-  const smartHomeDeviceOptions = [
-    { value: "thermostat", label: "Smart Thermostat" },
-    { value: "doorbell", label: "Smart Doorbell" },
-    { value: "locks", label: "Smart Locks" },
-    { value: "lighting", label: "Smart Lighting" },
-    { value: "speakers", label: "Smart Speakers/Assistants" },
-    { value: "appliances", label: "Smart Appliances" },
-    { value: "cameras", label: "Security Cameras" },
-    { value: "water_sensors", label: "Water Leak Sensors" },
-    { value: "smoke_detectors", label: "Smart Smoke/CO Detectors" }
-  ];
-  
-  // Handle form submission
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Validate form - mandatory fields
-    if (!name || !type || !address || !city || !state || !zipCode || !yearBuilt || !squareFeet || 
-        !bedrooms || !bathrooms || !roofType || !hvacType || !numberOfStories || !maintenanceLevel || !reminderFrequency) {
-      toast({
-        title: "Missing fields",
-        description: "Please fill in all required fields.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    // Validate year built
-    const yearBuiltNum = parseInt(yearBuilt);
-    if (isNaN(yearBuiltNum) || yearBuiltNum < 1800 || yearBuiltNum > currentYear) {
-      toast({
-        title: "Invalid year",
-        description: `Year built must be between 1800 and ${currentYear}.`,
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    // Validate square feet
-    const squareFeetNum = parseInt(squareFeet);
-    if (isNaN(squareFeetNum) || squareFeetNum <= 0) {
-      toast({
-        title: "Invalid square footage",
-        description: "Square footage must be a positive number.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    // Validate bedrooms and bathrooms
-    const bedroomsNum = parseInt(bedrooms);
-    const bathroomsNum = parseInt(bathrooms);
-    if (isNaN(bedroomsNum) || bedroomsNum < 0 || isNaN(bathroomsNum) || bathroomsNum < 0) {
-      toast({
-        title: "Invalid rooms",
-        description: "Bedrooms and bathrooms must be valid numbers.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    // Validate number of stories
-    const numberOfStoriesNum = parseInt(numberOfStories);
-    if (isNaN(numberOfStoriesNum) || numberOfStoriesNum <= 0) {
-      toast({
-        title: "Invalid number of stories",
-        description: "Number of stories must be a positive number.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    // Validate windows count if provided
-    if (windowsCount) {
-      const windowsCountNum = parseInt(windowsCount);
-      if (isNaN(windowsCountNum) || windowsCountNum < 0) {
-        toast({
-          title: "Invalid windows count",
-          description: "Windows count must be a valid number.",
-          variant: "destructive",
-        });
-        return;
-      }
-    }
-    
-    // Validate plumbing age if provided
-    if (plumbingAge) {
-      const plumbingAgeNum = parseInt(plumbingAge);
-      if (isNaN(plumbingAgeNum) || plumbingAgeNum < 0 || plumbingAgeNum > 150) {
-        toast({
-          title: "Invalid plumbing age",
-          description: "Plumbing age must be between 0 and 150 years.",
-          variant: "destructive",
-        });
-        return;
-      }
-    }
-    
-    // Validate electrical panel age if provided
-    if (electricalPanelAge) {
-      const electricalPanelAgeNum = parseInt(electricalPanelAge);
-      if (isNaN(electricalPanelAgeNum) || electricalPanelAgeNum < 0 || electricalPanelAgeNum > 150) {
-        toast({
-          title: "Invalid electrical panel age",
-          description: "Electrical panel age must be between 0 and 150 years.",
-          variant: "destructive",
-        });
-        return;
-      }
-    }
-    
-    setLoading(true);
+  // Handle step 4 submission (final)
+  const onSubmitStep4 = async (data: MaintenancePrefsFormValues) => {
+    const completeFormData = { ...formData, ...data } as CombinedFormData;
+    setIsSubmitting(true);
     
     try {
-      // Prepare home data
-      const homeData = {
-        name,
-        type,
-        location: `${address}, ${city}, ${state} ${zipCode}`,
-        year_built: yearBuiltNum,
-        square_footage: squareFeetNum,
-        bedrooms: bedroomsNum,
-        bathrooms: bathroomsNum,
-        roof_type: roofType,
-        hvac_type: hvacType,
-        maintenance_level: maintenanceLevel,
-        reminder_frequency: reminderFrequency,
-        notes,
+      // Call API to create home
+      await api.post('/api/homes', {
+        name: completeFormData.name || `My ${completeFormData.home_type.replace('_', ' ')} Home`,
+        home_type: completeFormData.home_type,
+        location: `${completeFormData.address}, ${completeFormData.city}, ${completeFormData.state} ${completeFormData.zipCode}`,
+        year_built: Number(completeFormData.year_built),
+        square_footage: Number(completeFormData.square_footage),
+        number_of_stories: Number(completeFormData.number_of_stories),
+        roof_type: completeFormData.roof_type,
+        hvac_type: completeFormData.hvac_type,
+        exterior_material: completeFormData.exterior_material || undefined,
+        foundation_type: completeFormData.foundation_type || undefined,
+        windows: completeFormData.windows_count || completeFormData.windows_type || completeFormData.windows_year ? {
+          count: completeFormData.windows_count ? Number(completeFormData.windows_count) : undefined,
+          type: completeFormData.windows_type || undefined,
+          year_installed: completeFormData.windows_year ? Number(completeFormData.windows_year) : undefined
+        } : undefined,
+        plumbing: completeFormData.plumbing_age || completeFormData.plumbing_material ? {
+          age: completeFormData.plumbing_age ? Number(completeFormData.plumbing_age) : undefined,
+          material: completeFormData.plumbing_material || undefined
+        } : undefined,
+        yard_garden: completeFormData.has_yard ? {
+          exists: completeFormData.has_yard,
+          size: completeFormData.yard_size || undefined,
+          features: completeFormData.yard_features ? completeFormData.yard_features.split(',').map(f => f.trim()) : []
+        } : undefined,
+        garage: completeFormData.garage_type && completeFormData.garage_type !== 'none' ? {
+          type: completeFormData.garage_type,
+          size: completeFormData.garage_size || undefined
+        } : undefined,
+        recent_renovations: completeFormData.recent_renovations ? 
+          [{
+            type: completeFormData.recent_renovations,
+            year: new Date().getFullYear()
+          }] : undefined,
+        occupancy: completeFormData.occupancy || undefined,
+        appliances: completeFormData.appliances ? 
+          completeFormData.appliances.split(',').map(a => ({
+            name: a.trim(),
+            age: 0
+          })) : undefined,
         user_id: user?.id,
-        number_of_stories: numberOfStoriesNum,
-        exterior_material: exteriorMaterial,
-        foundation_type: foundationType,
-        basement_type: basementType,
-        attic_type: atticType,
-        windows_count: windowsCount,
-        window_type: windowType,
-        plumbing_type: plumbingType,
-        plumbing_age: plumbingAge,
-        electrical_panel_age: electricalPanelAge,
-        electrical_panel_type: electricalPanelType,
-        has_garage: hasGarage,
-        garage_type: garageType,
-        has_pool: hasPool,
-        pool_type: poolType,
-        has_solar_panels: hasSolarPanels,
-        solar_panel_type: solarPanelType,
-        has_backup_generator: hasBackupGenerator,
-        generator_type: generatorType,
-        has_irrigation_system: hasIrrigationSystem,
-        irrigation_type: irrigationType,
-        has_security_system: hasSecuritySystem,
-        security_system_type: securitySystemType,
-        has_smart_home_devices: hasSmartHomeDevices,
-        smart_home_device_types: smartHomeDeviceTypes
-      };
+        maintenance_level: completeFormData.maintenance_level,
+        reminder_frequency: completeFormData.reminder_frequency,
+        notes: completeFormData.notes
+      });
       
-      if (isEditing && homeId) {
-        // Update existing home
-        await api.put(`/api/homes/${homeId}`, homeData);
-        
-        // Show success message
-        toast({
-          title: "Home updated",
-          description: "Your home has been successfully updated.",
-        });
-      } else {
-        // Create new home
-        await api.post("/api/homes", homeData);
-        
-        // Show success message
-        toast({
-          title: "Home added",
-          description: "Your home has been successfully added.",
-        });
-      }
-      
-      // Generate maintenance plan using OpenAI
-      setGeneratingPlan(true);
-      setPlanError(null);
-      setIsLoading(true); // Set loading state in context
-      
-      try {
-        // Call the OpenAI service with the home data
-        const plan = await generateMaintenancePlan({
-          name,
-          type,
-          address,
-          city,
-          state,
-          zipCode,
-          yearBuilt,
-          squareFeet,
-          bedrooms,
-          bathrooms,
-          roofType,
-          hvacType,
-          numberOfStories,
-          exteriorMaterial,
-          foundationType,
-          hasPool,
-          poolType,
-          hasSolarPanels,
-          hasGarage
-        });
-        
-        if (plan && plan.maintenancePlan && Array.isArray(plan.maintenancePlan)) {
-          setMaintenanceTasks(plan.maintenancePlan); // Store tasks in context
-          // Navigate to dashboard after successful plan generation
-          navigate("/dashboard");
-        } else {
-          throw new Error('Invalid maintenance plan format');
-        }
-      } catch (error) {
-        console.error('Error generating maintenance plan:', error);
-        setPlanError('Failed to generate maintenance plan. Please try again later.');
-        setError('Failed to generate maintenance plan. Please try again later.'); // Set error in context
-        
-        // Still navigate to dashboard after a delay
-        setTimeout(() => {
-          navigate("/dashboard");
-        }, 3000);
-      } finally {
-        setGeneratingPlan(false);
-        setIsLoading(false); // Clear loading state in context
-      }
-      
-    } catch (error) {
-      console.error(`Error ${isEditing ? 'updating' : 'adding'} home:`, error);
-      
+      // Show success toast
       toast({
-        title: "Error",
-        description: `Failed to ${isEditing ? 'update' : 'add'} your home. Please try again.`,
-        variant: "destructive",
+        title: 'Home added successfully',
+        description: 'Your additional home has been set up and is ready to be managed.',
+      });
+      
+      // Navigate to dashboard
+      navigate('/dashboard');
+    } catch (error: any) {
+      console.error('Error adding home:', error);
+      
+      // Show error toast
+      toast({
+        title: 'Failed to add home',
+        description: error.response?.data?.message || 'An error occurred. Please try again.',
+        variant: 'destructive',
       });
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
   };
   
+  // Go back to previous step
+  const handleBack = () => {
+    if (step > 1) {
+      setStep(step - 1);
+      window.scrollTo(0, 0);
+    }
+  };
+  
+  // Skip optional details
+  const handleSkip = () => {
+    // If on optional fields page, go to next page
+    if (step === 3) {
+      setStep(4);
+      window.scrollTo(0, 0);
+    }
+  };
+  
+  // Set maintenance level
+  const handleMaintenanceLevelChange = (value: string) => {
+    setValueStep4('maintenance_level', value as 'minimal' | 'standard' | 'comprehensive');
+  };
+  
+  // Set reminder frequency
+  const handleReminderFrequencyChange = (value: string) => {
+    setValueStep4('reminder_frequency', value as 'weekly' | 'biweekly' | 'monthly');
+  };
+
+  // Define home type options
+  const homeTypes = [
+    { value: "single_family", label: "Single Family Home" },
+    { value: "apartment", label: "Apartment" },
+    { value: "condo", label: "Condominium" },
+    { value: "townhouse", label: "Townhouse" },
+    { value: "mobile_home", label: "Mobile Home" },
+    { value: "other", label: "Other" }
+  ];
+  
+  // Define roof type options
+  const roofTypes = [
+    { value: 'asphalt_shingles', label: 'Asphalt Shingles' },
+    { value: 'metal', label: 'Metal Roof' },
+    { value: 'tile', label: 'Tile Roof' },
+    { value: 'flat', label: 'Flat/Built-up Roof' },
+    { value: 'slate', label: 'Slate Roof' },
+    { value: 'wood_shingles', label: 'Wood Shingles' },
+    { value: 'other', label: 'Other' },
+  ];
+  
+  // Define HVAC type options
+  const hvacTypes = [
+    { value: 'central_hvac', label: 'Central HVAC' },
+    { value: 'radiator', label: 'Radiator Heating' },
+    { value: 'window_ac', label: 'Window AC Units' },
+    { value: 'heat_pump', label: 'Heat Pump' },
+    { value: 'ductless_mini_split', label: 'Ductless Mini-Split' },
+    { value: 'boiler', label: 'Boiler System' },
+    { value: 'other', label: 'Other' },
+  ];
+
   return (
-    <div className="min-h-screen bg-softWhite">
-      <div className="container mx-auto py-12 px-4">
-        <div className="max-w-3xl mx-auto">
-          <div className="flex items-center justify-between mb-8">
-            <Button variant="ghost" onClick={() => navigate(-1)} className="flex items-center gap-2">
-              <ArrowLeft className="h-4 w-4" /> Back
-            </Button>
-            <h1 className="text-2xl font-bold">{isEditing ? 'Edit Home' : 'Add New Home'}</h1>
-            <div className="w-[73px]"></div> {/* Spacer for centering */}
+    <div className="min-h-screen flex flex-col bg-softWhite">
+      <div className="py-6 px-4 sm:px-6 lg:px-8 bg-white shadow-sm">
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
+          <div className="flex items-center">
+            <Shield className="h-8 w-8 text-primary mr-2" />
+            <span className="text-xl font-bold">HomeGuardian</span>
+          </div>
+          <Button variant="ghost" onClick={() => navigate('/dashboard')}>
+            Cancel
+          </Button>
+        </div>
+      </div>
+      
+      <div className="flex-grow flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-md w-full space-y-8">
+          <div className="text-center">
+            <h1 className="text-3xl font-bold mb-2">Add Another Home</h1>
+            <p className="text-neutral/70">
+              {step === 1 && "Let's get started with some basic information about your home"}
+              {step === 2 && "Now, let's add some details about your home's specifications"}
+              {step === 3 && "Let's add some optional details about your home"}
+              {step === 4 && "Finally, let's set your maintenance preferences"}
+            </p>
           </div>
           
-          <div className="flex flex-col gap-6">
-            <div className="flex items-center gap-3">
-              <HomeIcon className="h-8 w-8 text-primary" />
-              <div>
-                <h1 className="text-3xl font-bold tracking-tight">Add a New Home</h1>
-                <p className="text-muted-foreground mt-1">
-                  Enter your home details to start tracking maintenance
-                </p>
+          {/* Progress indicator */}
+          <div className="flex justify-between items-center mb-8">
+            <div className="w-full flex items-center">
+              <div className={`rounded-full h-10 w-10 flex items-center justify-center ${
+                step >= 1 ? 'bg-primary text-white' : 'bg-gray-200 text-gray-500'
+              }`}>
+                {step > 1 ? <CheckCircle className="h-5 w-5" /> : 1}
+              </div>
+              <div className={`flex-1 h-1 mx-2 ${step > 1 ? 'bg-primary' : 'bg-gray-200'}`}></div>
+              <div className={`rounded-full h-10 w-10 flex items-center justify-center ${
+                step >= 2 ? 'bg-primary text-white' : 'bg-gray-200 text-gray-500'
+              }`}>
+                {step > 2 ? <CheckCircle className="h-5 w-5" /> : 2}
+              </div>
+              <div className={`flex-1 h-1 mx-2 ${step > 2 ? 'bg-primary' : 'bg-gray-200'}`}></div>
+              <div className={`rounded-full h-10 w-10 flex items-center justify-center ${
+                step >= 3 ? 'bg-primary text-white' : 'bg-gray-200 text-gray-500'
+              }`}>
+                {step > 3 ? <CheckCircle className="h-5 w-5" /> : 3}
+              </div>
+              <div className={`flex-1 h-1 mx-2 ${step > 3 ? 'bg-primary' : 'bg-gray-200'}`}></div>
+              <div className={`rounded-full h-10 w-10 flex items-center justify-center ${
+                step >= 4 ? 'bg-primary text-white' : 'bg-gray-200 text-gray-500'
+              }`}>
+                4
               </div>
             </div>
-            
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="space-y-4">
-                <div className="bg-white p-6 rounded-lg border border-border shadow-sm">
-                  <h2 className="text-xl font-semibold mb-4">Basic Information</h2>
+          </div>
+          
+          <div className="bg-white p-8 rounded-2xl shadow-card">
+            {/* Step 1: Basic Home Information */}
+            {step === 1 && (
+              <form onSubmit={handleSubmitStep1(onSubmitStep1)} className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Home Name</Label>
+                  <div className="relative">
+                    <Input
+                      id="name"
+                      placeholder="e.g. My House, Beach Condo"
+                      {...registerStep1('name')}
+                      className={errorsStep1.name ? 'border-red-500 pl-10' : 'pl-10'}
+                    />
+                    <Home className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral/50" />
+                  </div>
+                  {errorsStep1.name && (
+                    <p className="text-red-500 text-sm">{errorsStep1.name.message}</p>
+                  )}
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="home_type">Home Type</Label>
+                  <Select 
+                    onValueChange={(value) => {
+                      setFormData({ ...formData, home_type: value as any });
+                      setValueStep1('home_type', value as 'single_family' | 'apartment' | 'townhouse' | 'condo' | 'mobile_home' | 'other');
+                    }}
+                    defaultValue={formData.home_type}
+                  >
+                    <SelectTrigger className={errorsStep1.home_type ? 'border-red-500' : ''}>
+                      <SelectValue placeholder="Select home type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {homeTypes.map((type) => (
+                        <SelectItem key={type.value} value={type.value}>
+                          {type.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errorsStep1.home_type && (
+                    <p className="text-red-500 text-sm">{errorsStep1.home_type.message}</p>
+                  )}
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="address">Street Address</Label>
+                  <div className="relative">
+                    <Input
+                      id="address"
+                      placeholder="123 Main St"
+                      {...registerStep1('address')}
+                      className={errorsStep1.address ? 'border-red-500 pl-10' : 'pl-10'}
+                    />
+                    <MapPin className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral/50" />
+                  </div>
+                  {errorsStep1.address && (
+                    <p className="text-red-500 text-sm">{errorsStep1.address.message}</p>
+                  )}
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="city">City</Label>
+                    <Input
+                      id="city"
+                      placeholder="City"
+                      {...registerStep1('city')}
+                      className={errorsStep1.city ? 'border-red-500' : ''}
+                    />
+                    {errorsStep1.city && (
+                      <p className="text-red-500 text-sm">{errorsStep1.city.message}</p>
+                    )}
+                  </div>
                   
-                  <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="state">State</Label>
+                    <Input
+                      id="state"
+                      placeholder="State"
+                      {...registerStep1('state')}
+                      className={errorsStep1.state ? 'border-red-500' : ''}
+                    />
+                    {errorsStep1.state && (
+                      <p className="text-red-500 text-sm">{errorsStep1.state.message}</p>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="zipCode">ZIP Code</Label>
+                  <Input
+                    id="zipCode"
+                    placeholder="ZIP Code"
+                    {...registerStep1('zipCode')}
+                    className={errorsStep1.zipCode ? 'border-red-500' : ''}
+                  />
+                  {errorsStep1.zipCode && (
+                    <p className="text-red-500 text-sm">{errorsStep1.zipCode.message}</p>
+                  )}
+                </div>
+                
+                <div className="flex justify-end pt-4">
+                  <Button type="submit">
+                    Next
+                  </Button>
+                </div>
+              </form>
+            )}
+            
+            {/* Step 2: Mandatory Home Details */}
+            {step === 2 && (
+              <form onSubmit={handleSubmitStep2(onSubmitStep2)} className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="year_built">Year Built</Label>
+                  <div className="relative">
+                    <Input
+                      id="year_built"
+                      placeholder="e.g. 1985"
+                      {...registerStep2('year_built')}
+                      className={errorsStep2.year_built ? 'border-red-500 pl-10' : 'pl-10'}
+                    />
+                    <Calendar className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral/50" />
+                  </div>
+                  {errorsStep2.year_built && (
+                    <p className="text-red-500 text-sm">{errorsStep2.year_built.message}</p>
+                  )}
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="square_footage">Square Footage</Label>
+                  <div className="relative">
+                    <Input
+                      id="square_footage"
+                      placeholder="e.g. 2000"
+                      {...registerStep2('square_footage')}
+                      className={errorsStep2.square_footage ? 'border-red-500 pl-10' : 'pl-10'}
+                    />
+                    <Ruler className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral/50" />
+                  </div>
+                  {errorsStep2.square_footage && (
+                    <p className="text-red-500 text-sm">{errorsStep2.square_footage.message}</p>
+                  )}
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="number_of_stories">Number of Stories</Label>
+                  <div className="relative">
+                    <Input
+                      id="number_of_stories"
+                      placeholder="e.g. 2"
+                      {...registerStep2('number_of_stories')}
+                      className={errorsStep2.number_of_stories ? 'border-red-500 pl-10' : 'pl-10'}
+                    />
+                    <Layers className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral/50" />
+                  </div>
+                  {errorsStep2.number_of_stories && (
+                    <p className="text-red-500 text-sm">{errorsStep2.number_of_stories.message}</p>
+                  )}
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="roof_type">Roof Type</Label>
+                  <Select
+                    value={watchStep2('roof_type')}
+                    onValueChange={(value) => setValueStep2('roof_type', value as 'asphalt_shingles' | 'metal' | 'tile' | 'flat' | 'slate' | 'wood_shingles' | 'other')}
+                  >
+                    <SelectTrigger className={errorsStep2.roof_type ? 'border-red-500' : ''}>
+                      <SelectValue placeholder="Select roof type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {roofTypes.map((type) => (
+                        <SelectItem key={type.value} value={type.value}>
+                          {type.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errorsStep2.roof_type && (
+                    <p className="text-red-500 text-sm">{errorsStep2.roof_type.message}</p>
+                  )}
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="hvac_type">HVAC System</Label>
+                  <Select
+                    value={watchStep2('hvac_type')}
+                    onValueChange={(value) => setValueStep2('hvac_type', value as 'central_hvac' | 'radiator' | 'window_ac' | 'heat_pump' | 'ductless_mini_split' | 'boiler' | 'other')}
+                  >
+                    <SelectTrigger className={errorsStep2.hvac_type ? 'border-red-500' : ''}>
+                      <SelectValue placeholder="Select HVAC type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {hvacTypes.map((type) => (
+                        <SelectItem key={type.value} value={type.value}>
+                          {type.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errorsStep2.hvac_type && (
+                    <p className="text-red-500 text-sm">{errorsStep2.hvac_type.message}</p>
+                  )}
+                </div>
+                
+                <div className="flex justify-between pt-4">
+                  <Button type="button" variant="outline" onClick={handleBack}>
+                    Back
+                  </Button>
+                  <Button type="submit">
+                    Next
+                  </Button>
+                </div>
+              </form>
+            )}
+            
+            {/* Step 3: Optional Home Details */}
+            {step === 3 && (
+              <form onSubmit={handleSubmitStep3(onSubmitStep3)} className="space-y-6">
+                <div className="space-y-4">
+                  <Label>Exterior & Foundation</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="name">Home Name</Label>
-                      <div className="relative">
-                        <Input
-                          id="name"
-                          value={name}
-                          onChange={(e) => setName(e.target.value)}
-                          placeholder="e.g., Main Residence, Vacation Home"
-                          className="pl-10"
-                          required
-                        />
-                        <HomeIcon className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral/50" />
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="type">Home Type</Label>
-                      <Select value={type} onValueChange={setType} required>
-                        <SelectTrigger id="type">
-                          <SelectValue placeholder="Select home type" />
+                      <Label htmlFor="exterior_material">Exterior Material</Label>
+                      <Select
+                        value={watchStep3('exterior_material')}
+                        onValueChange={(value) => setValueStep3('exterior_material', value as 'brick' | 'vinyl_siding' | 'wood' | 'stucco' | 'fiber_cement' | 'stone' | 'aluminum' | 'other' | undefined)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select exterior material" />
                         </SelectTrigger>
                         <SelectContent>
-                          {homeTypes.map((type) => (
-                            <SelectItem key={type.value} value={type.value}>
-                              {type.label}
-                            </SelectItem>
-                          ))}
+                          <SelectItem value="brick">Brick</SelectItem>
+                          <SelectItem value="vinyl_siding">Vinyl Siding</SelectItem>
+                          <SelectItem value="wood">Wood</SelectItem>
+                          <SelectItem value="stucco">Stucco</SelectItem>
+                          <SelectItem value="fiber_cement">Fiber Cement</SelectItem>
+                          <SelectItem value="stone">Stone</SelectItem>
+                          <SelectItem value="aluminum">Aluminum</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                     
                     <div>
-                      <Label htmlFor="address">Street Address</Label>
-                      <div className="relative">
-                        <Input
-                          id="address"
-                          value={address}
-                          onChange={(e) => setAddress(e.target.value)}
-                          placeholder="123 Main St"
-                          className="pl-10"
-                          required
-                        />
-                        <MapPin className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral/50" />
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                        <Label htmlFor="city">City</Label>
-                        <Input
-                          id="city"
-                          value={city}
-                          onChange={(e) => setCity(e.target.value)}
-                          placeholder="City"
-                          required
-                        />
-                      </div>
-                      
-                      <div>
-                        <Label htmlFor="state">State</Label>
-                        <Input
-                          id="state"
-                          value={state}
-                          onChange={(e) => setState(e.target.value)}
-                          placeholder="State"
-                          required
-                        />
-                      </div>
-                      
-                      <div>
-                        <Label htmlFor="zipCode">ZIP Code</Label>
-                        <Input
-                          id="zipCode"
-                          value={zipCode}
-                          onChange={(e) => setZipCode(e.target.value)}
-                          placeholder="ZIP Code"
-                          required
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="bg-white p-6 rounded-lg border border-border shadow-sm">
-                  <h2 className="text-xl font-semibold mb-4">Home Details</h2>
-                  
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="yearBuilt">Year Built</Label>
-                        <div className="relative">
-                          <Input
-                            id="yearBuilt"
-                            type="number"
-                            min="1800"
-                            max={currentYear}
-                            value={yearBuilt}
-                            onChange={(e) => setYearBuilt(e.target.value)}
-                            placeholder={`e.g., ${currentYear - 20}`}
-                            className="pl-10"
-                            required
-                          />
-                          <Calendar className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral/50" />
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <Label htmlFor="squareFeet">Square Footage</Label>
-                        <div className="relative">
-                          <Input
-                            id="squareFeet"
-                            type="number"
-                            min="1"
-                            value={squareFeet}
-                            onChange={(e) => setSquareFeet(e.target.value)}
-                            placeholder="e.g., 2000"
-                            className="pl-10"
-                            required
-                          />
-                          <Ruler className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral/50" />
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                        <Label htmlFor="bedrooms">Bedrooms</Label>
-                        <Input
-                          id="bedrooms"
-                          type="number"
-                          min="0"
-                          value={bedrooms}
-                          onChange={(e) => setBedrooms(e.target.value)}
-                          placeholder="e.g., 3"
-                          required
-                        />
-                      </div>
-                      
-                      <div>
-                        <Label htmlFor="bathrooms">Bathrooms</Label>
-                        <Input
-                          id="bathrooms"
-                          type="number"
-                          min="0"
-                          step="0.5"
-                          value={bathrooms}
-                          onChange={(e) => setBathrooms(e.target.value)}
-                          placeholder="e.g., 2"
-                          required
-                        />
-                      </div>
-                      
-                      <div>
-                        <Label htmlFor="numberOfStories">Number of Stories</Label>
-                        <Input
-                          id="numberOfStories"
-                          type="number"
-                          min="1"
-                          value={numberOfStories}
-                          onChange={(e) => setNumberOfStories(e.target.value)}
-                          placeholder="e.g., 2"
-                          required
-                        />
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="roofType">Roof Type</Label>
-                        <Select value={roofType} onValueChange={setRoofType} required>
-                          <SelectTrigger id="roofType">
-                            <SelectValue placeholder="Select roof type" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {roofTypes.map((type) => (
-                              <SelectItem key={type.value} value={type.value}>
-                                {type.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      
-                      <div>
-                        <Label htmlFor="hvacType">HVAC System</Label>
-                        <Select value={hvacType} onValueChange={setHvacType} required>
-                          <SelectTrigger id="hvacType">
-                            <SelectValue placeholder="Select HVAC type" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {hvacTypes.map((type) => (
-                              <SelectItem key={type.value} value={type.value}>
-                                {type.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="bg-white p-6 rounded-lg border border-border shadow-sm">
-                  <h2 className="text-xl font-semibold mb-4">Additional Home Details</h2>
-                  <p className="text-sm text-muted-foreground mb-4">These details help us provide more accurate maintenance recommendations.</p>
-                  
-                  <div className="space-y-6">
-                    <div>
-                      <h3 className="text-lg font-medium mb-3">Structure & Exterior</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="exteriorMaterial">Exterior Material</Label>
-                          <Select value={exteriorMaterial} onValueChange={setExteriorMaterial}>
-                            <SelectTrigger id="exteriorMaterial">
-                              <SelectValue placeholder="Select exterior material" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {exteriorMaterialTypes.map((type) => (
-                                <SelectItem key={type.value} value={type.value}>
-                                  {type.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        
-                        <div>
-                          <Label htmlFor="foundationType">Foundation Type</Label>
-                          <Select value={foundationType} onValueChange={setFoundationType}>
-                            <SelectTrigger id="foundationType">
-                              <SelectValue placeholder="Select foundation type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {foundationTypes.map((type) => (
-                                <SelectItem key={type.value} value={type.value}>
-                                  {type.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <h3 className="text-lg font-medium mb-3">Interior Features</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="basementType">Basement Type</Label>
-                          <Select value={basementType} onValueChange={setBasementType}>
-                            <SelectTrigger id="basementType">
-                              <SelectValue placeholder="Select basement type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {basementTypes.map((type) => (
-                                <SelectItem key={type.value} value={type.value}>
-                                  {type.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        
-                        <div>
-                          <Label htmlFor="atticType">Attic Type</Label>
-                          <Select value={atticType} onValueChange={setAtticType}>
-                            <SelectTrigger id="atticType">
-                              <SelectValue placeholder="Select attic type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {atticTypes.map((type) => (
-                                <SelectItem key={type.value} value={type.value}>
-                                  {type.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <h3 className="text-lg font-medium mb-3">Windows & Doors</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="windowsCount">Number of Windows</Label>
-                          <Input
-                            id="windowsCount"
-                            type="number"
-                            min="0"
-                            value={windowsCount}
-                            onChange={(e) => setWindowsCount(e.target.value)}
-                            placeholder="e.g., 12"
-                          />
-                        </div>
-                        
-                        <div>
-                          <Label htmlFor="windowType">Window Type</Label>
-                          <Select value={windowType} onValueChange={setWindowType}>
-                            <SelectTrigger id="windowType">
-                              <SelectValue placeholder="Select window type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {windowTypes.map((type) => (
-                                <SelectItem key={type.value} value={type.value}>
-                                  {type.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <h3 className="text-lg font-medium mb-3">Plumbing & Electrical</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="plumbingType">Plumbing Type</Label>
-                          <Select value={plumbingType} onValueChange={setPlumbingType}>
-                            <SelectTrigger id="plumbingType">
-                              <SelectValue placeholder="Select plumbing type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {plumbingTypes.map((type) => (
-                                <SelectItem key={type.value} value={type.value}>
-                                  {type.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        
-                        <div>
-                          <Label htmlFor="plumbingAge">Plumbing Age (years)</Label>
-                          <Input
-                            id="plumbingAge"
-                            type="number"
-                            min="0"
-                            max="150"
-                            value={plumbingAge}
-                            onChange={(e) => setPlumbingAge(e.target.value)}
-                            placeholder="e.g., 15"
-                          />
-                        </div>
-                      </div>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                        <div>
-                          <Label htmlFor="electricalPanelType">Electrical Panel Type</Label>
-                          <Select value={electricalPanelType} onValueChange={setElectricalPanelType}>
-                            <SelectTrigger id="electricalPanelType">
-                              <SelectValue placeholder="Select panel type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {electricalPanelTypes.map((type) => (
-                                <SelectItem key={type.value} value={type.value}>
-                                  {type.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        
-                        <div>
-                          <Label htmlFor="electricalPanelAge">Electrical Panel Age (years)</Label>
-                          <Input
-                            id="electricalPanelAge"
-                            type="number"
-                            min="0"
-                            max="150"
-                            value={electricalPanelAge}
-                            onChange={(e) => setElectricalPanelAge(e.target.value)}
-                            placeholder="e.g., 10"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <h3 className="text-lg font-medium mb-3">Additional Features</h3>
-                      
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                          <div className="space-y-0.5">
-                            <Label htmlFor="hasGarage">Garage</Label>
-                            <p className="text-sm text-muted-foreground">Does your home have a garage?</p>
-                          </div>
-                          <Switch
-                            id="hasGarage"
-                            checked={hasGarage}
-                            onCheckedChange={setHasGarage}
-                          />
-                        </div>
-                        
-                        {hasGarage && (
-                          <div>
-                            <Label htmlFor="garageType">Garage Type</Label>
-                            <Select value={garageType} onValueChange={setGarageType}>
-                              <SelectTrigger id="garageType">
-                                <SelectValue placeholder="Select garage type" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {garageTypes.map((type) => (
-                                  <SelectItem key={type.value} value={type.value}>
-                                    {type.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        )}
-                        
-                        <div className="flex items-center justify-between">
-                          <div className="space-y-0.5">
-                            <Label htmlFor="hasPool">Pool or Hot Tub</Label>
-                            <p className="text-sm text-muted-foreground">Does your home have a pool or hot tub?</p>
-                          </div>
-                          <Switch
-                            id="hasPool"
-                            checked={hasPool}
-                            onCheckedChange={setHasPool}
-                          />
-                        </div>
-                        
-                        {hasPool && (
-                          <div>
-                            <Label htmlFor="poolType">Pool Type</Label>
-                            <Select value={poolType} onValueChange={setPoolType}>
-                              <SelectTrigger id="poolType">
-                                <SelectValue placeholder="Select pool type" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {poolTypes.map((type) => (
-                                  <SelectItem key={type.value} value={type.value}>
-                                    {type.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        )}
-                        
-                        <div className="flex items-center justify-between">
-                          <div className="space-y-0.5">
-                            <Label htmlFor="hasSolarPanels">Solar Panels</Label>
-                            <p className="text-sm text-muted-foreground">Does your home have solar panels?</p>
-                          </div>
-                          <Switch
-                            id="hasSolarPanels"
-                            checked={hasSolarPanels}
-                            onCheckedChange={setHasSolarPanels}
-                          />
-                        </div>
-                        
-                        {hasSolarPanels && (
-                          <div>
-                            <Label htmlFor="solarPanelType">Solar Panel Type</Label>
-                            <Select value={solarPanelType} onValueChange={setSolarPanelType}>
-                              <SelectTrigger id="solarPanelType">
-                                <SelectValue placeholder="Select solar panel type" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {solarPanelTypes.map((type) => (
-                                  <SelectItem key={type.value} value={type.value}>
-                                    {type.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        )}
-                        
-                        <div className="flex items-center justify-between">
-                          <div className="space-y-0.5">
-                            <Label htmlFor="hasBackupGenerator">Backup Generator</Label>
-                            <p className="text-sm text-muted-foreground">Does your home have a backup generator?</p>
-                          </div>
-                          <Switch
-                            id="hasBackupGenerator"
-                            checked={hasBackupGenerator}
-                            onCheckedChange={setHasBackupGenerator}
-                          />
-                        </div>
-                        
-                        {hasBackupGenerator && (
-                          <div>
-                            <Label htmlFor="generatorType">Generator Type</Label>
-                            <Select value={generatorType} onValueChange={setGeneratorType}>
-                              <SelectTrigger id="generatorType">
-                                <SelectValue placeholder="Select generator type" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {generatorTypes.map((type) => (
-                                  <SelectItem key={type.value} value={type.value}>
-                                    {type.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        )}
-                        
-                        <div className="flex items-center justify-between">
-                          <div className="space-y-0.5">
-                            <Label htmlFor="hasIrrigationSystem">Irrigation System</Label>
-                            <p className="text-sm text-muted-foreground">Does your home have an irrigation system?</p>
-                          </div>
-                          <Switch
-                            id="hasIrrigationSystem"
-                            checked={hasIrrigationSystem}
-                            onCheckedChange={setHasIrrigationSystem}
-                          />
-                        </div>
-                        
-                        {hasIrrigationSystem && (
-                          <div>
-                            <Label htmlFor="irrigationType">Irrigation Type</Label>
-                            <Select value={irrigationType} onValueChange={setIrrigationType}>
-                              <SelectTrigger id="irrigationType">
-                                <SelectValue placeholder="Select irrigation type" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {irrigationTypes.map((type) => (
-                                  <SelectItem key={type.value} value={type.value}>
-                                    {type.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        )}
-                        
-                        <div className="flex items-center justify-between">
-                          <div className="space-y-0.5">
-                            <Label htmlFor="hasSecuritySystem">Security System</Label>
-                            <p className="text-sm text-muted-foreground">Does your home have a security system?</p>
-                          </div>
-                          <Switch
-                            id="hasSecuritySystem"
-                            checked={hasSecuritySystem}
-                            onCheckedChange={setHasSecuritySystem}
-                          />
-                        </div>
-                        
-                        {hasSecuritySystem && (
-                          <div>
-                            <Label htmlFor="securitySystemType">Security System Type</Label>
-                            <Select value={securitySystemType} onValueChange={setSecuritySystemType}>
-                              <SelectTrigger id="securitySystemType">
-                                <SelectValue placeholder="Select security system type" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {securitySystemTypes.map((type) => (
-                                  <SelectItem key={type.value} value={type.value}>
-                                    {type.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        )}
-                        
-                        <div className="flex items-center justify-between">
-                          <div className="space-y-0.5">
-                            <Label htmlFor="hasSmartHomeDevices">Smart Home Devices</Label>
-                            <p className="text-sm text-muted-foreground">Does your home have smart home devices?</p>
-                          </div>
-                          <Switch
-                            id="hasSmartHomeDevices"
-                            checked={hasSmartHomeDevices}
-                            onCheckedChange={setHasSmartHomeDevices}
-                          />
-                        </div>
-                        
-                        {hasSmartHomeDevices && (
-                          <div className="space-y-2">
-                            <Label>Smart Home Device Types</Label>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                              {smartHomeDeviceOptions.map((option) => (
-                                <div key={option.value} className="flex items-center space-x-2">
-                                  <Checkbox 
-                                    id={`smart-${option.value}`}
-                                    checked={smartHomeDeviceTypes.includes(option.value)}
-                                    onCheckedChange={(checked) => {
-                                      if (checked) {
-                                        setSmartHomeDeviceTypes([...smartHomeDeviceTypes, option.value]);
-                                      } else {
-                                        setSmartHomeDeviceTypes(
-                                          smartHomeDeviceTypes.filter((value) => value !== option.value)
-                                        );
-                                      }
-                                    }}
-                                  />
-                                  <Label 
-                                    htmlFor={`smart-${option.value}`}
-                                    className="text-sm cursor-pointer"
-                                  >
-                                    {option.label}
-                                  </Label>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="bg-white p-6 rounded-lg border border-border shadow-sm">
-                  <h2 className="text-xl font-semibold mb-4">Maintenance Preferences</h2>
-                  
-                  <div className="space-y-4">
-                    <div>
-                      <Label className="mb-2 block">Maintenance Level</Label>
-                      <RadioGroup 
-                        value={maintenanceLevel} 
-                        onValueChange={setMaintenanceLevel}
-                        className="grid gap-4"
+                      <Label htmlFor="foundation_type">Foundation Type</Label>
+                      <Select
+                        value={watchStep3('foundation_type')}
+                        onValueChange={(value) => setValueStep3('foundation_type', value as 'slab' | 'crawlspace' | 'basement' | 'pier_and_beam' | 'other' | undefined)}
                       >
-                        <div className={`flex items-start space-x-3 border rounded-lg p-4 cursor-pointer transition-colors ${
-                          maintenanceLevel === 'minimal' ? 'border-primary bg-primary/5' : 'border-gray-200'
-                        }`}>
-                          <RadioGroupItem value="minimal" id="minimal" className="mt-1" />
-                          <div>
-                            <Label htmlFor="minimal" className="font-medium cursor-pointer">Minimal</Label>
-                            <p className="text-sm text-neutral/70">Essential maintenance tasks only</p>
-                          </div>
-                        </div>
-                        
-                        <div className={`flex items-start space-x-3 border rounded-lg p-4 cursor-pointer transition-colors ${
-                          maintenanceLevel === 'standard' ? 'border-primary bg-primary/5' : 'border-gray-200'
-                        }`}>
-                          <RadioGroupItem value="standard" id="standard" className="mt-1" />
-                          <div>
-                            <Label htmlFor="standard" className="font-medium cursor-pointer">Standard</Label>
-                            <p className="text-sm text-neutral/70">Recommended maintenance schedule</p>
-                          </div>
-                        </div>
-                        
-                        <div className={`flex items-start space-x-3 border rounded-lg p-4 cursor-pointer transition-colors ${
-                          maintenanceLevel === 'comprehensive' ? 'border-primary bg-primary/5' : 'border-gray-200'
-                        }`}>
-                          <RadioGroupItem value="comprehensive" id="comprehensive" className="mt-1" />
-                          <div>
-                            <Label htmlFor="comprehensive" className="font-medium cursor-pointer">Comprehensive</Label>
-                            <p className="text-sm text-neutral/70">Detailed maintenance for optimal home care</p>
-                          </div>
-                        </div>
-                      </RadioGroup>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select foundation type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="slab">Slab</SelectItem>
+                          <SelectItem value="crawlspace">Crawlspace</SelectItem>
+                          <SelectItem value="basement">Basement</SelectItem>
+                          <SelectItem value="pier_and_beam">Pier and Beam</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="space-y-4">
+                  <Label>Windows</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="windows_count">Number of Windows</Label>
+                      <Input
+                        id="windows_count"
+                        placeholder="e.g. 12"
+                        {...registerStep3('windows_count')}
+                      />
                     </div>
                     
                     <div>
-                      <Label className="mb-2 block">Reminder Frequency</Label>
-                      <RadioGroup 
-                        value={reminderFrequency} 
-                        onValueChange={setReminderFrequency}
-                        className="grid gap-4"
+                      <Label htmlFor="windows_type">Window Type</Label>
+                      <Select
+                        value={watchStep3('windows_type')}
+                        onValueChange={(value) => setValueStep3('windows_type', value as 'single_pane' | 'double_pane' | 'triple_pane' | 'other' | undefined)}
                       >
-                        <div className={`flex items-start space-x-3 border rounded-lg p-4 cursor-pointer transition-colors ${
-                          reminderFrequency === 'weekly' ? 'border-primary bg-primary/5' : 'border-gray-200'
-                        }`}>
-                          <RadioGroupItem value="weekly" id="weekly" className="mt-1" />
-                          <div>
-                            <Label htmlFor="weekly" className="font-medium cursor-pointer">Weekly</Label>
-                            <p className="text-sm text-neutral/70">Get reminders every week</p>
-                          </div>
-                        </div>
-                        
-                        <div className={`flex items-start space-x-3 border rounded-lg p-4 cursor-pointer transition-colors ${
-                          reminderFrequency === 'biweekly' ? 'border-primary bg-primary/5' : 'border-gray-200'
-                        }`}>
-                          <RadioGroupItem value="biweekly" id="biweekly" className="mt-1" />
-                          <div>
-                            <Label htmlFor="biweekly" className="font-medium cursor-pointer">Bi-weekly</Label>
-                            <p className="text-sm text-neutral/70">Get reminders every two weeks</p>
-                          </div>
-                        </div>
-                        
-                        <div className={`flex items-start space-x-3 border rounded-lg p-4 cursor-pointer transition-colors ${
-                          reminderFrequency === 'monthly' ? 'border-primary bg-primary/5' : 'border-gray-200'
-                        }`}>
-                          <RadioGroupItem value="monthly" id="monthly" className="mt-1" />
-                          <div>
-                            <Label htmlFor="monthly" className="font-medium cursor-pointer">Monthly</Label>
-                            <p className="text-sm text-neutral/70">Get reminders once a month</p>
-                          </div>
-                        </div>
-                      </RadioGroup>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select window type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="single_pane">Single Pane</SelectItem>
+                          <SelectItem value="double_pane">Double Pane</SelectItem>
+                          <SelectItem value="triple_pane">Triple Pane</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                     
                     <div>
-                      <Label htmlFor="notes">Additional Notes (Optional)</Label>
-                      <Textarea
-                        id="notes"
-                        value={notes}
-                        onChange={(e) => setNotes(e.target.value)}
-                        placeholder="Any special considerations or notes about your home..."
-                        className="min-h-[100px]"
+                      <Label htmlFor="windows_year">Year Windows Installed</Label>
+                      <Input
+                        id="windows_year"
+                        placeholder="e.g. 2010"
+                        {...registerStep3('windows_year')}
                       />
                     </div>
                   </div>
                 </div>
-              </div>
-              
-              <div className="flex justify-end gap-4">
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={() => navigate("/dashboard")}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={loading}>
-                  {loading ? (isEditing ? "Updating Home..." : "Adding Home...") : (isEditing ? "Update Home" : "Add Home")}
-                </Button>
-              </div>
-            </form>
+                
+                <div className="space-y-4">
+                  <Label>Plumbing</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="plumbing_age">Plumbing Age (years)</Label>
+                      <Input
+                        id="plumbing_age"
+                        placeholder="e.g. 15"
+                        {...registerStep3('plumbing_age')}
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="plumbing_material">Plumbing Material</Label>
+                      <Select
+                        value={watchStep3('plumbing_material')}
+                        onValueChange={(value) => setValueStep3('plumbing_material', value as 'copper' | 'pvc' | 'pex' | 'galvanized' | 'cast_iron' | 'other' | undefined)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select plumbing material" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="copper">Copper</SelectItem>
+                          <SelectItem value="pvc">PVC</SelectItem>
+                          <SelectItem value="pex">PEX</SelectItem>
+                          <SelectItem value="galvanized">Galvanized</SelectItem>
+                          <SelectItem value="cast_iron">Cast Iron</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="has_yard" 
+                      checked={watchStep3('has_yard')}
+                      onCheckedChange={(checked) => {
+                        setValueStep3('has_yard', checked === true);
+                      }}
+                    />
+                    <Label htmlFor="has_yard">This home has a yard or garden</Label>
+                  </div>
+                  
+                  {watchStep3('has_yard') && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-6 mt-2">
+                      <div>
+                        <Label htmlFor="yard_size">Yard Size</Label>
+                        <Select
+                          value={watchStep3('yard_size')}
+                          onValueChange={(value) => setValueStep3('yard_size', value as 'small' | 'medium' | 'large' | undefined)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select yard size" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="small">Small</SelectItem>
+                            <SelectItem value="medium">Medium</SelectItem>
+                            <SelectItem value="large">Large</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="yard_features">Yard Features</Label>
+                        <Input
+                          id="yard_features"
+                          placeholder="e.g., garden, pool, patio (comma separated)"
+                          {...registerStep3('yard_features')}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="space-y-4">
+                  <Label>Garage Information</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="garage_type">Garage Type</Label>
+                      <Select
+                        value={watchStep3('garage_type')}
+                        onValueChange={(value) => setValueStep3('garage_type', value as 'attached' | 'detached' | 'none' | undefined)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select garage type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="attached">Attached</SelectItem>
+                          <SelectItem value="detached">Detached</SelectItem>
+                          <SelectItem value="none">None</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    {watchStep3('garage_type') && watchStep3('garage_type') !== 'none' && (
+                      <div>
+                        <Label htmlFor="garage_size">Garage Size</Label>
+                        <Select
+                          value={watchStep3('garage_size')}
+                          onValueChange={(value) => setValueStep3('garage_size', value as '1_car' | '2_car' | '3_car' | 'other' | undefined)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select garage size" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="1_car">1 Car</SelectItem>
+                            <SelectItem value="2_car">2 Car</SelectItem>
+                            <SelectItem value="3_car">3 Car</SelectItem>
+                            <SelectItem value="other">Other</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="space-y-4">
+                  <Label>Recent Renovations</Label>
+                  <Input
+                    id="recent_renovations"
+                    placeholder="e.g., kitchen remodel, bathroom update"
+                    {...registerStep3('recent_renovations')}
+                  />
+                </div>
+                
+                <div className="space-y-4">
+                  <Label htmlFor="occupancy">Occupancy</Label>
+                  <Select
+                    value={watchStep3('occupancy')}
+                    onValueChange={(value) => setValueStep3('occupancy', value as 'primary_residence' | 'rental' | 'vacation_home' | 'other' | undefined)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select occupancy type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="primary_residence">Primary Residence</SelectItem>
+                      <SelectItem value="rental">Rental Property</SelectItem>
+                      <SelectItem value="vacation_home">Vacation Home</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-4">
+                  <Label htmlFor="appliances">Appliances</Label>
+                  <Input
+                    id="appliances"
+                    placeholder="e.g., refrigerator, dishwasher, washer (comma separated)"
+                    {...registerStep3('appliances')}
+                  />
+                </div>
+                
+                <div className="flex justify-between mt-8">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleBack}
+                  >
+                    Back
+                  </Button>
+                  <div className="space-x-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleSkip}
+                    >
+                      Skip
+                    </Button>
+                    <Button
+                      type="submit"
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </div>
+              </form>
+            )}
+            
+            {/* Step 4: Maintenance Preferences */}
+            {step === 4 && (
+              <form onSubmit={handleSubmitStep4(onSubmitStep4)} className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="maintenance_level">Maintenance Level</Label>
+                  <Select
+                    value={watchStep4('maintenance_level')}
+                    onValueChange={(value) => handleMaintenanceLevelChange(value as 'minimal' | 'standard' | 'comprehensive')}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select maintenance level" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="minimal">Minimal</SelectItem>
+                      <SelectItem value="standard">Standard</SelectItem>
+                      <SelectItem value="comprehensive">Comprehensive</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="reminder_frequency">Reminder Frequency</Label>
+                  <Select
+                    value={watchStep4('reminder_frequency')}
+                    onValueChange={(value) => handleReminderFrequencyChange(value as 'weekly' | 'biweekly' | 'monthly')}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select reminder frequency" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="weekly">Weekly</SelectItem>
+                      <SelectItem value="biweekly">Biweekly</SelectItem>
+                      <SelectItem value="monthly">Monthly</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="notes">Notes</Label>
+                  <Textarea
+                    id="notes"
+                    placeholder="Enter any additional notes"
+                    {...registerStep4('notes')}
+                  />
+                </div>
+                
+                <div className="flex justify-between mt-8">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleBack}
+                  >
+                    Back
+                  </Button>
+                  <Button
+                    type="submit"
+                  >
+                    Next
+                  </Button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       </div>
@@ -1288,4 +953,4 @@ const AddHome = ({ isEditing = false }: AddHomeProps) => {
   );
 };
 
-export default AddHome; 
+export default AddHome;

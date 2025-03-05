@@ -134,8 +134,8 @@ const Onboarding: React.FC = () => {
       year_built: formData.year_built || '',
       square_footage: formData.square_footage || '',
       number_of_stories: formData.number_of_stories || '',
-      roof_type: formData.roof_type || '',
-      hvac_type: formData.hvac_type || '',
+      roof_type: formData.roof_type || undefined,
+      hvac_type: formData.hvac_type || undefined,
     },
   });
   
