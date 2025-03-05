@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { ChevronDown, ChevronUp, Search } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -77,10 +76,6 @@ const FAQ = () => {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
-  
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
   
   const toggleQuestion = (index: number) => {
     setActiveIndex(activeIndex === index ? null : index);
