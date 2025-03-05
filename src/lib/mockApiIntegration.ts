@@ -94,7 +94,6 @@ if (import.meta.env.DEV) {
   api.patch = async function(url: string, data?: any, config?: any) {
     // If this is a request to update a task (mark as complete)
     if (url.match(/\/api\/tasks\/[a-zA-Z0-9-]+$/)) {
-      console.log('Mock API: Intercepted task update request', url, data);
       // Generate a mock response for task update
       return {
         data: {

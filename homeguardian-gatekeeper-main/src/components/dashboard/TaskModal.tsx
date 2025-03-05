@@ -4,12 +4,16 @@ import { Button } from "@/components/ui/button";
 
 export interface TaskData {
   id: string;
-  task_name: string;
+  title?: string;
+  task_name?: string;
+  description?: string;
   due_date: string;
-  why: string;
-  completed: boolean;
+  why?: string;
+  completed?: boolean;
+  status?: 'pending' | 'completed' | 'overdue';
   home_id: string;
   estimated_cost?: number;
+  estimated_time?: number;
 }
 
 export interface TaskModalProps {
@@ -25,13 +29,19 @@ const TaskModal = ({ isOpen, onClose, task, onComplete }: TaskModalProps) => {
   // Format the due date
   const formattedDate = format(new Date(task.due_date), "MMMM d, yyyy");
   
+  // Handle different property names for task name/title
+  const taskTitle = task.task_name || task.title || "Task";
+  
+  // Check if task is completed
+  const isCompleted = task.completed || task.status === 'completed';
+  
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-lg max-w-2xl w-full max-h-[90vh] overflow-auto">
         {/* Header */}
         <div className="p-6 border-b border-border/50">
           <div className="flex justify-between items-center">
-            <h3 className="text-xl font-semibold">{task.task_name}</h3>
+            <h3 className="text-xl font-semibold">{taskTitle}</h3>
             <Button 
               variant="ghost" 
               size="icon" 
@@ -55,15 +65,29 @@ const TaskModal = ({ isOpen, onClose, task, onComplete }: TaskModalProps) => {
             </div>
           </div>
           
-          <div className="flex items-start gap-3">
-            <div className="flex-shrink-0 mt-0.5">
-              <AlertCircle className="h-5 w-5 text-muted-foreground" />
+          {task.why && (
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 mt-0.5">
+                <AlertCircle className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <div>
+                <h4 className="text-sm font-medium text-muted-foreground mb-1">Why It's Important</h4>
+                <p>{task.why}</p>
+              </div>
             </div>
-            <div>
-              <h4 className="text-sm font-medium text-muted-foreground mb-1">Why It's Important</h4>
-              <p>{task.why}</p>
+          )}
+          
+          {task.description && !task.why && (
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 mt-0.5">
+                <AlertCircle className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <div>
+                <h4 className="text-sm font-medium text-muted-foreground mb-1">Description</h4>
+                <p>{task.description}</p>
+              </div>
             </div>
-          </div>
+          )}
           
           {task.estimated_cost && (
             <div className="flex items-start gap-3">
@@ -98,7 +122,7 @@ const TaskModal = ({ isOpen, onClose, task, onComplete }: TaskModalProps) => {
         
         {/* Footer */}
         <div className="p-6 border-t border-border/50 flex justify-end">
-          {!task.completed ? (
+          {!isCompleted ? (
             <Button onClick={onComplete}>
               Mark as Completed
             </Button>
