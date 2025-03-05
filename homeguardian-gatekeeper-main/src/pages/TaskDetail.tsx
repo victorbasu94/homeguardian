@@ -14,7 +14,9 @@ import {
   Plus,
   Tag,
   Info,
-  User as UserIcon
+  User as UserIcon,
+  DollarSign,
+  ListChecks
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
@@ -80,6 +82,8 @@ interface Task {
   comments: Comment[];
   steps: TaskStep[];
   location: string; // User's home location for vendor search
+  suggestedCompletionDate?: string; // Added for AI-generated tasks
+  subTasks?: string[]; // Added for AI-generated tasks
 }
 
 // Attachment interface
@@ -108,143 +112,194 @@ interface Comment {
 // Task step interface
 interface TaskStep {
   id: string;
+  order: number;
   title: string;
   description?: string;
   isCompleted: boolean;
-  order: number;
 }
 
-// Mock task data
+// Vendor interface
+interface Vendor {
+  id: string;
+  name: string;
+  address: string;
+  phone: string;
+  distance: number;
+  rating: number;
+  services: string[];
+}
+
+// Mock task for development
 const mockTask: Task = {
-  id: '123',
+  id: '1',
   title: 'Replace HVAC Air Filter',
-  description: 'The HVAC air filter needs to be replaced every 3 months to maintain air quality and system efficiency. Use a MERV 8-11 rated filter for optimal performance.',
-  status: 'in_progress',
+  description: 'The HVAC air filter needs to be replaced every 3 months to maintain air quality and system efficiency. Purchase a new filter and install it according to the manufacturer\'s instructions.',
+  status: 'pending',
   priority: 'medium',
-  dueDate: '2023-12-15T00:00:00Z',
-  createdAt: '2023-11-01T10:30:00Z',
-  updatedAt: '2023-11-10T14:45:00Z',
-  homeId: '456',
+  dueDate: '2023-12-15',
+  createdAt: '2023-11-01T10:00:00Z',
+  updatedAt: '2023-11-01T10:00:00Z',
+  homeId: '1',
   homeName: 'Main Residence',
   category: 'HVAC',
   estimatedDuration: 30,
   estimatedCost: 25,
-  progress: 60,
-  location: 'Denver, CO', // Location for vendor search
+  progress: 0,
+  location: 'San Francisco, CA',
+  suggestedCompletionDate: '2023-12-10',
+  subTasks: [
+    'Purchase new air filter (20x20x1 MERV 11)',
+    'Turn off HVAC system before replacement',
+    'Remove old filter and dispose properly',
+    'Install new filter following airflow direction arrows',
+    'Turn HVAC system back on and verify operation'
+  ],
   attachments: [
     {
-      id: 'att1',
-      name: 'hvac_manual.pdf',
-      url: '#',
+      id: '1',
+      name: 'HVAC_Manual.pdf',
+      url: '/mock/HVAC_Manual.pdf',
       type: 'application/pdf',
       size: 2500000,
-      uploadedAt: '2023-11-05T11:20:00Z',
-      uploadedBy: 'John Doe',
-    },
-    {
-      id: 'att2',
-      name: 'filter_location.jpg',
-      url: '#',
-      type: 'image/jpeg',
-      size: 1200000,
-      uploadedAt: '2023-11-05T11:25:00Z',
-      uploadedBy: 'John Doe',
+      uploadedAt: '2023-11-01T10:05:00Z',
+      uploadedBy: 'user1',
     },
   ],
   comments: [
     {
-      id: 'com1',
-      text: 'I purchased the filters from Home Depot. They had a good sale on the MERV 11 filters.',
-      createdAt: '2023-11-05T15:30:00Z',
+      id: '1',
+      text: 'I\'ve ordered the filters from Amazon. They should arrive by Thursday.',
+      createdAt: '2023-11-02T14:30:00Z',
       user: {
         id: 'user1',
         name: 'John Doe',
-        avatar: '',
-      },
-    },
-    {
-      id: 'com2',
-      text: 'Remember to turn off the HVAC system before replacing the filter for safety.',
-      createdAt: '2023-11-08T09:15:00Z',
-      user: {
-        id: 'user2',
-        name: 'Jane Smith',
-        avatar: '',
       },
     },
   ],
   steps: [
     {
-      id: 'step1',
-      title: 'Turn off HVAC system',
-      description: 'For safety, turn off the HVAC system at the thermostat before proceeding.',
-      isCompleted: true,
+      id: '1',
       order: 1,
+      title: 'Purchase new air filter',
+      description: 'Buy a 20x20x1 MERV 11 filter from a local hardware store or online.',
+      isCompleted: false,
     },
     {
-      id: 'step2',
-      title: 'Locate the filter compartment',
-      description: 'The filter is typically located in the return air duct or at the air handler.',
-      isCompleted: true,
+      id: '2',
       order: 2,
+      title: 'Turn off HVAC system',
+      description: 'Ensure the system is completely off before proceeding.',
+      isCompleted: false,
     },
     {
-      id: 'step3',
-      title: 'Remove the old filter',
-      description: 'Carefully slide out the old filter and note the airflow direction marked on it.',
-      isCompleted: true,
+      id: '3',
       order: 3,
+      title: 'Remove old filter',
+      description: 'Carefully take out the old filter and dispose of it properly.',
+      isCompleted: false,
     },
     {
-      id: 'step4',
-      title: 'Insert the new filter',
-      description: 'Insert the new filter with the airflow arrow pointing toward the HVAC unit.',
-      isCompleted: false,
+      id: '4',
       order: 4,
+      title: 'Install new filter',
+      description: 'Insert the new filter, making sure the arrows on the filter frame point in the direction of airflow.',
+      isCompleted: false,
     },
     {
-      id: 'step5',
-      title: 'Turn on HVAC system',
-      description: 'Turn the HVAC system back on at the thermostat.',
-      isCompleted: false,
+      id: '5',
       order: 5,
+      title: 'Turn HVAC system back on',
+      description: 'Restart the system and verify it\'s working correctly.',
+      isCompleted: false,
     },
   ],
 };
 
-// Mock vendor data for local development
-const mockVendors = [
+// Mock vendors for development
+const mockVendors: Vendor[] = [
   {
-    name: "ABC Home Services",
-    address: "123 Main St, Anytown, CA 94123",
-    distance: 1.2,
-    phone: "555-123-4567"
+    id: '1',
+    name: 'ABC HVAC Services',
+    address: '123 Main St, San Francisco, CA',
+    phone: '(415) 555-1234',
+    distance: 2.3,
+    rating: 4.8,
+    services: ['HVAC Repair', 'HVAC Installation', 'Air Filter Replacement'],
   },
   {
-    name: "Quality Home Maintenance",
-    address: "456 Oak Ave, Anytown, CA 94123",
-    distance: 2.5,
-    phone: "555-234-5678"
-  },
-  {
-    name: "Professional Home Care",
-    address: "789 Pine Rd, Anytown, CA 94123",
+    id: '2',
+    name: 'Bay Area Home Services',
+    address: '456 Market St, San Francisco, CA',
+    phone: '(415) 555-5678',
     distance: 3.1,
-    phone: "555-345-6789"
+    rating: 4.6,
+    services: ['Plumbing', 'Electrical', 'HVAC', 'General Maintenance'],
   },
   {
-    name: "Expert Home Solutions",
-    address: "101 Maple Dr, Anytown, CA 94123",
-    distance: 4.2,
-    phone: "555-456-7890"
+    id: '3',
+    name: 'Golden Gate Repairs',
+    address: '789 Oak St, San Francisco, CA',
+    phone: '(415) 555-9012',
+    distance: 4.5,
+    rating: 4.7,
+    services: ['Home Repairs', 'HVAC Services', 'Appliance Repair'],
   },
-  {
-    name: "Premier Home Specialists",
-    address: "202 Cedar Ln, Anytown, CA 94123",
-    distance: 5.0,
-    phone: "555-567-8901"
-  }
 ];
+
+// Format date function
+const formatDate = (dateString: string) => {
+  const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
+  return new Date(dateString).toLocaleDateString(undefined, options);
+};
+
+// Format date and time function
+const formatDateTime = (dateString: string) => {
+  const options: Intl.DateTimeFormatOptions = { 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  };
+  return new Date(dateString).toLocaleDateString(undefined, options);
+};
+
+// Format file size function
+const formatFileSize = (bytes: number) => {
+  if (bytes < 1024) return bytes + ' B';
+  else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+  else return (bytes / 1048576).toFixed(1) + ' MB';
+};
+
+// Get status badge component
+const getStatusBadge = (status: TaskStatus) => {
+  switch (status) {
+    case 'pending':
+      return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">Pending</Badge>;
+    case 'in_progress':
+      return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">In Progress</Badge>;
+    case 'completed':
+      return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Completed</Badge>;
+    case 'overdue':
+      return <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">Overdue</Badge>;
+    default:
+      return null;
+  }
+};
+
+// Get priority badge component
+const getPriorityBadge = (priority: TaskPriority) => {
+  switch (priority) {
+    case 'low':
+      return <Badge variant="outline" className="bg-neutral-50 text-neutral-700 border-neutral-200">Low Priority</Badge>;
+    case 'medium':
+      return <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">Medium Priority</Badge>;
+    case 'high':
+      return <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">High Priority</Badge>;
+    default:
+      return null;
+  }
+};
 
 const TaskDetail: React.FC = () => {
   const { taskId } = useParams<{ taskId: string }>();
@@ -255,7 +310,7 @@ const TaskDetail: React.FC = () => {
   const [isUpdatingTask, setIsUpdatingTask] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isVendorDialogOpen, setIsVendorDialogOpen] = useState<boolean>(false);
-  const [vendors, setVendors] = useState<any[]>([]);
+  const [vendors, setVendors] = useState<Vendor[]>([]);
   const [isLoadingVendors, setIsLoadingVendors] = useState<boolean>(false);
   const [vendorError, setVendorError] = useState<string | null>(null);
   const { toast } = useToast();
@@ -289,65 +344,6 @@ const TaskDetail: React.FC = () => {
     
     fetchTask();
   }, [taskId, toast]);
-  
-  // Format date to readable string
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    }).format(date);
-  };
-  
-  // Format date with time
-  const formatDateTime = (dateString: string) => {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: 'numeric',
-      minute: 'numeric',
-    }).format(date);
-  };
-  
-  // Format file size
-  const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return bytes + ' B';
-    else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
-    else return (bytes / 1048576).toFixed(1) + ' MB';
-  };
-  
-  // Get status badge
-  const getStatusBadge = (status: TaskStatus) => {
-    switch (status) {
-      case 'pending':
-        return <Badge variant="outline" className="bg-neutral/5">Pending</Badge>;
-      case 'in_progress':
-        return <Badge variant="default" className="bg-blue-500">In Progress</Badge>;
-      case 'completed':
-        return <Badge variant="default" className="bg-green-500">Completed</Badge>;
-      case 'overdue':
-        return <Badge variant="destructive">Overdue</Badge>;
-      default:
-        return <Badge variant="outline">Unknown</Badge>;
-    }
-  };
-  
-  // Get priority badge
-  const getPriorityBadge = (priority: TaskPriority) => {
-    switch (priority) {
-      case 'low':
-        return <Badge variant="outline" className="border-green-500 text-green-700">Low</Badge>;
-      case 'medium':
-        return <Badge variant="outline" className="border-yellow-500 text-yellow-700">Medium</Badge>;
-      case 'high':
-        return <Badge variant="outline" className="border-red-500 text-red-700">High</Badge>;
-      default:
-        return <Badge variant="outline">Normal</Badge>;
-    }
-  };
   
   // Handle comment submission
   const handleCommentSubmit = async (e: React.FormEvent) => {
@@ -626,7 +622,7 @@ const TaskDetail: React.FC = () => {
                   
                   {task.estimatedCost && (
                     <div className="flex items-center gap-2 text-neutral/70">
-                      <Info className="h-4 w-4 flex-shrink-0" />
+                      <DollarSign className="h-4 w-4 flex-shrink-0" />
                       <span>Est. Cost: ${task.estimatedCost}</span>
                     </div>
                   )}
@@ -635,6 +631,13 @@ const TaskDetail: React.FC = () => {
                     <div className="flex items-center gap-2 text-neutral/70">
                       <UserIcon className="h-4 w-4 flex-shrink-0" />
                       <span>Assigned to: {task.assignedTo}</span>
+                    </div>
+                  )}
+                  
+                  {task.suggestedCompletionDate && (
+                    <div className="flex items-center gap-2 text-neutral/70">
+                      <Calendar className="h-4 w-4 flex-shrink-0" />
+                      <span>Suggested Completion: {formatDate(task.suggestedCompletionDate)}</span>
                     </div>
                   )}
                 </div>
@@ -651,6 +654,20 @@ const TaskDetail: React.FC = () => {
                   <h3 className="font-medium mb-2">Description</h3>
                   <p className="text-neutral/80 whitespace-pre-line">{task.description}</p>
                 </div>
+                
+                {/* Sub-tasks section (if available) */}
+                {task.subTasks && task.subTasks.length > 0 && (
+                  <div className="bg-neutral/5 rounded-lg p-4 mt-4">
+                    <h3 className="font-medium mb-2 flex items-center gap-2">
+                      <ListChecks className="h-4 w-4" /> Sub-Tasks
+                    </h3>
+                    <ul className="list-disc pl-5 space-y-1">
+                      {task.subTasks.map((subTask, index) => (
+                        <li key={index} className="text-neutral/80">{subTask}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
             </div>
           </div>
