@@ -464,4 +464,106 @@ router.post('/test-ai-plan',
   }
 );
 
+/**
+ * @swagger
+ * /api/tasks/generate-plan:
+ *   post:
+ *     summary: Generate a maintenance plan for a home using AI based on home data
+ *     tags: [Tasks]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               type:
+ *                 type: string
+ *               address:
+ *                 type: string
+ *               city:
+ *                 type: string
+ *               state:
+ *                 type: string
+ *               zipCode:
+ *                 type: string
+ *               yearBuilt:
+ *                 type: string
+ *               squareFeet:
+ *                 type: number
+ *               bedrooms:
+ *                 type: number
+ *               bathrooms:
+ *                 type: number
+ *               roofType:
+ *                 type: string
+ *               hvacType:
+ *                 type: string
+ *               numberOfStories:
+ *                 type: number
+ *               exteriorMaterial:
+ *                 type: string
+ *               foundationType:
+ *                 type: string
+ *               hasPool:
+ *                 type: boolean
+ *               poolType:
+ *                 type: string
+ *               hasSolarPanels:
+ *                 type: boolean
+ *               hasGarage:
+ *                 type: boolean
+ *     responses:
+ *       200:
+ *         description: AI-generated maintenance plan
+ *       400:
+ *         description: Bad request
+ *       500:
+ *         description: Server error
+ */
+router.post('/generate-plan',
+  async (req, res, next) => {
+    try {
+      const homeData = req.body;
+      
+      // Format home details for the AI service
+      const homeDetails = {
+        address: {
+          city: homeData.city,
+          state: homeData.state,
+          zipCode: homeData.zipCode
+        },
+        size: {
+          totalSquareFeet: homeData.squareFeet,
+          bedrooms: homeData.bedrooms,
+          bathrooms: homeData.bathrooms
+        },
+        yearBuilt: homeData.yearBuilt,
+        propertyType: homeData.type,
+        features: {
+          roofType: homeData.roofType,
+          heatingSystem: homeData.hvacType,
+          hasPool: homeData.hasPool,
+          poolType: homeData.poolType,
+          hasSolarPanels: homeData.hasSolarPanels,
+          hasGarage: homeData.hasGarage,
+          exteriorMaterial: homeData.exteriorMaterial,
+          foundationType: homeData.foundationType,
+          numberOfStories: homeData.numberOfStories
+        }
+      };
+      
+      // Generate AI-powered maintenance plan
+      const plan = await generateMaintenancePlanWithAI(homeDetails);
+      
+      res.status(200).json(plan);
+    } catch (error) {
+      logger.error('Error generating maintenance plan:', error);
+      res.status(500).json({ message: 'Failed to generate maintenance plan', error: error.message });
+    }
+  }
+);
+
 module.exports = router; 

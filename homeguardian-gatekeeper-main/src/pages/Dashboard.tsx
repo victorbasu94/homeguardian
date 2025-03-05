@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { PlusCircle, Home as HomeIcon, AlertCircle, Plus, ClipboardList, Bell, Settings, Search, CheckCircle } from 'lucide-react';
+import { PlusCircle, Home as HomeIcon, AlertCircle, Plus, ClipboardList, Bell, Settings, Search, CheckCircle, Sparkles } from 'lucide-react';
 import { format } from 'date-fns';
 import { useAuth } from '@/hooks/useAuth';
 import api from '@/lib/axios';
@@ -16,6 +16,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import HomesEmptyState from '@/components/dashboard/HomesEmptyState';
 import HomesLoading from '@/components/dashboard/HomesLoading';
 import SubscriptionStatus from '@/components/dashboard/SubscriptionStatus';
+import AIMaintenanceTasks from '@/components/dashboard/AIMaintenanceTasks';
+import { useMaintenance, MOCK_MAINTENANCE_TASKS } from '@/contexts/MaintenanceContext';
 
 // Define interfaces
 export interface UserData {
@@ -138,6 +140,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { maintenanceTasks } = useMaintenance();
   
   // State for homes
   const [homes, setHomes] = useState<HomeData[]>([]);
@@ -161,6 +164,9 @@ const Dashboard = () => {
   // Search and UI state
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('tasks');
+  
+  const [selectedTab, setSelectedTab] = useState('homes');
+  const [showAITasks, setShowAITasks] = useState(true);
   
   // Check for subscription success parameter
   useEffect(() => {
@@ -281,47 +287,46 @@ const Dashboard = () => {
   };
   
   const fetchTasks = async (homeId: string) => {
-    // Skip if homeId is undefined or empty
-    if (!homeId) {
-      console.error("Cannot fetch tasks: homeId is undefined");
-      setTasksError("Cannot load tasks: home ID is missing");
-      setLoadingTasks(false);
-      return;
-    }
-    
     try {
       setLoadingTasks(true);
       setTasksError(null);
       
-      console.log("Fetching tasks for homeId:", homeId);
       const response = await api.get(`/api/tasks/${homeId}`);
       console.log("Tasks response:", response.data);
       
-      // Check if we have tasks data
-      if (response.data && response.data.data) {
-        // Map the API response to match the TaskData interface
-        const mappedTasks = response.data.data.map((task: any) => ({
-          id: task.id || task._id,
-          title: task.title || task.task_name || "Untitled Task",
-          description: task.description || task.why || "",
-          due_date: task.due_date || new Date().toISOString(),
-          status: task.status || (task.completed ? 'completed' : 'pending'),
-          priority: task.priority || 'medium',
-          home_id: task.home_id || homeId,
-          category: task.category || "General",
-          estimated_time: task.estimated_time || 30,
-          estimated_cost: task.estimated_cost || null
-        }));
-        
-        console.log("Mapped tasks:", mappedTasks);
-        setTasks(mappedTasks);
-      } else {
-        console.log("No tasks data found in response");
-        setTasks([]);
-      }
+      // Get regular tasks from API
+      const regularTasks = response.data?.data || [];
+      
+      // Convert AI maintenance tasks to TaskData format
+      const aiTasks = maintenanceTasks.map((aiTask, index) => ({
+        id: `ai-task-${index}`,
+        title: aiTask.task,
+        description: aiTask.taskDescription,
+        due_date: aiTask.suggestedCompletionDate,
+        status: 'pending',
+        priority: 'medium',
+        home_id: homeId,
+        category: 'maintenance',
+        estimated_time: parseInt(aiTask.estimatedTime) || 60,
+        estimated_cost: aiTask.estimatedCost || 0,
+        is_ai_generated: true,
+        sub_tasks: aiTask.subTasks
+      }));
+      
+      // Combine regular tasks with AI tasks
+      const combinedTasks = [...regularTasks, ...aiTasks];
+      
+      // Sort tasks by due date
+      combinedTasks.sort((a, b) => {
+        const dateA = new Date(a.due_date);
+        const dateB = new Date(b.due_date);
+        return dateA.getTime() - dateB.getTime();
+      });
+      
+      setTasks(combinedTasks);
     } catch (error) {
       console.error("Error fetching tasks:", error);
-      setTasksError("Failed to load tasks for this home. Please try again later.");
+      setTasksError("Failed to load tasks. Please try again.");
     } finally {
       setLoadingTasks(false);
     }
@@ -486,8 +491,9 @@ const Dashboard = () => {
     if (!selectedHome) {
       return (
         <div className="bg-muted/30 border border-border rounded-lg p-6 text-center">
-          <p className="text-muted-foreground">
-            Select a home to view its tasks
+          <h3 className="text-lg font-medium mb-2">Select a home to view tasks</h3>
+          <p className="text-muted-foreground mb-4">
+            Choose a home from the list to view and manage its maintenance tasks
           </p>
         </div>
       );
@@ -495,9 +501,9 @@ const Dashboard = () => {
     
     if (loadingTasks) {
       return (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {[1, 2, 3, 4].map(i => (
-            <Skeleton key={i} className="h-32 w-full rounded-lg" />
+            <Skeleton key={i} className="h-64 w-full rounded-lg" />
           ))}
         </div>
       );
@@ -523,10 +529,6 @@ const Dashboard = () => {
         )
       : tasks;
     
-    console.log("Search query:", searchQuery);
-    console.log("Filtered tasks:", filteredTasks);
-    console.log("Original tasks:", tasks);
-    
     if (filteredTasks.length === 0) {
       return (
         <div className="bg-muted/30 border border-border rounded-lg p-6 text-center">
@@ -544,43 +546,33 @@ const Dashboard = () => {
       );
     }
     
-    // Filter tasks by completion status
-    const pendingTasks = filteredTasks.filter(task => task.status === 'pending');
-    const completedTasks = filteredTasks.filter(task => task.status === 'completed');
-    
     return (
-      <div className="space-y-6">
-        {pendingTasks.length > 0 && (
-          <div>
-            <h3 className="text-lg font-medium mb-3">Upcoming Tasks</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {pendingTasks.map(task => (
-                <TaskCard 
-                  key={task.id} 
-                  task={task} 
-                  onComplete={() => handleTaskComplete(task.id)}
-                  onViewDetails={() => navigate(`/tasks/${task.id}`)}
-                />
-              ))}
+      <div>
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold">Maintenance Tasks</h2>
+            <div className="relative w-64">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search tasks..."
+                className="pl-8"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
             </div>
           </div>
-        )}
-        
-        {completedTasks.length > 0 && (
-          <div>
-            <h3 className="text-lg font-medium mb-3">Completed Tasks</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {completedTasks.map(task => (
-                <TaskCard 
-                  key={task.id} 
-                  task={task} 
-                  onComplete={() => handleTaskComplete(task.id)}
-                  onViewDetails={() => navigate(`/tasks/${task.id}`)}
-                />
-              ))}
-            </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredTasks.map(task => (
+              <TaskCard 
+                key={task.id} 
+                task={task} 
+                onComplete={() => handleTaskComplete(task.id)}
+                onViewDetails={(task) => navigate(`/tasks/${task.id}`)}
+              />
+            ))}
           </div>
-        )}
+        </div>
         
         <div className="flex justify-end">
           <Button onClick={() => navigate(`/homes/${selectedHome.id}/tasks/add`)}>
@@ -593,143 +585,57 @@ const Dashboard = () => {
   };
   
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-softWhite">
       <DashboardNavbar />
       
-      <main className="container mx-auto px-4 py-8">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-neutral">Dashboard</h1>
-            <p className="text-neutral/70">Manage your homes and maintenance tasks</p>
-          </div>
-          
-          <div className="flex items-center gap-3">
-            <div className="relative w-full md:w-64">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-neutral/50" />
-              <Input
-                type="text"
-                placeholder="Search..."
-                className="pl-10"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
+      <main className="container mx-auto py-8 px-4">
+        {/* Subscription Status */}
+        {renderSubscriptionStatus()}
+        
+        {/* Main Content */}
+        <div className="mt-8">
+          <Tabs defaultValue="tasks" onValueChange={(value) => setSelectedTab(value)}>
+            <div className="flex justify-between items-center mb-6">
+              <TabsList>
+                <TabsTrigger value="tasks" className="flex items-center gap-2">
+                  <ClipboardList className="h-4 w-4" /> Tasks
+                </TabsTrigger>
+                <TabsTrigger value="homes" className="flex items-center gap-2">
+                  <HomeIcon className="h-4 w-4" /> Homes
+                </TabsTrigger>
+              </TabsList>
+              
+              <div className="flex items-center gap-3">
+                {selectedTab === 'homes' && (
+                  <Button onClick={() => navigate('/homes/add')} className="flex items-center gap-2">
+                    <Plus className="h-4 w-4" /> Add Home
+                  </Button>
+                )}
+                {selectedTab === 'tasks' && selectedHome && (
+                  <Button onClick={() => navigate(`/homes/${selectedHome.id}/tasks/add`)} className="flex items-center gap-2">
+                    <Plus className="h-4 w-4" /> Add Task
+                  </Button>
+                )}
+              </div>
             </div>
-            <Button onClick={() => navigate("/homes/add")}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Home
-            </Button>
-          </div>
+            
+            <TabsContent value="tasks">
+              {renderTasks()}
+            </TabsContent>
+            
+            <TabsContent value="homes">
+              {renderHomes()}
+            </TabsContent>
+          </Tabs>
         </div>
-        
-        <SubscriptionStatus 
-          status={userData?.subscription_status === 'active' ? 'active' : 
-                 userData?.subscription_status === 'trial' ? 'trial' : 'none'}
-          expiryDate={userData?.subscription_end_date ? format(new Date(userData.subscription_end_date), 'MMMM d, yyyy') : undefined}
-          onUpgrade={() => navigate('/plan-selection')}
-        />
-        
-        <Tabs 
-          defaultValue="tasks" 
-          value={activeTab}
-          onValueChange={setActiveTab}
-          className="mt-8"
-        >
-          <TabsList className="mb-6">
-            <TabsTrigger value="tasks" className="flex items-center gap-2">
-              <CheckCircle className="h-4 w-4" />
-              <span>Tasks</span>
-            </TabsTrigger>
-            <TabsTrigger value="homes" className="flex items-center gap-2">
-              <HomeIcon className="h-4 w-4" />
-              <span>My Homes</span>
-            </TabsTrigger>
-            <TabsTrigger value="notifications" className="flex items-center gap-2">
-              <Bell className="h-4 w-4" />
-              <span>Notifications</span>
-            </TabsTrigger>
-            <TabsTrigger value="settings" className="flex items-center gap-2">
-              <Settings className="h-4 w-4" />
-              <span>Settings</span>
-            </TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="homes">
-            {loadingHomes ? (
-              <HomesLoading />
-            ) : homes.length === 0 ? (
-              <HomesEmptyState onAddHome={() => navigate("/homes/add")} />
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {homes.map(home => (
-                  <HomeCard
-                    key={home.id}
-                    home={home}
-                    isSelected={home.id === selectedHome?.id}
-                    onClick={() => handleHomeSelect(home)}
-                    onEdit={() => navigate(`/homes/${home.id}/edit`)}
-                  />
-                ))}
-              </div>
-            )}
-          </TabsContent>
-          
-          <TabsContent value="tasks">
-            {renderTasks()}
-          </TabsContent>
-          
-          <TabsContent value="notifications">
-            <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
-              <Bell className="h-12 w-12 mx-auto text-neutral/30 mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No notifications</h3>
-              <p className="text-neutral/70">
-                You're all caught up! We'll notify you when there are updates.
-              </p>
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="settings">
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h2 className="text-xl font-semibold mb-6">Account Settings</h2>
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-lg font-medium mb-4">Profile Information</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-neutral/70 mb-1">
-                        Full Name
-                      </label>
-                      <Input defaultValue="John Doe" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-neutral/70 mb-1">
-                        Email Address
-                      </label>
-                      <Input defaultValue="john.doe@example.com" />
-                    </div>
-                  </div>
-                </div>
-                
-                <div>
-                  <h3 className="text-lg font-medium mb-4">Notification Preferences</h3>
-                  <div className="space-y-3">
-                    {/* Notification preferences would go here */}
-                  </div>
-                </div>
-                
-                <div className="pt-4 border-t border-gray-200">
-                  <Button>Save Changes</Button>
-                </div>
-              </div>
-            </div>
-          </TabsContent>
-        </Tabs>
       </main>
       
+      {/* Task Modal */}
       {selectedTask && (
-        <TaskModal 
+        <TaskModal
           isOpen={!!selectedTask}
-          onClose={() => setSelectedTask(null)}
           task={selectedTask}
+          onClose={() => setSelectedTask(null)}
           onComplete={() => handleTaskComplete(selectedTask.id)}
         />
       )}

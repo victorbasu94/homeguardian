@@ -9,19 +9,35 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
-import { ArrowLeft, Home as HomeIcon, MapPin, Calendar, Ruler, Thermometer, Droplets, Construction, Layers, Warehouse } from "lucide-react";
+import { ArrowLeft, Home as HomeIcon, MapPin, Calendar, Ruler, Thermometer, Droplets, Construction, Layers, Warehouse, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import api from "@/lib/axios";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { useMaintenance } from "@/contexts/MaintenanceContext";
 
 interface AddHomeProps {
   isEditing?: boolean;
 }
+
+// Function to generate maintenance plan using OpenAI API
+const generateMaintenancePlan = async (homeData: any) => {
+  try {
+    const response = await api.post('/api/tasks/generate-plan', homeData);
+    return response.data;
+  } catch (error) {
+    console.error('Error calling OpenAI API:', error);
+    throw error;
+  }
+};
 
 const AddHome = ({ isEditing = false }: AddHomeProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
   const { homeId } = useParams<{ homeId: string }>();
+  const { setMaintenanceTasks, setIsLoading, setError } = useMaintenance();
   
   // Form state
   const [name, setName] = useState("");
@@ -69,6 +85,8 @@ const AddHome = ({ isEditing = false }: AddHomeProps) => {
   
   const [loading, setLoading] = useState(false);
   const [fetchingHome, setFetchingHome] = useState(false);
+  const [generatingPlan, setGeneratingPlan] = useState(false);
+  const [planError, setPlanError] = useState<string | null>(null);
   
   // Fetch home data if editing
   useEffect(() => {
@@ -452,8 +470,56 @@ const AddHome = ({ isEditing = false }: AddHomeProps) => {
         });
       }
       
-      // Navigate back to dashboard
-      navigate("/dashboard");
+      // Generate maintenance plan using OpenAI
+      setGeneratingPlan(true);
+      setPlanError(null);
+      setIsLoading(true); // Set loading state in context
+      
+      try {
+        // Call the OpenAI service with the home data
+        const plan = await generateMaintenancePlan({
+          name,
+          type,
+          address,
+          city,
+          state,
+          zipCode,
+          yearBuilt,
+          squareFeet,
+          bedrooms,
+          bathrooms,
+          roofType,
+          hvacType,
+          numberOfStories,
+          exteriorMaterial,
+          foundationType,
+          hasPool,
+          poolType,
+          hasSolarPanels,
+          hasGarage
+        });
+        
+        if (plan && plan.maintenancePlan && Array.isArray(plan.maintenancePlan)) {
+          setMaintenanceTasks(plan.maintenancePlan); // Store tasks in context
+          // Navigate to dashboard after successful plan generation
+          navigate("/dashboard");
+        } else {
+          throw new Error('Invalid maintenance plan format');
+        }
+      } catch (error) {
+        console.error('Error generating maintenance plan:', error);
+        setPlanError('Failed to generate maintenance plan. Please try again later.');
+        setError('Failed to generate maintenance plan. Please try again later.'); // Set error in context
+        
+        // Still navigate to dashboard after a delay
+        setTimeout(() => {
+          navigate("/dashboard");
+        }, 3000);
+      } finally {
+        setGeneratingPlan(false);
+        setIsLoading(false); // Clear loading state in context
+      }
+      
     } catch (error) {
       console.error(`Error ${isEditing ? 'updating' : 'adding'} home:`, error);
       
