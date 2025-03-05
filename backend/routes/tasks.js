@@ -6,6 +6,8 @@ const { verifyToken } = require('../middleware/auth');
 const Task = require('../models/Task');
 const Home = require('../models/Home');
 const logger = require('../utils/logger');
+const { generateMaintenancePlan } = require('../services/maintenanceService');
+const { generateMaintenancePlanWithAI } = require('../services/openaiService');
 
 /**
  * @swagger
@@ -333,6 +335,131 @@ router.patch('/:taskId',
       });
     } catch (error) {
       next(error);
+    }
+  }
+);
+
+/**
+ * @swagger
+ * /api/tasks/generate-ai-plan/{homeId}:
+ *   post:
+ *     summary: Generate a maintenance plan for a home using AI
+ *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: homeId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Home ID
+ *     responses:
+ *       200:
+ *         description: AI-generated maintenance plan
+ *       400:
+ *         description: Bad request
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - home does not belong to user
+ *       404:
+ *         description: Home not found
+ *       500:
+ *         description: Server error
+ */
+router.post('/generate-ai-plan/:homeId',
+  verifyToken,
+  [
+    param('homeId')
+      .isMongoId().withMessage('Invalid home ID format')
+  ],
+  async (req, res, next) => {
+    try {
+      // Validate request
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+      }
+
+      const homeId = sanitize(req.params.homeId);
+      
+      // Check if home exists and belongs to user
+      const home = await Home.findById(homeId);
+      if (!home) {
+        return res.status(404).json({ message: 'Home not found' });
+      }
+      
+      if (home.user_id.toString() !== req.user.id) {
+        return res.status(403).json({ message: 'You do not have permission to access this home' });
+      }
+      
+      // Generate AI-powered maintenance plan
+      const tasks = await generateMaintenancePlan(home, true);
+      
+      res.status(200).json({
+        message: 'AI-powered maintenance plan generated successfully',
+        tasks
+      });
+    } catch (error) {
+      logger.error('Error generating AI maintenance plan:', error);
+      res.status(500).json({ message: 'Failed to generate AI maintenance plan', error: error.message });
+    }
+  }
+);
+
+/**
+ * @swagger
+ * /api/tasks/test-ai-plan:
+ *   post:
+ *     summary: Test AI maintenance plan generation with raw home details
+ *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               homeDetails:
+ *                 type: string
+ *                 description: Description of the home (e.g., "A 2000 sq ft home built in 1990 in Seattle, WA")
+ *     responses:
+ *       200:
+ *         description: AI-generated maintenance plan
+ *       400:
+ *         description: Bad request
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+router.post('/test-ai-plan',
+  verifyToken,
+  [
+    body('homeDetails')
+      .isString().withMessage('Home details must be a string')
+      .notEmpty().withMessage('Home details are required')
+  ],
+  async (req, res, next) => {
+    try {
+      // Validate request
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+      }
+
+      const homeDetails = sanitize(req.body.homeDetails);
+      
+      // Generate AI-powered maintenance plan with raw home details
+      const plan = await generateMaintenancePlanWithAI(homeDetails);
+      
+      res.status(200).json(plan);
+    } catch (error) {
+      logger.error('Error testing AI maintenance plan:', error);
+      res.status(500).json({ message: 'Failed to generate test AI maintenance plan', error: error.message });
     }
   }
 );

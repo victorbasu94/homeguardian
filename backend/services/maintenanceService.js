@@ -2,6 +2,7 @@ const { DateTime } = require('luxon');
 const Task = require('../models/Task');
 const taskRules = require('../config/tasks.json');
 const logger = require('winston');
+const { generateMaintenancePlanWithAI } = require('./openaiService');
 
 /**
  * Evaluates a condition against a home property
@@ -113,10 +114,54 @@ function calculateDueDate(frequency) {
 /**
  * Generates a maintenance plan for a home based on its characteristics
  * @param {Object} home - The home object
+ * @param {Boolean} useAI - Whether to use AI for generating the plan
  * @returns {Array} - Array of task objects
  */
-async function generateMaintenancePlan(home) {
+async function generateMaintenancePlan(home, useAI = false) {
   try {
+    // If AI-powered plan generation is requested
+    if (useAI && process.env.OPENAI_API_KEY) {
+      try {
+        const aiPlan = await generateMaintenancePlanWithAI(home);
+        const tasks = [];
+        
+        // Convert AI-generated plan to our task format
+        if (aiPlan && aiPlan.maintenancePlan && Array.isArray(aiPlan.maintenancePlan)) {
+          for (const item of aiPlan.maintenancePlan) {
+            // Create task with AI-generated details
+            const taskData = {
+              home_id: home._id,
+              task_name: item.task,
+              description: item.taskDescription || `Maintenance task: ${item.task}`,
+              frequency: 'custom', // AI doesn't specify frequency directly
+              due_date: item.suggestedCompletionDate,
+              why: "AI-recommended maintenance task",
+              estimated_time: parseEstimatedTime(item.estimatedTime), // Convert time string to minutes
+              estimated_cost: item.estimatedCost || 0,
+              category: 'maintenance',
+              priority: determinePriority(item.suggestedCompletionDate),
+              steps: item.subTasks || [],
+              completed: false,
+              ai_generated: true
+            };
+            
+            tasks.push(taskData);
+          }
+          
+          // Save all tasks to the database
+          if (tasks.length > 0) {
+            await Task.insertMany(tasks);
+          }
+          
+          return tasks;
+        }
+      } catch (error) {
+        logger.error('Error generating AI maintenance plan, falling back to rule-based:', error);
+        // Fall back to rule-based if AI fails
+      }
+    }
+    
+    // Original rule-based logic
     const tasks = [];
     const { rules } = taskRules;
 
@@ -184,17 +229,61 @@ async function generateMaintenancePlan(home) {
 /**
  * Regenerates tasks for a home after it has been updated
  * @param {Object} home - The updated home object
+ * @param {Boolean} useAI - Whether to use AI for generating the plan
  * @returns {Array} - Array of new task objects
  */
-async function regenerateTasksForHome(home) {
+async function regenerateTasksForHome(home, useAI = false) {
   try {
     // Generate new tasks based on updated home information
-    const newTasks = await generateMaintenancePlan(home);
+    const newTasks = await generateMaintenancePlan(home, useAI);
     
     return newTasks;
   } catch (error) {
     logger.error('Error regenerating tasks for home:', error);
     throw error;
+  }
+}
+
+/**
+ * Parse estimated time string to minutes
+ * @param {String} timeString - Time string (e.g., "2 hours", "30 minutes")
+ * @returns {Number} - Time in minutes
+ */
+function parseEstimatedTime(timeString) {
+  if (!timeString) return 30; // Default 30 minutes
+  
+  const lowerTimeString = timeString.toLowerCase();
+  
+  if (lowerTimeString.includes('hour')) {
+    const hours = parseFloat(lowerTimeString.replace(/[^0-9.]/g, ''));
+    return Math.round(hours * 60);
+  } else if (lowerTimeString.includes('minute')) {
+    return Math.round(parseFloat(lowerTimeString.replace(/[^0-9.]/g, '')));
+  } else if (lowerTimeString.includes('day')) {
+    const days = parseFloat(lowerTimeString.replace(/[^0-9.]/g, ''));
+    return Math.round(days * 8 * 60); // Assuming 8-hour workdays
+  }
+  
+  // If format is unknown, default to 30 minutes
+  return 30;
+}
+
+/**
+ * Determine task priority based on due date
+ * @param {String} dueDate - ISO date string
+ * @returns {String} - Priority level (high, medium, low)
+ */
+function determinePriority(dueDate) {
+  const now = DateTime.now();
+  const due = DateTime.fromISO(dueDate);
+  const diff = due.diff(now, 'days').days;
+  
+  if (diff < 30) {
+    return 'high';
+  } else if (diff < 90) {
+    return 'medium';
+  } else {
+    return 'low';
   }
 }
 
