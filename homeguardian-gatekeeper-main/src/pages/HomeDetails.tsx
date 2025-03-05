@@ -17,9 +17,9 @@ import {
 import { format } from "date-fns";
 import api from "@/lib/axios";
 import { HomeData } from "@/components/dashboard/HomeCard";
-import { TaskData } from "@/components/dashboard/TaskCard";
-import TaskCard from "@/components/dashboard/TaskCard";
-import TaskModal from "@/components/dashboard/TaskModal";
+import TaskCard, { TaskData } from "@/components/dashboard/TaskCard";
+import TaskModal, { TaskData as ModalTaskData } from "@/components/dashboard/TaskModal";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // Extend HomeData interface to include the properties we need
 interface ExtendedHomeData extends HomeData {
@@ -28,6 +28,19 @@ interface ExtendedHomeData extends HomeData {
   year_built: number;
   square_feet: number;
 }
+
+// Convert TaskData to ModalTaskData
+const convertToModalTask = (task: TaskData): ModalTaskData => {
+  return {
+    id: task.id,
+    task_name: task.title,
+    due_date: task.due_date,
+    why: task.description,
+    completed: task.status === 'completed',
+    home_id: task.home_id,
+    estimated_cost: task.estimated_cost
+  };
+};
 
 const HomeDetails = () => {
   const { homeId } = useParams<{ homeId: string }>();
@@ -55,6 +68,7 @@ const HomeDetails = () => {
   const [selectedTask, setSelectedTask] = useState<TaskData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("details");
   
   // Fetch home details and tasks
   useEffect(() => {
@@ -112,76 +126,85 @@ const HomeDetails = () => {
   
   const handleTaskComplete = async (taskId: string) => {
     try {
-      await api.patch(`/api/tasks/${taskId}`, { completed: true });
+      await api.patch(`/api/tasks/${taskId}/complete`);
       
-      // Update the tasks list
+      // Update local state
       setTasks(prevTasks => 
         prevTasks.map(task => 
-          task.id === taskId ? { ...task, completed: true } : task
+          task.id === taskId 
+            ? { ...task, status: 'completed' } 
+            : task
         )
       );
       
-      // Close the modal
-      setSelectedTask(null);
-      
       toast({
-        title: "Task completed",
+        title: "Task Completed",
         description: "The task has been marked as completed.",
       });
     } catch (error) {
       console.error("Error completing task:", error);
       toast({
         title: "Error",
-        description: "Failed to mark the task as completed. Please try again.",
+        description: "Failed to complete the task. Please try again.",
         variant: "destructive",
       });
     }
   };
   
-  // Format roof type and HVAC type for display
   const formatRoofType = (type: string) => {
-    const types: Record<string, string> = {
-      asphalt: "Asphalt Shingles",
-      metal: "Metal Roof",
-      tile: "Tile Roof",
-      slate: "Slate Roof",
-      wood: "Wood Shingles",
-      flat: "Flat/Built-up Roof"
-    };
-    
-    return types[type] || type;
+    switch (type.toLowerCase()) {
+      case 'asphalt':
+      case 'asphalt_shingle':
+        return 'Asphalt Shingle';
+      case 'metal':
+        return 'Metal';
+      case 'tile':
+        return 'Tile';
+      default:
+        return type.charAt(0).toUpperCase() + type.slice(1);
+    }
   };
   
   const formatHvacType = (type: string) => {
-    const types: Record<string, string> = {
-      central: "Central Air",
-      window: "Window Units",
-      split: "Split System",
-      heat_pump: "Heat Pump",
-      radiant: "Radiant Heating",
-      geothermal: "Geothermal"
-    };
-    
-    return types[type] || type;
+    switch (type.toLowerCase()) {
+      case 'central_air':
+      case 'central':
+        return 'Central Air';
+      case 'heat_pump':
+        return 'Heat Pump';
+      case 'window_units':
+        return 'Window Units';
+      default:
+        return type.charAt(0).toUpperCase() + type.slice(1);
+    }
   };
   
   if (loading) {
     return (
-      <div className="container py-8 max-w-5xl">
-        <Skeleton className="h-8 w-32 mb-6" />
-        <Skeleton className="h-12 w-64 mb-4" />
-        <Skeleton className="h-6 w-full max-w-md mb-8" />
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          {[1, 2, 3, 4].map(i => (
-            <Skeleton key={i} className="h-24 w-full rounded-lg" />
-          ))}
+      <div className="container mx-auto py-8 px-4">
+        <div className="flex items-center mb-6">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="mr-2"
+            onClick={() => navigate('/dashboard')}
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <Skeleton className="h-8 w-64" />
         </div>
         
-        <Skeleton className="h-10 w-48 mb-4" />
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {[1, 2, 3].map(i => (
-            <Skeleton key={i} className="h-32 w-full rounded-lg" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <Skeleton className="h-24 rounded-xl" />
+          <Skeleton className="h-24 rounded-xl" />
+          <Skeleton className="h-24 rounded-xl" />
+        </div>
+        
+        <Skeleton className="h-12 w-full mb-4" />
+        
+        <div className="space-y-4">
+          {[1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-32 rounded-xl" />
           ))}
         </div>
       </div>
@@ -190,141 +213,167 @@ const HomeDetails = () => {
   
   if (error || !home) {
     return (
-      <div className="container py-8">
-        <Button 
-          variant="ghost" 
-          className="mb-6 flex items-center text-muted-foreground hover:text-foreground"
-          onClick={() => navigate("/dashboard")}
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Dashboard
-        </Button>
+      <div className="container mx-auto py-8 px-4">
+        <div className="flex items-center mb-6">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="mr-2"
+            onClick={() => navigate('/dashboard')}
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <h1 className="text-2xl font-bold">Error</h1>
+        </div>
         
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-800">
-          <p>{error || "Home not found"}</p>
+        <div className="bg-destructive/10 text-destructive p-6 rounded-xl">
+          <h2 className="text-xl font-semibold mb-2">Failed to Load Home Details</h2>
+          <p>{error || "Unknown error occurred"}</p>
+          <Button 
+            variant="outline" 
+            className="mt-4"
+            onClick={() => navigate('/dashboard')}
+          >
+            Return to Dashboard
+          </Button>
         </div>
       </div>
     );
   }
   
   return (
-    <div className="container py-8 max-w-5xl">
-      <Button 
-        variant="ghost" 
-        className="mb-6 flex items-center text-muted-foreground hover:text-foreground"
-        onClick={() => navigate("/dashboard")}
-      >
-        <ArrowLeft className="mr-2 h-4 w-4" />
-        Back to Dashboard
-      </Button>
+    <div className="container mx-auto py-8 px-4">
+      <div className="flex items-center mb-6">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="mr-2"
+          onClick={() => navigate('/dashboard')}
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <h1 className="text-2xl font-bold">{home.name || `Home in ${home.location}`}</h1>
+      </div>
       
-      <div className="flex flex-col gap-8">
-        {/* Home header */}
-        <div className="flex flex-col gap-4">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-3">
-              <HomeIcon className="h-8 w-8 text-primary" />
-              <div>
-                <h1 className="text-3xl font-bold tracking-tight">{home.name}</h1>
-                <p className="text-muted-foreground">{home.address}</p>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="bg-white rounded-xl p-6 border shadow-sm">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="p-2 rounded-full bg-primary/10 text-primary">
+              <HomeIcon className="h-5 w-5" />
+            </div>
+            <h2 className="font-semibold">Location</h2>
+          </div>
+          <p className="text-lg">{home.location}</p>
+        </div>
+        
+        <div className="bg-white rounded-xl p-6 border shadow-sm">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="p-2 rounded-full bg-primary/10 text-primary">
+              <Calendar className="h-5 w-5" />
+            </div>
+            <h2 className="font-semibold">Year Built</h2>
+          </div>
+          <p className="text-lg">{home.year_built}</p>
+        </div>
+        
+        <div className="bg-white rounded-xl p-6 border shadow-sm">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="p-2 rounded-full bg-primary/10 text-primary">
+              <SquareIcon className="h-5 w-5" />
+            </div>
+            <h2 className="font-semibold">Square Footage</h2>
+          </div>
+          <p className="text-lg">{home.square_feet} sq ft</p>
+        </div>
+      </div>
+      
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
+        <TabsList className="mb-6">
+          <TabsTrigger value="details">Home Details</TabsTrigger>
+          <TabsTrigger value="tasks">Tasks</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="details" className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-white rounded-xl p-6 border shadow-sm">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="p-2 rounded-full bg-primary/10 text-primary">
+                  <Construction className="h-5 w-5" />
+                </div>
+                <h2 className="font-semibold">Roof Type</h2>
               </div>
+              <p className="text-lg">{home.roof_type ? formatRoofType(home.roof_type) : 'Not specified'}</p>
             </div>
             
-            <div className="flex gap-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="flex items-center gap-1"
-                onClick={() => navigate(`/homes/${homeId}/edit`)}
-              >
-                <Pencil className="h-4 w-4" />
-                <span>Edit</span>
-              </Button>
-              <Button variant="outline" size="sm" className="flex items-center gap-1 text-destructive hover:text-destructive">
-                <Trash2 className="h-4 w-4" />
-                <span>Delete</span>
-              </Button>
+            <div className="bg-white rounded-xl p-6 border shadow-sm">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="p-2 rounded-full bg-primary/10 text-primary">
+                  <Fan className="h-5 w-5" />
+                </div>
+                <h2 className="font-semibold">HVAC System</h2>
+              </div>
+              <p className="text-lg">{home.hvac_type ? formatHvacType(home.hvac_type) : 'Not specified'}</p>
             </div>
           </div>
-        </div>
+          
+          <div className="flex justify-end">
+            <Button 
+              variant="outline" 
+              className="flex items-center gap-2"
+              onClick={() => navigate(`/homes/${homeId}/edit`)}
+            >
+              <Pencil className="h-4 w-4" />
+              Edit Home Details
+            </Button>
+          </div>
+        </TabsContent>
         
-        {/* Home details */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="bg-muted/20 rounded-lg p-4 flex flex-col gap-2">
-            <div className="text-muted-foreground text-sm font-medium flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              <span>Year Built</span>
-            </div>
-            <div className="text-xl font-semibold">{home.year_built}</div>
-          </div>
-          
-          <div className="bg-muted/20 rounded-lg p-4 flex flex-col gap-2">
-            <div className="text-muted-foreground text-sm font-medium flex items-center gap-2">
-              <SquareIcon className="h-4 w-4" />
-              <span>Square Footage</span>
-            </div>
-            <div className="text-xl font-semibold">{home.square_feet} sq ft</div>
-          </div>
-          
-          <div className="bg-muted/20 rounded-lg p-4 flex flex-col gap-2">
-            <div className="text-muted-foreground text-sm font-medium flex items-center gap-2">
-              <Construction className="h-4 w-4" />
-              <span>Roof Type</span>
-            </div>
-            <div className="text-xl font-semibold">{formatRoofType(home.roof_type)}</div>
-          </div>
-          
-          <div className="bg-muted/20 rounded-lg p-4 flex flex-col gap-2">
-            <div className="text-muted-foreground text-sm font-medium flex items-center gap-2">
-              <Fan className="h-4 w-4" />
-              <span>HVAC System</span>
-            </div>
-            <div className="text-xl font-semibold">{formatHvacType(home.hvac_type)}</div>
-          </div>
-        </div>
-        
-        {/* Tasks section */}
-        <div className="mt-4">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-bold tracking-tight">Maintenance Tasks</h2>
-            <Button onClick={() => navigate(`/homes/${homeId}/tasks/add`)}>
-              <PlusCircle className="h-4 w-4 mr-2" />
+        <TabsContent value="tasks" className="space-y-6">
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-semibold">Maintenance Tasks</h2>
+            <Button 
+              className="flex items-center gap-2"
+              onClick={() => navigate(`/tasks/add?homeId=${homeId}`)}
+            >
+              <PlusCircle className="h-4 w-4" />
               Add Task
             </Button>
           </div>
           
           {tasks.length === 0 ? (
-            <div className="bg-muted/30 border border-border rounded-lg p-6 text-center">
-              <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <div className="bg-muted/50 rounded-xl p-8 text-center">
               <h3 className="text-lg font-medium mb-2">No tasks yet</h3>
               <p className="text-muted-foreground mb-4">
-                Add your first maintenance task for this home
+                You haven't added any maintenance tasks for this home yet.
               </p>
-              <Button onClick={() => navigate(`/homes/${homeId}/tasks/add`)}>
-                <PlusCircle className="h-4 w-4 mr-2" />
-                Add Task
+              <Button 
+                onClick={() => navigate(`/tasks/add?homeId=${homeId}`)}
+                className="flex items-center gap-2"
+              >
+                <PlusCircle className="h-4 w-4" />
+                Add Your First Task
               </Button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {tasks.map(task => (
+            <div className="space-y-4">
+              {tasks.map((task) => (
                 <TaskCard 
                   key={task.id} 
                   task={task} 
-                  onClick={() => handleTaskClick(task)}
+                  onComplete={handleTaskComplete}
+                  onViewDetails={() => handleTaskClick(task)}
                 />
               ))}
             </div>
           )}
-        </div>
-      </div>
+        </TabsContent>
+      </Tabs>
       
-      {/* Task modal */}
       {selectedTask && (
-        <TaskModal
-          isOpen={!!selectedTask}
+        <TaskModal 
+          task={convertToModalTask(selectedTask)} 
+          isOpen={!!selectedTask} 
           onClose={() => setSelectedTask(null)}
-          task={selectedTask}
           onComplete={() => selectedTask && handleTaskComplete(selectedTask.id)}
         />
       )}
