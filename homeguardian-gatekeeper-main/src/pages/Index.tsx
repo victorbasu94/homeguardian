@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, Check, Cog, Home, Quote, ShieldCheck } from 'lucide-react';
+import { ArrowRight, Check, Cog, Home, Quote, ShieldCheck, ChevronDown } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
@@ -24,6 +24,7 @@ const testimonials = [
 
 const Index = () => {
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
+  const [showScrollArrow, setShowScrollArrow] = useState(true);
   
   // Auto-rotate testimonials
   useEffect(() => {
@@ -34,6 +35,23 @@ const Index = () => {
     }, 5000);
     
     return () => clearInterval(interval);
+  }, []);
+  
+  // Handle scroll for arrow visibility
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollPosition = window.scrollY;
+      const heroHeight = window.innerHeight;
+      
+      if (scrollPosition > heroHeight * 0.5) {
+        setShowScrollArrow(false);
+      } else {
+        setShowScrollArrow(true);
+      }
+    };
+    
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
   
   return (
@@ -74,7 +92,7 @@ const Index = () => {
           alt="Beautiful modern home exterior"
         />
         
-        <div className="container max-w-5xl mx-auto text-center z-20 px-4 animate-fade-in">
+        <div className="container max-w-5xl mx-auto text-center z-20 px-4 animate-fade animate-slide-up">
           <h1 className="text-3xl md:text-5xl font-bold text-white tracking-tight leading-tight mb-2">
             Protecting Your Home, <span className="relative inline-block">
               <span className="relative z-10 text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">Effortlessly</span>
@@ -88,11 +106,29 @@ const Index = () => {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link 
               to="/register" 
-              className="bg-[#A3BFFA] text-white px-4 py-2 rounded-lg text-base font-medium hover:bg-[#B3C8FC] transition-all duration-300 flex items-center"
+              className="bg-[#A3BFFA] text-white px-4 py-2 rounded-lg text-base font-medium hover:bg-[#B3C8FC] transition-all duration-300 flex items-center hover:scale-105 animate-pulse"
+              style={{ animationDuration: '3s' }}
             >
               Get Started <ArrowRight className="ml-2 h-4 w-4 stroke-[1.5px]" />
             </Link>
           </div>
+        </div>
+        
+        {/* Scroll Down Arrow */}
+        <div 
+          className={`fixed bottom-4 right-4 z-50 transition-opacity duration-500 ${
+            showScrollArrow ? 'opacity-100' : 'opacity-0 pointer-events-none'
+          }`}
+        >
+          <ChevronDown 
+            className="w-6 h-6 text-[#A3BFFA] animate-bounce cursor-pointer" 
+            onClick={() => {
+              window.scrollTo({
+                top: window.innerHeight,
+                behavior: 'smooth'
+              });
+            }}
+          />
         </div>
       </div>
       
@@ -102,7 +138,7 @@ const Index = () => {
           <h2 className="text-2xl md:text-4xl font-bold text-center mb-8 text-[#1A2526]">Features</h2>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-5xl mx-auto">
-            <div className="bg-gradient-to-br from-[#D4C7A9]/20 to-[#F5F5F5] p-3 rounded-xl shadow-md border border-[#4A4A4A]/10 noise-texture h-[350px] flex flex-col">
+            <div className="bg-gradient-to-br from-[#D4C7A9]/20 to-[#F5F5F5] p-3 rounded-xl shadow-md border border-[#4A4A4A]/10 noise-texture h-[350px] flex flex-col animate-fade animate-slide-up" style={{ animationDelay: '0s' }}>
               <div className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-[#A3BFFA]/10 text-[#A3BFFA] mb-3 mx-auto">
                 <ShieldCheck className="w-6 h-6 stroke-[1.5px]" />
               </div>
@@ -112,7 +148,7 @@ const Index = () => {
               </p>
             </div>
             
-            <div className="bg-gradient-to-br from-[#D4C7A9]/20 to-[#F5F5F5] p-3 rounded-xl shadow-md border border-[#4A4A4A]/10 noise-texture h-[350px] flex flex-col">
+            <div className="bg-gradient-to-br from-[#D4C7A9]/20 to-[#F5F5F5] p-3 rounded-xl shadow-md border border-[#4A4A4A]/10 noise-texture h-[350px] flex flex-col animate-fade animate-slide-up" style={{ animationDelay: '0.2s' }}>
               <div className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-[#A3BFFA]/10 text-[#A3BFFA] mb-3 mx-auto">
                 <Cog className="w-6 h-6 stroke-[1.5px]" />
               </div>
@@ -122,7 +158,7 @@ const Index = () => {
               </p>
             </div>
             
-            <div className="bg-gradient-to-br from-[#D4C7A9]/20 to-[#F5F5F5] p-3 rounded-xl shadow-md border border-[#4A4A4A]/10 noise-texture h-[350px] flex flex-col">
+            <div className="bg-gradient-to-br from-[#D4C7A9]/20 to-[#F5F5F5] p-3 rounded-xl shadow-md border border-[#4A4A4A]/10 noise-texture h-[350px] flex flex-col animate-fade animate-slide-up" style={{ animationDelay: '0.4s' }}>
               <div className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-[#A3BFFA]/10 text-[#A3BFFA] mb-3 mx-auto">
                 <Home className="w-6 h-6 stroke-[1.5px]" />
               </div>
@@ -140,11 +176,11 @@ const Index = () => {
         <div className="container mx-auto px-4">
           <h2 className="text-2xl md:text-4xl font-bold text-center mb-8 text-[#1A2526]">What Homeowners Say</h2>
           
-          <div className="relative max-w-3xl mx-auto">
+          <div className="relative max-w-3xl mx-auto animate-bounce-in">
             <div className="relative bg-gradient-to-br from-[#D4C7A9]/30 to-[#F5F5F5] rounded-xl p-3 md:p-4 shadow-md border border-[#4A4A4A]/10 noise-texture">
               <Quote className="absolute text-[#4A4A4A] top-3 left-3 h-6 w-6 stroke-[1.5px] opacity-30" />
               
-              <div key={currentTestimonial} className="relative z-10 animate-fade-in px-8 pt-6">
+              <div key={currentTestimonial} className="relative z-10 px-8 pt-6 animate-fade">
                 <p className="font-secondary text-xl leading-relaxed mb-4 text-[#1A2526] italic">
                   "{testimonials[currentTestimonial].quote}"
                 </p>
@@ -176,14 +212,15 @@ const Index = () => {
       
       {/* CTA Section */}
       <div className="py-12 md:py-16 bg-gradient-to-br from-[#A3BFFA]/10 to-[#F5F5F5]">
-        <div className="container mx-auto px-4 text-center">
+        <div className="container mx-auto px-4 text-center animate-fade" style={{ animationDelay: '0.2s' }}>
           <h2 className="text-2xl md:text-4xl font-bold mb-3 text-[#1A2526]">Ready to Protect Your Home?</h2>
           <p className="text-[#4A4A4A] max-w-2xl mx-auto mb-6">
             Join thousands of homeowners who trust HomeGuardian for smarter, simpler home maintenance.
           </p>
           <Link 
             to="/register" 
-            className="bg-[#A3BFFA] text-white px-4 py-2 rounded-lg text-base font-medium hover:bg-[#B3C8FC] transition-all duration-300 inline-flex items-center"
+            className="bg-[#A3BFFA] text-white px-4 py-2 rounded-lg text-base font-medium hover:bg-[#B3C8FC] transition-all duration-300 inline-flex items-center hover:scale-105 animate-pulse"
+            style={{ animationDuration: '3s' }}
           >
             Get Started Today <Check className="ml-2 h-4 w-4 stroke-[1.5px]" />
           </Link>
@@ -194,7 +231,7 @@ const Index = () => {
       <footer className="bg-[#1A2526] text-white py-8">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div>
+            <div className="animate-slide-up" style={{ animationDelay: '0.1s' }}>
               <h3 className="text-lg font-bold mb-4">HomeGuardian</h3>
               <ul className="space-y-2">
                 <li><Link to="/" className="hover:text-[#A3BFFA] transition-colors">Home</Link></li>
@@ -204,7 +241,7 @@ const Index = () => {
               </ul>
             </div>
             
-            <div>
+            <div className="animate-slide-up" style={{ animationDelay: '0.3s' }}>
               <h3 className="text-lg font-bold mb-4">Support</h3>
               <ul className="space-y-2">
                 <li><Link to="/faq" className="hover:text-[#A3BFFA] transition-colors">FAQ</Link></li>
@@ -214,7 +251,7 @@ const Index = () => {
               </ul>
             </div>
             
-            <div>
+            <div className="animate-slide-up" style={{ animationDelay: '0.5s' }}>
               <h3 className="text-lg font-bold mb-4">Connect</h3>
               <ul className="space-y-2">
                 <li><a href="https://twitter.com" className="hover:text-[#A3BFFA] transition-colors">Twitter</a></li>
@@ -225,7 +262,7 @@ const Index = () => {
             </div>
           </div>
           
-          <div className="mt-8 pt-4 border-t border-white/10 text-center text-sm">
+          <div className="mt-8 pt-4 border-t border-white/10 text-center text-sm animate-fade" style={{ animationDelay: '0.7s' }}>
             <p>© {new Date().getFullYear()} HomeGuardian. All rights reserved.</p>
           </div>
         </div>

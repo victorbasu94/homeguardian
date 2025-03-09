@@ -5,6 +5,10 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400,500,600,700&family=Poppins:wght@500,600,700&family=Georgia:wght@400,700&display=swap');
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  
   :root {
     --background: 0 0% 96%; /* Guardian White #F5F5F5 */
     --foreground: 180 20% 13%; /* Midnight Slate #1A2526 */
@@ -90,6 +94,36 @@
     --success: 122 48% 34%; /* #2E7D32 */
     --success-foreground: 0 0% 100%;
   }
+}
+
+/* Animation Keyframes */
+@keyframes fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes bounce-in {
+  0% { opacity: 0; transform: translateY(30px); }
+  60% { opacity: 1; transform: translateY(-10px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* Animation Utility Classes */
+.animate-fade {
+  animation: fade 0.5s ease-in-out;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.5s ease-in-out;
+}
+
+.animate-bounce-in {
+  animation: bounce-in 0.6s ease-in-out;
 }
 
 /* Noise texture overlay */
