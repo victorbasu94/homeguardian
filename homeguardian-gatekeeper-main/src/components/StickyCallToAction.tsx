@@ -48,11 +48,6 @@ const StickyCallToAction = ({
         <Shield className="w-5 h-5" />
         {text} <ArrowRight className="w-5 h-5" />
       </Link>
-      
-      {/* Money-back guarantee badge */}
-      <div className="absolute -top-10 right-0 md:right-0 money-back-badge animate-bounce-subtle">
-        <span>30-day money-back guarantee</span>
-      </div>
     </div>
   );
 };

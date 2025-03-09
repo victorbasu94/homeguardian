@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { Shield, CheckCircle, ArrowRight, Star, Clock, Calendar, Wrench, Zap, ChevronDown } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import StickyCallToAction from '@/components/StickyCallToAction';
 import { Button } from '@/components/ui/button';
 
 const LandingPage: React.FC = () => {
@@ -280,7 +279,7 @@ const LandingPage: React.FC = () => {
               },
               {
                 question: "Is there a money-back guarantee?",
-                answer: "Yes! We offer a 30-day money-back guarantee on all our plans. If you're not completely satisfied with HomeGuardian, simply contact our support team for a full refund."
+                answer: "If you're not completely satisfied with HomeGuardian, simply contact our support team to discuss refund options."
               }
             ].map((faq, i) => (
               <div key={i} className="bg-white p-6 rounded-xl border border-gray-100 shadow-card">
@@ -303,35 +302,7 @@ const LandingPage: React.FC = () => {
         </div>
       </section>
       
-      {/* CTA Section */}
-      <section className="section-padding bg-primary text-white">
-        <div className="container-width">
-          <div className="text-center max-w-3xl mx-auto">
-            <h2 className="text-white mb-6">Ready to Protect Your Home?</h2>
-            <p className="text-white/90 text-xl mb-8">
-              Join thousands of homeowners who trust HomeGuardian to keep their homes in perfect condition.
-            </p>
-            
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/register" className="bg-white text-primary hover:bg-white/90 px-8 py-3 rounded-full font-medium text-xl transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transform hover:scale-105">
-                Get Started Now <ArrowRight className="w-5 h-5" />
-              </Link>
-              <Link to="/pricing" className="bg-white/10 text-white hover:bg-white/20 px-8 py-3 rounded-full font-medium text-xl transition-all duration-300 flex items-center justify-center gap-2">
-                View Pricing
-              </Link>
-            </div>
-            
-            <div className="mt-8 text-white/80">
-              <span className="flex items-center justify-center gap-2">
-                <CheckCircle className="h-5 w-5" /> 30-day money-back guarantee
-              </span>
-            </div>
-          </div>
-        </div>
-      </section>
-      
       <Footer />
-      <StickyCallToAction />
     </div>
   );
 };

@@ -15,7 +15,6 @@ import {
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import StickyCallToAction from '@/components/StickyCallToAction';
 import { Button } from '@/components/ui/button';
 
 const HowItWorks: React.FC = () => {
@@ -406,35 +405,7 @@ const HowItWorks: React.FC = () => {
         </div>
       </section>
       
-      {/* CTA Section */}
-      <section className="section-padding bg-gradient-to-r from-blue-500 to-blue-400 text-white noise-texture">
-        <div className="container-width">
-          <div className="text-center max-w-3xl mx-auto">
-            <h2 className="text-white mb-6">Ready to Protect Your Home?</h2>
-            <p className="text-white/90 text-xl mb-8">
-              Join thousands of homeowners who trust HomeGuardian to keep their homes in perfect condition.
-            </p>
-            
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/register" className="bg-white text-blue-500 hover:bg-white/90 px-8 py-3 rounded-full font-medium text-xl transition-all duration-300 flex items-center justify-center gap-2 shadow-md hover:shadow-lg transform hover:scale-105">
-                Get Started Now <ArrowRight className="w-5 h-5" />
-              </Link>
-              <Link to="/pricing" className="bg-white/10 text-white hover:bg-white/20 px-8 py-3 rounded-full font-medium text-xl transition-all duration-300 flex items-center justify-center gap-2 transform hover:scale-105">
-                View Pricing
-              </Link>
-            </div>
-            
-            <div className="mt-8">
-              <span className="bg-[#D4C7A9] text-[#1A2526] text-sm font-bold px-3 py-1 rounded-full inline-flex items-center gap-1 mx-auto">
-                <CheckCircle className="h-4 w-4" /> 30-day money-back guarantee
-              </span>
-            </div>
-          </div>
-        </div>
-      </section>
-      
       <Footer />
-      <StickyCallToAction />
     </div>
   );
 };

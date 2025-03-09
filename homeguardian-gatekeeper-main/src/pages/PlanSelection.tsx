@@ -232,21 +232,6 @@ const PlanSelection = () => {
           </Button>
         </div>
         
-        {/* Money-back guarantee */}
-        <div className="mt-12 bg-tertiary/10 rounded-xl p-6 border border-tertiary/20 max-w-2xl mx-auto">
-          <div className="flex items-center gap-4">
-            <div className="bg-tertiary rounded-full p-2 flex-shrink-0">
-              <Shield className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold mb-1 text-neutral">30-Day Money-Back Guarantee</h3>
-              <p className="text-neutral/80">
-                Not satisfied with our service? Get a full refund within 30 days, no questions asked.
-              </p>
-            </div>
-          </div>
-        </div>
-        
         <div className="mt-8 text-center">
           <p className="text-neutral/60 text-sm">
             All plans are billed according to your selected billing cycle. You can cancel anytime.
