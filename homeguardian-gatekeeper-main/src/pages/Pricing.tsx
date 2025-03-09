@@ -43,26 +43,26 @@ const PricingTier: React.FC<PricingTierProps> = ({
     <div className={`
       relative rounded-2xl overflow-hidden transition-all duration-300
       ${highlighted 
-        ? 'border-2 border-primary shadow-xl scale-105 z-10 bg-white' 
-        : 'border border-neutral/10 shadow-md bg-white/80'}
+        ? 'border-2 border-blue-500 shadow-card-hover scale-105 z-10 bg-white transform hover:translate-y-[-5px]' 
+        : 'border border-neutral/10 shadow-card bg-white/80 transform hover:translate-y-[-5px] hover:shadow-card-hover'}
     `}>
       {highlighted && (
-        <div className="absolute top-0 left-0 right-0 bg-primary text-white text-center py-1.5 text-sm font-medium">
+        <div className="absolute top-0 left-0 right-0 bg-blue-500 text-white text-center py-1.5 text-sm font-medium">
           Most Popular
         </div>
       )}
       
       <div className="p-6 pt-8">
         <div className="flex items-center gap-3 mb-4">
-          <div className="bg-primary/10 p-2 rounded-full">
-            {icon}
+          <div className="bg-blue-500/10 p-2 rounded-full">
+            {React.cloneElement(icon as React.ReactElement, { className: "h-6 w-6 text-blue-500" })}
           </div>
           <h3 className="text-xl font-semibold">{title}</h3>
         </div>
         
         <div>
           <div className="flex items-end gap-2">
-            <span className="text-4xl font-bold">
+            <span className="text-4xl font-bold text-blue-500">
               ${price.monthly}
             </span>
             <span className="text-neutral/70 mb-1">/ month</span>
@@ -79,10 +79,10 @@ const PricingTier: React.FC<PricingTierProps> = ({
         
         <div className="mt-6">
           <Button 
-            className={`w-full ${highlighted ? 'bg-primary hover:bg-primary/90' : ''}`}
+            className={`w-full ${highlighted ? 'bg-blue-500 hover:bg-blue-500/90 shadow-button hover:shadow-button-hover' : ''}`}
             onClick={() => onSubscribe(tier)}
           >
-            Get Started
+            Get Started <ArrowRight className="ml-2 h-5 w-5" />
           </Button>
         </div>
         
@@ -90,7 +90,7 @@ const PricingTier: React.FC<PricingTierProps> = ({
           {features.map((feature, index) => (
             <div key={index} className="flex items-start gap-3">
               {feature.included ? (
-                <CheckCircle className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                <CheckCircle className="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" />
               ) : (
                 <X className="h-5 w-5 text-neutral/40 flex-shrink-0 mt-0.5" />
               )}
@@ -131,7 +131,7 @@ const Pricing: React.FC = () => {
         { text: 'Home value protection report', included: false },
       ],
       tier: 'basic' as SubscriptionTier,
-      icon: <Home className="h-6 w-6 text-primary" />,
+      icon: <Home className="h-6 w-6 text-blue-500" />,
       homes: 1,
     },
     {
@@ -152,7 +152,7 @@ const Pricing: React.FC = () => {
       ],
       tier: 'pro' as SubscriptionTier,
       highlighted: true,
-      icon: <Shield className="h-6 w-6 text-primary" />,
+      icon: <Shield className="h-6 w-6 text-blue-500" />,
       homes: 2,
     },
     {
@@ -172,7 +172,7 @@ const Pricing: React.FC = () => {
         { text: 'Annual home health assessment', included: true },
       ],
       tier: 'premium' as SubscriptionTier,
-      icon: <Zap className="h-6 w-6 text-primary" />,
+      icon: <Zap className="h-6 w-6 text-blue-500" />,
       homes: 5,
     },
   ];
@@ -182,21 +182,30 @@ const Pricing: React.FC = () => {
       <Navbar />
       
       {/* Hero Section */}
-      <section className="relative pt-32 pb-20 md:pt-40 md:pb-32 overflow-hidden bg-primary-gradient text-white">
+      <section className="relative pt-32 pb-20 md:pt-40 md:pb-32 overflow-hidden bg-blue-500/90 noise-texture">
+        {/* Decorative circles */}
+        <div className="absolute top-20 right-10 w-64 h-64 rounded-full bg-white/10 blur-3xl animate-pulse-soft"></div>
+        <div className="absolute bottom-10 left-10 w-80 h-80 rounded-full bg-white/5 blur-3xl animate-pulse-soft"></div>
+        
         <div className="container-width relative z-10">
           <div className="max-w-3xl mx-auto text-center">
-            <h1 className="text-white mb-6">
+            <h1 className="text-white mb-6 animate-fade-in">
               Simple, Transparent Pricing
             </h1>
-            <p className="text-white/90 text-xl mb-8 max-w-2xl mx-auto">
+            <p className="text-white/90 text-xl mb-8 max-w-2xl mx-auto animate-slide-in">
               Choose the plan that's right for your home maintenance needs. All plans include our core AI-powered maintenance technology.
             </p>
+            
+            <div className="flex flex-col sm:flex-row gap-4 justify-center animate-scale-in">
+              <Link to="/register" className="bg-white text-blue-500 hover:bg-white/90 px-8 py-3 rounded-full font-medium text-xl transition-all duration-300 flex items-center justify-center gap-2 shadow-md hover:shadow-lg transform hover:scale-105">
+                Get Started Now <ArrowRight className="w-5 h-5" />
+              </Link>
+              <Link to="/how-it-works" className="bg-white/10 text-white hover:bg-white/20 px-8 py-3 rounded-full font-medium text-xl transition-all duration-300 flex items-center justify-center gap-2 transform hover:scale-105">
+                How It Works
+              </Link>
+            </div>
           </div>
         </div>
-        
-        {/* Decorative elements */}
-        <div className="absolute top-20 right-10 w-64 h-64 rounded-full bg-white/10 blur-3xl"></div>
-        <div className="absolute bottom-10 left-10 w-80 h-80 rounded-full bg-white/5 blur-3xl"></div>
       </section>
       
       {/* Pricing Tiers */}
@@ -221,7 +230,7 @@ const Pricing: React.FC = () => {
           </div>
           
           <div className="mt-12 text-center">
-            <p className="text-neutral/70">Have questions? <Link to="/contact" className="text-primary hover:underline">Contact our team</Link></p>
+            <p className="text-neutral/70">Have questions? <Link to="/contact" className="text-blue-500 hover:underline">Contact our team</Link></p>
           </div>
         </div>
       </section>
@@ -230,7 +239,7 @@ const Pricing: React.FC = () => {
       <section className="section-padding bg-white">
         <div className="container-width">
           <div className="text-center mb-16">
-            <h2 className="mb-4">Frequently Asked Questions</h2>
+            <h2 className="mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-amber-400">Frequently Asked Questions</h2>
             <p className="text-neutral/80 max-w-2xl mx-auto text-lg">
               Find answers to common questions about our pricing and plans
             </p>
@@ -248,159 +257,49 @@ const Pricing: React.FC = () => {
               },
               {
                 question: "Is there a contract or commitment?",
-                answer: "No long-term contracts or commitments. You can cancel your subscription at any time from your account settings. If you cancel, you'll maintain access until the end of your current billing period."
+                answer: "No, all our plans are month-to-month with no long-term contracts. You can cancel anytime from your account settings."
+              },
+              {
+                question: "Can I add more homes to my plan?",
+                answer: "Yes, you can add additional homes to any plan for an extra fee. The Basic plan allows 1 home, Pro allows 2 homes, and Premium allows up to 5 homes. Contact support if you need to manage more than 5 homes."
               },
               {
                 question: "Do you offer refunds?",
-                answer: "If you're not completely satisfied with HomeGuardian, simply contact our support team to discuss refund options."
-              },
-              {
-                question: "What payment methods do you accept?",
-                answer: "We accept all major credit cards (Visa, Mastercard, American Express, Discover) as well as PayPal. All payments are securely processed and your information is never stored on our servers."
+                answer: "We offer a 30-day money-back guarantee if you're not satisfied with our service. After that period, we don't provide refunds for partial months, but you can cancel anytime to avoid future charges."
               }
             ].map((faq, i) => (
-              <div key={i} className="bg-softWhite p-6 rounded-xl border border-gray-100 shadow-card">
-                <button className="flex justify-between items-center w-full text-left">
-                  <h3 className="text-lg font-bold">{faq.question}</h3>
-                  <ArrowRight className="h-5 w-5 text-primary flex-shrink-0" />
-                </button>
-                <div className="mt-4 text-neutral/80">
-                  <p>{faq.answer}</p>
-                </div>
+              <div key={i} className="bg-softWhite p-6 rounded-xl border border-neutral/10 shadow-card hover:shadow-card-hover transition-all duration-300">
+                <h3 className="text-xl font-bold mb-2 text-neutral">{faq.question}</h3>
+                <p className="text-neutral/80">{faq.answer}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
       
-      {/* Comparison Table (Mobile Hidden) */}
-      <section className="section-padding bg-softWhite hidden lg:block">
-        <div className="container-width">
-          <div className="text-center mb-16">
-            <h2 className="mb-4">Plan Comparison</h2>
-            <p className="text-neutral/80 max-w-2xl mx-auto text-lg">
-              Compare all features across our different plans
+      {/* CTA Section */}
+      <section className="section-padding bg-softWhite relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-amber-400/10"></div>
+        
+        {/* Decorative elements */}
+        <div className="absolute top-20 right-10 w-64 h-64 rounded-full bg-blue-500/10 blur-3xl"></div>
+        <div className="absolute bottom-10 left-10 w-80 h-80 rounded-full bg-amber-400/10 blur-3xl"></div>
+        
+        <div className="container-width relative z-10">
+          <div className="bg-white rounded-2xl shadow-card p-8 md:p-12 text-center max-w-4xl mx-auto">
+            <h2 className="mb-4">Ready to Protect Your Home?</h2>
+            <p className="text-neutral/80 max-w-2xl mx-auto text-lg mb-8">
+              Join thousands of homeowners who trust HomeGuardian to keep their homes in perfect condition.
             </p>
-          </div>
-          
-          <div className="bg-white rounded-xl shadow-card overflow-hidden">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="text-left p-6 font-medium text-neutral/70">Features</th>
-                  <th className="p-6 text-center">
-                    <div className="font-bold text-xl mb-1">Basic</div>
-                    <div className="text-primary font-bold">${plan === 'monthly' ? '9.99' : '8.33'}/mo</div>
-                  </th>
-                  <th className="p-6 text-center bg-primary/5 border-x border-primary/10">
-                    <div className="font-bold text-xl mb-1">Pro</div>
-                    <div className="text-primary font-bold">${plan === 'monthly' ? '19.99' : '16.67'}/mo</div>
-                  </th>
-                  <th className="p-6 text-center">
-                    <div className="font-bold text-xl mb-1">Premium</div>
-                    <div className="text-primary font-bold">${plan === 'monthly' ? '29.99' : '24.99'}/mo</div>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr className="border-b border-gray-200">
-                  <td className="p-6 font-medium">Homes</td>
-                  <td className="p-6 text-center">1 home</td>
-                  <td className="p-6 text-center bg-primary/5 border-x border-primary/10">2 homes</td>
-                  <td className="p-6 text-center">5 homes</td>
-                </tr>
-                <tr className="border-b border-gray-200">
-                  <td className="p-6 font-medium">Maintenance Tasks</td>
-                  <td className="p-6 text-center">Unlimited</td>
-                  <td className="p-6 text-center bg-primary/5 border-x border-primary/10">Unlimited</td>
-                  <td className="p-6 text-center">Unlimited</td>
-                </tr>
-                <tr className="border-b border-gray-200">
-                  <td className="p-6 font-medium">Task Reminders</td>
-                  <td className="p-6 text-center">Basic (Email)</td>
-                  <td className="p-6 text-center bg-primary/5 border-x border-primary/10">Advanced (Email, SMS)</td>
-                  <td className="p-6 text-center">Advanced (Email, SMS)</td>
-                </tr>
-                <tr className="border-b border-gray-200">
-                  <td className="p-6 font-medium">DIY Guides</td>
-                  <td className="p-6 text-center">
-                    <CheckCircle className="h-5 w-5 text-primary mx-auto" />
-                  </td>
-                  <td className="p-6 text-center bg-primary/5 border-x border-primary/10">
-                    <CheckCircle className="h-5 w-5 text-primary mx-auto" />
-                  </td>
-                  <td className="p-6 text-center">
-                    <CheckCircle className="h-5 w-5 text-primary mx-auto" />
-                  </td>
-                </tr>
-                <tr className="border-b border-gray-200">
-                  <td className="p-6 font-medium">Professional Recommendations</td>
-                  <td className="p-6 text-center">
-                    <X className="h-5 w-5 text-neutral/30 mx-auto" />
-                  </td>
-                  <td className="p-6 text-center bg-primary/5 border-x border-primary/10">
-                    <CheckCircle className="h-5 w-5 text-primary mx-auto" />
-                  </td>
-                  <td className="p-6 text-center">
-                    <CheckCircle className="h-5 w-5 text-primary mx-auto" />
-                  </td>
-                </tr>
-                <tr className="border-b border-gray-200">
-                  <td className="p-6 font-medium">Priority Support</td>
-                  <td className="p-6 text-center">
-                    <X className="h-5 w-5 text-neutral/30 mx-auto" />
-                  </td>
-                  <td className="p-6 text-center bg-primary/5 border-x border-primary/10">
-                    <CheckCircle className="h-5 w-5 text-primary mx-auto" />
-                  </td>
-                  <td className="p-6 text-center">
-                    <CheckCircle className="h-5 w-5 text-primary mx-auto" />
-                  </td>
-                </tr>
-                <tr>
-                  <td className="p-6 font-medium">Advanced Reporting</td>
-                  <td className="p-6 text-center">
-                    <X className="h-5 w-5 text-neutral/30 mx-auto" />
-                  </td>
-                  <td className="p-6 text-center bg-primary/5 border-x border-primary/10">
-                    <X className="h-5 w-5 text-neutral/30 mx-auto" />
-                  </td>
-                  <td className="p-6 text-center">
-                    <CheckCircle className="h-5 w-5 text-primary mx-auto" />
-                  </td>
-                </tr>
-              </tbody>
-              <tfoot>
-                <tr className="border-t border-gray-200 bg-gray-50">
-                  <td className="p-6"></td>
-                  <td className="p-6 text-center">
-                    <Button 
-                      onClick={() => handleSubscribe('basic')} 
-                      variant="outline"
-                      className="bg-primary/10 text-primary hover:bg-primary/20"
-                    >
-                      Choose Basic
-                    </Button>
-                  </td>
-                  <td className="p-6 text-center bg-primary/5 border-x border-primary/10">
-                    <Button 
-                      onClick={() => handleSubscribe('pro')}
-                    >
-                      Choose Pro
-                    </Button>
-                  </td>
-                  <td className="p-6 text-center">
-                    <Button 
-                      onClick={() => handleSubscribe('premium')} 
-                      variant="outline"
-                      className="bg-primary/10 text-primary hover:bg-primary/20"
-                    >
-                      Choose Premium
-                    </Button>
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
+            
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link to="/register" className="bg-blue-500 text-white hover:bg-blue-500/90 px-8 py-3 rounded-full font-medium text-xl transition-all duration-300 flex items-center justify-center gap-2 shadow-md hover:shadow-lg transform hover:scale-105">
+                Get Started Now <ArrowRight className="w-5 h-5" />
+              </Link>
+              <Link to="/contact" className="bg-softWhite text-neutral hover:bg-neutral/10 px-8 py-3 rounded-full font-medium text-xl transition-all duration-300 flex items-center justify-center gap-2 transform hover:scale-105">
+                Contact Sales
+              </Link>
+            </div>
           </div>
         </div>
       </section>
