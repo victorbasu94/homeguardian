@@ -3,7 +3,20 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { PlusCircle, Home as HomeIcon, AlertCircle, Plus, ClipboardList, Bell, Settings, Search, CheckCircle, Sparkles } from 'lucide-react';
+import { 
+  PlusCircle, 
+  Home as HomeIcon, 
+  AlertCircle, 
+  Plus, 
+  ClipboardList, 
+  Bell, 
+  Settings, 
+  Search, 
+  CheckCircle, 
+  Sparkles,
+  CheckIcon,
+  LayoutDashboard
+} from 'lucide-react';
 import { format } from 'date-fns';
 import { useAuth } from '@/hooks/useAuth';
 import api from '@/lib/axios';
@@ -11,6 +24,7 @@ import HomeCard, { HomeData, HomeCardProps } from '@/components/dashboard/HomeCa
 import TaskCard, { TaskData } from '@/components/dashboard/TaskCard';
 import TaskModal, { TaskData as TaskModalData } from '@/components/dashboard/TaskModal';
 import DashboardNavbar from '@/components/dashboard/DashboardNavbar';
+import Footer from '@/components/Footer';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import HomesEmptyState from '@/components/dashboard/HomesEmptyState';
@@ -163,9 +177,8 @@ const Dashboard = () => {
   
   // Search and UI state
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState('tasks');
+  const [activeTab, setActiveTab] = useState('overview');
   
-  const [selectedTab, setSelectedTab] = useState('homes');
   const [showAITasks, setShowAITasks] = useState(true);
   
   // Check for subscription success parameter
@@ -461,27 +474,43 @@ const Dashboard = () => {
       );
     }
     
-    return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {homes.map(home => (
-          <HomeCard 
-            key={home.id} 
-            home={home} 
+    const renderHomeCards = () => {
+      return homes.map((home) => (
+        <div key={home.id}>
+          <HomeCard
+            home={home}
             isSelected={selectedHome?.id === home.id}
             onClick={() => handleHomeSelect(home)}
             onEdit={() => navigate(`/homes/${home.id}/edit`)}
           />
-        ))}
-        <div className="flex items-center justify-center h-full min-h-[200px] border border-dashed border-border rounded-lg bg-muted/20 hover:bg-muted/30 transition-colors">
-          <Button 
-            variant="ghost" 
-            className="flex flex-col gap-2 h-auto py-8"
-            onClick={() => navigate("/homes/add")}
-          >
-            <PlusCircle className="h-8 w-8 text-muted-foreground" />
-            <span>Add Home</span>
+        </div>
+      ));
+    };
+    
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-bold text-[#1A2526]">Your Homes</h2>
+          <Button onClick={() => navigate('/homes/add')} className="flex items-center gap-2">
+            <Plus className="h-4 w-4" /> Add Home
           </Button>
         </div>
+        
+        {loadingHomes ? (
+          <HomesLoading />
+        ) : homesError ? (
+          <div className="text-center py-8">
+            <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
+            <h3 className="text-lg font-medium">Error Loading Homes</h3>
+            <p className="text-muted-foreground">{homesError}</p>
+          </div>
+        ) : homes.length === 0 ? (
+          <HomesEmptyState onAddHome={() => navigate('/homes/add')} />
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {renderHomeCards()}
+          </div>
+        )}
       </div>
     );
   };
@@ -529,116 +558,288 @@ const Dashboard = () => {
         )
       : tasks;
     
-    if (filteredTasks.length === 0) {
-      return (
-        <div className="bg-muted/30 border border-border rounded-lg p-6 text-center">
-          <h3 className="text-lg font-medium mb-2">No tasks found</h3>
-          <p className="text-muted-foreground mb-4">
-            {searchQuery.trim() !== '' 
-              ? "No tasks match your search criteria." 
-              : "Add maintenance tasks to keep track of your home upkeep"}
-          </p>
-          <Button onClick={() => navigate(`/homes/${selectedHome.id}/tasks/add`)}>
-            <PlusCircle className="h-4 w-4 mr-2" />
-            Add Task
-          </Button>
-        </div>
-      );
-    }
+    // Ensure tasks are properly typed
+    const typedTasks = filteredTasks as TaskData[];
     
     return (
-      <div>
+      <div className="space-y-6">
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold">Maintenance Tasks</h2>
-            <div className="relative w-64">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search tasks..."
-                className="pl-8"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
+            <h2 className="text-2xl font-bold text-[#1A2526]">Maintenance Tasks</h2>
+            {selectedHome && (
+              <Button onClick={() => navigate(`/homes/${selectedHome.id}/tasks/add`)} className="flex items-center gap-2">
+                <Plus className="h-4 w-4" /> Add Task
+              </Button>
+            )}
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredTasks.map(task => (
-              <TaskCard 
-                key={task.id} 
-                task={task} 
-                onComplete={() => handleTaskComplete(task.id)}
-                onViewDetails={(task) => navigate(`/tasks/${task.id}`)}
+          {selectedHome ? (
+            <div className="flex items-center gap-2 mb-4">
+              <Input
+                placeholder="Search tasks..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="max-w-sm"
               />
-            ))}
-          </div>
+            </div>
+          ) : (
+            <div className="bg-amber-50 border border-amber-200 rounded-md p-4 mb-4">
+              <p className="text-amber-800 flex items-center gap-2">
+                <AlertCircle className="h-4 w-4" />
+                Select a home to view and manage its tasks
+              </p>
+            </div>
+          )}
         </div>
         
-        <div className="flex justify-end">
-          <Button onClick={() => navigate(`/homes/${selectedHome.id}/tasks/add`)}>
-            <PlusCircle className="h-4 w-4 mr-2" />
-            Add Task
-          </Button>
+        {loadingTasks ? (
+          <div className="space-y-4">
+            {[...Array(3)].map((_, i) => (
+              <Skeleton key={i} className="h-32 w-full rounded-lg" />
+            ))}
+          </div>
+        ) : tasksError ? (
+          <div className="text-center py-8">
+            <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
+            <h3 className="text-lg font-medium">Error Loading Tasks</h3>
+            <p className="text-muted-foreground">{tasksError}</p>
+          </div>
+        ) : typedTasks.length === 0 ? (
+          <div className="text-center py-12 border rounded-lg bg-background">
+            <ClipboardList className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-medium">No Tasks Found</h3>
+            <p className="text-muted-foreground mb-6">
+              {selectedHome ? "This home doesn't have any tasks yet." : "Select a home to view its tasks."}
+            </p>
+            {selectedHome && (
+              <Button onClick={() => navigate(`/homes/${selectedHome.id}/tasks/add`)}>
+                Add Your First Task
+              </Button>
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {typedTasks.map((task) => (
+              <div key={task.id}>
+                <TaskCard
+                  task={task}
+                  onViewDetails={(taskData) => handleTaskClick(taskData)}
+                  onComplete={(taskId) => handleTaskComplete(taskId)}
+                />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // Render the overview section
+  const renderOverview = () => {
+    // Create a safe user name display
+    const userName = userData?.name || 'there';
+    
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-[36px] font-bold text-[#1A2526]">
+            Hi, {userName}
+          </h2>
+          <p className="text-[20px] text-[#4A4A4A] font-serif">
+            Welcome to your HomeGuardian dashboard
+          </p>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Stat Card 1 */}
+          <div className="w-full max-w-[300px] bg-gradient-to-br from-[#D4C7A9]/20 to-[#F5F5F5] border border-[#4A4A4A] rounded-xl shadow-md p-3">
+            <h3 className="font-medium text-[#1A2526]">Tasks</h3>
+            <p className="text-2xl font-bold text-[#2E7D32]">{tasks.length}</p>
+            <p className="text-sm text-[#4A4A4A]">Active maintenance tasks</p>
+          </div>
+          
+          {/* Stat Card 2 */}
+          <div className="w-full max-w-[300px] bg-gradient-to-br from-[#D4C7A9]/20 to-[#F5F5F5] border border-[#4A4A4A] rounded-xl shadow-md p-3">
+            <h3 className="font-medium text-[#1A2526]">Homes</h3>
+            <p className="text-2xl font-bold text-[#2E7D32]">{homes.length}</p>
+            <p className="text-sm text-[#4A4A4A]">Properties being managed</p>
+          </div>
+          
+          {/* Stat Card 3 */}
+          <div className="w-full max-w-[300px] bg-gradient-to-br from-[#D4C7A9]/20 to-[#F5F5F5] border border-[#4A4A4A] rounded-xl shadow-md p-3">
+            <h3 className="font-medium text-[#1A2526]">Plan</h3>
+            <p className="text-2xl font-bold text-[#2E7D32]">{userData?.subscription_plan || 'Basic'}</p>
+            <p className="text-sm text-[#4A4A4A]">Current subscription</p>
+          </div>
         </div>
       </div>
     );
   };
-  
+
+  // Render the plan section
+  const renderPlan = () => {
+    return (
+      <div className="space-y-6">
+        <h2 className="text-2xl font-bold text-[#1A2526]">Your Plan</h2>
+        
+        <div className="bg-gradient-to-br from-[#D4C7A9]/20 to-[#F5F5F5] border border-[#4A4A4A] rounded-xl shadow-md p-6">
+          <h3 className="text-xl font-medium text-[#1A2526] mb-2">
+            Current Plan: {userData?.subscription_plan || 'Basic'}
+          </h3>
+          <p className="text-[#4A4A4A] mb-4">
+            {userData?.subscription_status === 'active' 
+              ? `Your plan is active until ${userData?.subscription_end_date || 'N/A'}`
+              : 'Your plan is not currently active'}
+          </p>
+          
+          <Button className="border-[#A3BFFA] bg-[#D4C7A9]/10 text-[#1A2526] hover:bg-[#A3BFFA]/20">
+            Upgrade Your Plan
+          </Button>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="border rounded-xl p-4">
+            <h3 className="font-medium">Basic</h3>
+            <p className="text-2xl font-bold">$9.99/mo</p>
+            <ul className="mt-4 space-y-2">
+              <li className="flex items-center">
+                <CheckCircle className="h-5 w-5 text-[#2E7D32] mr-2" />
+                <span>Up to 2 homes</span>
+              </li>
+              <li className="flex items-center">
+                <CheckCircle className="h-5 w-5 text-[#2E7D32] mr-2" />
+                <span>Basic maintenance reminders</span>
+              </li>
+            </ul>
+          </div>
+          
+          <div className="border rounded-xl p-4 border-[#A3BFFA] bg-[#D4C7A9]/10">
+            <h3 className="font-medium">Pro</h3>
+            <p className="text-2xl font-bold">$19.99/mo</p>
+            <ul className="mt-4 space-y-2">
+              <li className="flex items-center">
+                <CheckCircle className="h-5 w-5 text-[#2E7D32] mr-2" />
+                <span>Up to 5 homes</span>
+              </li>
+              <li className="flex items-center">
+                <CheckCircle className="h-5 w-5 text-[#2E7D32] mr-2" />
+                <span>Advanced maintenance tracking</span>
+              </li>
+              <li className="flex items-center">
+                <CheckCircle className="h-5 w-5 text-[#2E7D32] mr-2" />
+                <span>AI maintenance suggestions</span>
+              </li>
+            </ul>
+          </div>
+          
+          <div className="border rounded-xl p-4">
+            <h3 className="font-medium">Premium</h3>
+            <p className="text-2xl font-bold">$29.99/mo</p>
+            <ul className="mt-4 space-y-2">
+              <li className="flex items-center">
+                <CheckCircle className="h-5 w-5 text-[#2E7D32] mr-2" />
+                <span>Unlimited homes</span>
+              </li>
+              <li className="flex items-center">
+                <CheckCircle className="h-5 w-5 text-[#2E7D32] mr-2" />
+                <span>Priority support</span>
+              </li>
+              <li className="flex items-center">
+                <CheckCircle className="h-5 w-5 text-[#2E7D32] mr-2" />
+                <span>Advanced analytics</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <div className="min-h-screen bg-softWhite">
+    <div className="min-h-screen bg-[#F5F5F5] flex flex-col">
+      {/* Navbar */}
       <DashboardNavbar />
       
-      <main className="container mx-auto py-8 px-4">
-        {/* Subscription Status */}
-        {renderSubscriptionStatus()}
+      {/* Main Content */}
+      <div className="flex flex-col md:flex-row flex-grow">
+        {/* Sidebar - 250px wide */}
+        <aside className="w-full md:w-[250px] bg-gradient-to-br from-[#D4C7A9]/20 to-[#F5F5F5] p-3 min-h-[calc(100vh-64px)]">
+          <nav className="space-y-2">
+            <button
+              onClick={() => setActiveTab('overview')}
+              className={`w-full text-left px-4 py-2 rounded-md flex items-center space-x-2 ${
+                activeTab === 'overview' 
+                  ? 'border-l-4 border-[#A3BFFA] bg-white/50' 
+                  : 'text-[#1A2526]'
+              }`}
+            >
+              <LayoutDashboard className="h-5 w-5" />
+              <span>Overview</span>
+            </button>
+            
+            <button
+              onClick={() => setActiveTab('tasks')}
+              className={`w-full text-left px-4 py-2 rounded-md flex items-center space-x-2 ${
+                activeTab === 'tasks' 
+                  ? 'border-l-4 border-[#A3BFFA] bg-white/50' 
+                  : 'text-[#1A2526]'
+              }`}
+            >
+              <ClipboardList className="h-5 w-5" />
+              <span>Tasks</span>
+            </button>
+            
+            <button
+              onClick={() => setActiveTab('homes')}
+              className={`w-full text-left px-4 py-2 rounded-md flex items-center space-x-2 ${
+                activeTab === 'homes' 
+                  ? 'border-l-4 border-[#A3BFFA] bg-white/50' 
+                  : 'text-[#1A2526]'
+              }`}
+            >
+              <HomeIcon className="h-5 w-5" />
+              <span>Homes</span>
+            </button>
+            
+            <button
+              onClick={() => setActiveTab('plan')}
+              className={`w-full text-left px-4 py-2 rounded-md flex items-center space-x-2 ${
+                activeTab === 'plan' 
+                  ? 'border-l-4 border-[#A3BFFA] bg-white/50' 
+                  : 'text-[#1A2526]'
+              }`}
+            >
+              <Sparkles className="h-5 w-5" />
+              <span>Plan</span>
+            </button>
+          </nav>
+        </aside>
         
-        {/* Main Content */}
-        <div className="mt-8">
-          <Tabs defaultValue="tasks" onValueChange={(value) => setSelectedTab(value)}>
-            <div className="flex justify-between items-center mb-6">
-              <TabsList>
-                <TabsTrigger value="tasks" className="flex items-center gap-2">
-                  <ClipboardList className="h-4 w-4" /> Tasks
-                </TabsTrigger>
-                <TabsTrigger value="homes" className="flex items-center gap-2">
-                  <HomeIcon className="h-4 w-4" /> Homes
-                </TabsTrigger>
-              </TabsList>
-              
-              <div className="flex items-center gap-3">
-                {selectedTab === 'homes' && (
-                  <Button onClick={() => navigate('/homes/add')} className="flex items-center gap-2">
-                    <Plus className="h-4 w-4" /> Add Home
-                  </Button>
-                )}
-                {selectedTab === 'tasks' && selectedHome && (
-                  <Button onClick={() => navigate(`/homes/${selectedHome.id}/tasks/add`)} className="flex items-center gap-2">
-                    <Plus className="h-4 w-4" /> Add Task
-                  </Button>
-                )}
-              </div>
-            </div>
-            
-            <TabsContent value="tasks">
-              {renderTasks()}
-            </TabsContent>
-            
-            <TabsContent value="homes">
-              {renderHomes()}
-            </TabsContent>
-          </Tabs>
-        </div>
-      </main>
+        {/* Main Content Area */}
+        <main className="flex-1 p-6">
+          {activeTab === 'overview' && renderOverview()}
+          {activeTab === 'tasks' && renderTasks()}
+          {activeTab === 'homes' && renderHomes()}
+          {activeTab === 'plan' && renderPlan()}
+          
+          {/* Task Modal */}
+          {selectedTask && (
+            <TaskModal
+              isOpen={!!selectedTask}
+              task={selectedTask}
+              onClose={() => setSelectedTask(null)}
+              onComplete={() => {
+                if (selectedTask) {
+                  void handleTaskComplete(selectedTask.id);
+                }
+              }}
+            />
+          )}
+        </main>
+      </div>
       
-      {/* Task Modal */}
-      {selectedTask && (
-        <TaskModal
-          isOpen={!!selectedTask}
-          task={selectedTask}
-          onClose={() => setSelectedTask(null)}
-          onComplete={() => handleTaskComplete(selectedTask.id)}
-        />
-      )}
+      {/* Footer */}
+      <Footer />
     </div>
   );
 };
