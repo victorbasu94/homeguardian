@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Shield, ArrowRight, User } from 'lucide-react';
+import { Menu, X, ShieldCheck, ArrowRight, User } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 
@@ -26,14 +26,14 @@ const Navbar = () => {
   return (
     <header 
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled ? 'bg-white/95 backdrop-blur-sm shadow-card' : 'bg-transparent'
+        isScrolled ? 'bg-[#F5F5F5]/95 backdrop-blur-md shadow-md border-b border-[#D4C7A9]/30' : 'bg-transparent'
       }`}
     >
-      <div className="container mx-auto px-4 md:px-6">
-        <div className="flex items-center justify-between h-20 md:h-24">
+      <div className="container mx-auto px-4">
+        <div className="flex items-center justify-between h-20">
           <Link to={user ? "/dashboard" : "/"} className="flex items-center gap-2 z-10">
-            <Shield className={`h-8 w-8 ${isScrolled ? 'text-primary' : 'text-white'}`} />
-            <span className={`text-2xl font-bold font-poppins ${isScrolled ? 'text-primary' : 'text-white'}`}>
+            <ShieldCheck className={`h-6 w-6 ${isScrolled ? 'text-[#1A2526]' : 'text-white'} stroke-[1.5px]`} />
+            <span className={`text-xl font-bold ${isScrolled ? 'text-[#1A2526]' : 'text-white'}`}>
               HomeGuardian
             </span>
           </Link>
@@ -41,64 +41,64 @@ const Navbar = () => {
           {/* Mobile menu button */}
           <button 
             onClick={() => setIsMenuOpen(!isMenuOpen)} 
-            className={`md:hidden ${isScrolled ? 'text-primary' : 'text-white'}`}
+            className={`md:hidden ${isScrolled ? 'text-[#1A2526]' : 'text-white'}`}
             aria-label="Toggle menu"
           >
-            {isMenuOpen ? <X size={28} /> : <Menu size={28} />}
+            {isMenuOpen ? <X size={24} className="stroke-[1.5px]" /> : <Menu size={24} className="stroke-[1.5px]" />}
           </button>
 
           {/* Desktop navigation */}
-          <nav className="hidden md:flex items-center space-x-10">
+          <nav className="hidden md:flex items-center space-x-8">
             <Link 
               to="/" 
-              className={`font-medium text-base transition-colors hover:text-secondary ${
+              className={`font-medium text-base transition-colors ${
                 isActive('/') 
-                  ? (isScrolled ? 'text-primary' : 'text-white font-semibold') 
-                  : (isScrolled ? 'text-neutral hover:text-primary' : 'text-white/90 hover:text-white')
+                  ? (isScrolled ? 'text-[#1A2526]' : 'text-white font-semibold') 
+                  : (isScrolled ? 'text-[#4A4A4A] hover:text-[#A3BFFA]' : 'text-white/90 hover:text-white')
               }`}
             >
               Home
             </Link>
             <Link 
               to="/how-it-works" 
-              className={`font-medium text-base transition-colors hover:text-secondary ${
+              className={`font-medium text-base transition-colors ${
                 isActive('/how-it-works') 
-                  ? (isScrolled ? 'text-primary' : 'text-white font-semibold') 
-                  : (isScrolled ? 'text-neutral hover:text-primary' : 'text-white/90 hover:text-white')
+                  ? (isScrolled ? 'text-[#1A2526]' : 'text-white font-semibold') 
+                  : (isScrolled ? 'text-[#4A4A4A] hover:text-[#A3BFFA]' : 'text-white/90 hover:text-white')
               }`}
             >
               How It Works
             </Link>
             <Link 
               to="/pricing" 
-              className={`font-medium text-base transition-colors hover:text-secondary ${
+              className={`font-medium text-base transition-colors ${
                 isActive('/pricing') 
-                  ? (isScrolled ? 'text-primary' : 'text-white font-semibold') 
-                  : (isScrolled ? 'text-neutral hover:text-primary' : 'text-white/90 hover:text-white')
+                  ? (isScrolled ? 'text-[#1A2526]' : 'text-white font-semibold') 
+                  : (isScrolled ? 'text-[#4A4A4A] hover:text-[#A3BFFA]' : 'text-white/90 hover:text-white')
               }`}
             >
               Pricing
             </Link>
             <Link 
               to="/faq" 
-              className={`font-medium text-base transition-colors hover:text-secondary ${
+              className={`font-medium text-base transition-colors ${
                 isActive('/faq') 
-                  ? (isScrolled ? 'text-primary' : 'text-white font-semibold') 
-                  : (isScrolled ? 'text-neutral hover:text-primary' : 'text-white/90 hover:text-white')
+                  ? (isScrolled ? 'text-[#1A2526]' : 'text-white font-semibold') 
+                  : (isScrolled ? 'text-[#4A4A4A] hover:text-[#A3BFFA]' : 'text-white/90 hover:text-white')
               }`}
             >
               FAQ
             </Link>
             
-            <div className="flex items-center space-x-6">
+            <div className="flex items-center space-x-4">
               {user ? (
                 <Link 
                   to="/dashboard" 
                   className={`flex items-center space-x-2 text-base font-medium transition-colors ${
-                    isScrolled ? 'text-primary hover:text-primary-dark' : 'text-white hover:text-secondary'
+                    isScrolled ? 'text-[#A3BFFA] hover:text-[#A3BFFA]/80' : 'text-white hover:text-[#A3BFFA]'
                   }`}
                 >
-                  <User className="h-4 w-4" />
+                  <User className="h-4 w-4 stroke-[1.5px]" />
                   <span>Dashboard</span>
                 </Link>
               ) : (
@@ -106,16 +106,16 @@ const Navbar = () => {
                   <Link 
                     to="/login" 
                     className={`text-base font-medium transition-colors ${
-                      isScrolled ? 'text-primary hover:text-primary-dark' : 'text-white hover:text-secondary'
+                      isScrolled ? 'text-[#A3BFFA] hover:text-[#A3BFFA]/80' : 'text-white hover:text-[#A3BFFA]'
                     }`}
                   >
                     Log In
                   </Link>
                   <Link 
                     to="/register" 
-                    className={`inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background bg-primary text-primary-foreground hover:bg-primary/90 h-10 py-2 px-4`}
+                    className="bg-[#A3BFFA] text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-[#A3BFFA]/90 transition-all duration-300 flex items-center"
                   >
-                    Get Started <ArrowRight className="ml-2 h-4 w-4" />
+                    Get Started <ArrowRight className="ml-2 h-4 w-4 stroke-[1.5px]" />
                   </Link>
                 </>
               )}
@@ -126,77 +126,77 @@ const Navbar = () => {
 
       {/* Mobile menu */}
       {isMenuOpen && (
-        <div className="md:hidden fixed inset-0 z-40 bg-background">
-          <div className="container mx-auto px-4 py-6">
-            <div className="flex justify-between items-center mb-8">
+        <div className="md:hidden fixed inset-0 z-40 bg-[#F5F5F5] noise-texture">
+          <div className="container mx-auto px-4 py-4">
+            <div className="flex justify-between items-center mb-6">
               <Link to="/" className="flex items-center gap-2" onClick={closeMenu}>
-                <Shield className="h-8 w-8 text-primary" />
-                <span className="text-2xl font-bold text-primary font-poppins">HomeGuardian</span>
+                <ShieldCheck className="h-6 w-6 text-[#1A2526] stroke-[1.5px]" />
+                <span className="text-xl font-bold text-[#1A2526]">HomeGuardian</span>
               </Link>
               <button 
                 onClick={closeMenu} 
-                className="text-primary"
+                className="text-[#1A2526]"
                 aria-label="Close menu"
               >
-                <X size={28} />
+                <X size={24} className="stroke-[1.5px]" />
               </button>
             </div>
             
-            <nav className="flex flex-col space-y-6">
+            <nav className="flex flex-col space-y-4">
               <Link 
                 to="/" 
-                className="text-xl font-medium text-foreground"
+                className="text-lg font-medium text-[#1A2526]"
                 onClick={closeMenu}
               >
                 Home
               </Link>
               <Link 
                 to="/how-it-works" 
-                className="text-xl font-medium text-foreground"
+                className="text-lg font-medium text-[#1A2526]"
                 onClick={closeMenu}
               >
                 How It Works
               </Link>
               <Link 
                 to="/pricing" 
-                className="text-xl font-medium text-foreground"
+                className="text-lg font-medium text-[#1A2526]"
                 onClick={closeMenu}
               >
                 Pricing
               </Link>
               <Link 
                 to="/faq" 
-                className="text-xl font-medium text-foreground"
+                className="text-lg font-medium text-[#1A2526]"
                 onClick={closeMenu}
               >
                 FAQ
               </Link>
               
-              <div className="pt-6 flex flex-col space-y-4">
+              <div className="pt-4 flex flex-col space-y-3">
                 {user ? (
                   <Link 
                     to="/dashboard" 
-                    className="flex items-center space-x-2 text-xl font-medium text-primary"
+                    className="flex items-center space-x-2 text-lg font-medium text-[#A3BFFA]"
                     onClick={closeMenu}
                   >
-                    <User className="h-5 w-5" />
+                    <User className="h-5 w-5 stroke-[1.5px]" />
                     <span>Dashboard</span>
                   </Link>
                 ) : (
                   <>
                     <Link 
                       to="/login" 
-                      className="text-xl font-medium text-primary"
+                      className="text-lg font-medium text-[#A3BFFA]"
                       onClick={closeMenu}
                     >
                       Log In
                     </Link>
                     <Link 
                       to="/register" 
-                      className="inline-flex items-center justify-center rounded-md text-base font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background bg-primary text-primary-foreground hover:bg-primary/90 h-12 py-2 px-4"
+                      className="bg-[#A3BFFA] text-white px-3 py-2 rounded-lg text-base font-medium hover:bg-[#A3BFFA]/90 transition-all duration-300 inline-flex items-center w-fit"
                       onClick={closeMenu}
                     >
-                      Get Started <ArrowRight className="ml-2 h-5 w-5" />
+                      Get Started <ArrowRight className="ml-2 h-4 w-4 stroke-[1.5px]" />
                     </Link>
                   </>
                 )}
