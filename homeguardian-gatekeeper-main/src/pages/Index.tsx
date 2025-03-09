@@ -227,46 +227,8 @@ const Index = () => {
         </div>
       </div>
       
-      {/* Footer */}
-      <footer className="bg-[#1A2526] text-white py-8">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="animate-slide-up" style={{ animationDelay: '0.1s' }}>
-              <h3 className="text-lg font-bold mb-4">HomeGuardian</h3>
-              <ul className="space-y-2">
-                <li><Link to="/" className="hover:text-[#A3BFFA] transition-colors">Home</Link></li>
-                <li><Link to="/features" className="hover:text-[#A3BFFA] transition-colors">Features</Link></li>
-                <li><Link to="/pricing" className="hover:text-[#A3BFFA] transition-colors">Pricing</Link></li>
-                <li><Link to="/about" className="hover:text-[#A3BFFA] transition-colors">About Us</Link></li>
-              </ul>
-            </div>
-            
-            <div className="animate-slide-up" style={{ animationDelay: '0.3s' }}>
-              <h3 className="text-lg font-bold mb-4">Support</h3>
-              <ul className="space-y-2">
-                <li><Link to="/faq" className="hover:text-[#A3BFFA] transition-colors">FAQ</Link></li>
-                <li><Link to="/contact" className="hover:text-[#A3BFFA] transition-colors">Contact Us</Link></li>
-                <li><Link to="/help" className="hover:text-[#A3BFFA] transition-colors">Help Center</Link></li>
-                <li><Link to="/privacy" className="hover:text-[#A3BFFA] transition-colors">Privacy Policy</Link></li>
-              </ul>
-            </div>
-            
-            <div className="animate-slide-up" style={{ animationDelay: '0.5s' }}>
-              <h3 className="text-lg font-bold mb-4">Connect</h3>
-              <ul className="space-y-2">
-                <li><a href="https://twitter.com" className="hover:text-[#A3BFFA] transition-colors">Twitter</a></li>
-                <li><a href="https://facebook.com" className="hover:text-[#A3BFFA] transition-colors">Facebook</a></li>
-                <li><a href="https://instagram.com" className="hover:text-[#A3BFFA] transition-colors">Instagram</a></li>
-                <li><a href="https://linkedin.com" className="hover:text-[#A3BFFA] transition-colors">LinkedIn</a></li>
-              </ul>
-            </div>
-          </div>
-          
-          <div className="mt-8 pt-4 border-t border-white/10 text-center text-sm animate-fade" style={{ animationDelay: '0.7s' }}>
-            <p>© {new Date().getFullYear()} HomeGuardian. All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
+      {/* Use the shared Footer component instead of custom footer */}
+      <Footer />
     </div>
   );
 };

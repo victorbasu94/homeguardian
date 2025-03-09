@@ -33,19 +33,19 @@ export default {
 				background: 'hsl(var(--background))',
 				foreground: 'hsl(var(--foreground))',
 				primary: {
-					DEFAULT: '#00C4B4', // Teal
-					light: '#33D1C4',
-					dark: '#00A396',
+					DEFAULT: '#A3BFFA', // Serenity Blue
+					light: '#B9CFFB',
+					dark: '#8AACF9',
 					foreground: '#FFFFFF'
 				},
 				secondary: {
-					DEFAULT: '#FF6F61', // Coral
-					light: '#FF8F84',
-					dark: '#E5584A',
-					foreground: '#FFFFFF'
+					DEFAULT: '#D4C7A9', // Warm Taupe
+					light: '#E2D9C4',
+					dark: '#C6B58E',
+					foreground: '#1A2526'
 				},
 				tertiary: {
-					DEFAULT: '#FBBF24', // Yellow
+					DEFAULT: '#FBBF24', // Yellow (keeping this as it's not defined in index.css)
 					light: '#FCCC55',
 					dark: '#E5A91F',
 					foreground: '#4A5568'
@@ -55,12 +55,12 @@ export default {
 					foreground: 'hsl(var(--destructive-foreground))'
 				},
 				muted: {
-					DEFAULT: 'hsl(var(--muted))',
+					DEFAULT: '#4A4A4A', // Soft Graphite
 					foreground: 'hsl(var(--muted-foreground))'
 				},
 				accent: {
-					DEFAULT: 'hsl(var(--accent))',
-					foreground: 'hsl(var(--accent-foreground))'
+					DEFAULT: '#D4C7A9', // Warm Taupe (same as secondary)
+					foreground: '#1A2526'
 				},
 				popover: {
 					DEFAULT: 'hsl(var(--popover))',
@@ -80,8 +80,8 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
-				neutral: '#4A5568', // Gray for text
-				softWhite: '#F8FAFC', // Soft white for backgrounds
+				neutral: '#4A4A4A', // Soft Graphite for text
+				softWhite: '#F5F5F5', // Guardian White for backgrounds
 			},
 			borderRadius: {
 				lg: '1rem',
@@ -144,8 +144,8 @@ export default {
                     '50%': { transform: 'translateY(-10px)' }
                 },
                 'pulse-glow': {
-                    '0%, 100%': { boxShadow: '0 0 0 0 rgba(0, 196, 180, 0.4)' },
-                    '50%': { boxShadow: '0 0 20px 10px rgba(0, 196, 180, 0.2)' }
+                    '0%, 100%': { boxShadow: '0 0 0 0 rgba(163, 191, 250, 0.4)' },
+                    '50%': { boxShadow: '0 0 20px 10px rgba(163, 191, 250, 0.2)' }
                 },
 				'bounce-subtle': {
 					'0%, 100%': { transform: 'translateY(0)' },
@@ -180,11 +180,11 @@ export default {
 				'200': '200ms',
             },
             backgroundImage: {
-                'auth-gradient': 'linear-gradient(to right bottom, #F8FAFC, #FFFFFF)',
-                'primary-gradient': 'linear-gradient(to right, #00C4B4, #33D1C4)',
-                'secondary-gradient': 'linear-gradient(to right, #FF6F61, #FF8F84)',
-                'teal-coral-gradient': 'linear-gradient(135deg, #00C4B4 0%, #FF6F61 100%)',
-				'soft-gradient': 'linear-gradient(to bottom right, #F8FAFC, #FFFFFF)',
+                'auth-gradient': 'linear-gradient(to right bottom, #F5F5F5, #FFFFFF)',
+                'primary-gradient': 'linear-gradient(to right, #A3BFFA, #B9CFFB)',
+                'secondary-gradient': 'linear-gradient(to right, #D4C7A9, #E2D9C4)',
+                'taupe-blue-gradient': 'linear-gradient(135deg, #D4C7A9 0%, #A3BFFA 100%)',
+				'soft-gradient': 'linear-gradient(to bottom right, #F5F5F5, #FFFFFF)',
             },
             backdropBlur: {
                 'xs': '2px',
@@ -196,8 +196,8 @@ export default {
 			boxShadow: {
 				'card': '0 4px 20px rgba(0, 0, 0, 0.05)',
 				'card-hover': '0 10px 30px rgba(0, 0, 0, 0.08)',
-				'button': '0 4px 10px rgba(0, 196, 180, 0.2)',
-				'button-hover': '0 6px 15px rgba(0, 196, 180, 0.3)',
+				'button': '0 4px 10px rgba(163, 191, 250, 0.2)',
+				'button-hover': '0 6px 15px rgba(163, 191, 250, 0.3)',
 			}
 		}
 	},

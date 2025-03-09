@@ -4,6 +4,7 @@ import { Shield, LogOut, User, Settings, Home, Bell } from 'lucide-react';
 import { handleLogout } from '@/lib/auth';
 import { useToast } from '@/hooks/use-toast';
 import StickyCallToAction from './StickyCallToAction';
+import Footer from './Footer';
 
 interface LayoutProps {
   children: ReactNode;
@@ -70,11 +71,7 @@ const Layout = ({ children, showStickyCallToAction = false }: LayoutProps) => {
         {showStickyCallToAction && <StickyCallToAction />}
       </main>
       
-      <footer className="py-8 border-t border-gray-100 bg-white">
-        <div className="container mx-auto px-4 text-center text-base text-neutral">
-          <p className="font-inter">© {new Date().getFullYear()} HomeGuardian. All rights reserved.</p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 };
