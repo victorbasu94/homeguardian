@@ -43,26 +43,26 @@ const PricingTier: React.FC<PricingTierProps> = ({
     <div className={`
       relative rounded-2xl overflow-hidden transition-all duration-300
       ${highlighted 
-        ? 'border-2 border-blue-500 shadow-card-hover scale-105 z-10 bg-white transform hover:translate-y-[-5px]' 
+        ? 'border-2 border-[#A3BFFA] shadow-card-hover scale-105 z-10 bg-white transform hover:translate-y-[-5px]' 
         : 'border border-neutral/10 shadow-card bg-white/80 transform hover:translate-y-[-5px] hover:shadow-card-hover'}
     `}>
       {highlighted && (
-        <div className="absolute top-0 left-0 right-0 bg-blue-500 text-white text-center py-1.5 text-sm font-medium">
+        <div className="absolute top-0 left-0 right-0 bg-[#A3BFFA] text-white text-center py-1.5 text-sm font-medium">
           Most Popular
         </div>
       )}
       
       <div className="p-6 pt-8">
         <div className="flex items-center gap-3 mb-4">
-          <div className="bg-blue-500/10 p-2 rounded-full">
-            {React.cloneElement(icon as React.ReactElement, { className: "h-6 w-6 text-blue-500" })}
+          <div className="bg-[#A3BFFA]/10 p-2 rounded-full">
+            {React.cloneElement(icon as React.ReactElement, { className: "h-6 w-6 text-[#A3BFFA]" })}
           </div>
           <h3 className="text-xl font-semibold">{title}</h3>
         </div>
         
         <div>
           <div className="flex items-end gap-2">
-            <span className="text-4xl font-bold text-blue-500">
+            <span className="text-4xl font-bold text-[#A3BFFA]">
               ${price.monthly}
             </span>
             <span className="text-neutral/70 mb-1">/ month</span>
@@ -79,7 +79,9 @@ const PricingTier: React.FC<PricingTierProps> = ({
         
         <div className="mt-6">
           <Button 
-            className={`w-full ${highlighted ? 'bg-blue-500 hover:bg-blue-500/90 shadow-button hover:shadow-button-hover' : ''}`}
+            className={`w-full ${highlighted 
+              ? 'bg-[#A3BFFA] text-white font-medium hover:bg-[#A3BFFA]/90 transition-all duration-300 shadow-md' 
+              : 'bg-[#A3BFFA] text-white font-medium hover:bg-[#A3BFFA]/90 transition-all duration-300 shadow-md'}`}
             onClick={() => onSubscribe(tier)}
           >
             Get Started <ArrowRight className="ml-2 h-5 w-5" />
@@ -90,7 +92,7 @@ const PricingTier: React.FC<PricingTierProps> = ({
           {features.map((feature, index) => (
             <div key={index} className="flex items-start gap-3">
               {feature.included ? (
-                <CheckCircle className="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" />
+                <CheckCircle className="h-5 w-5 text-[#A3BFFA] flex-shrink-0 mt-0.5" />
               ) : (
                 <X className="h-5 w-5 text-neutral/40 flex-shrink-0 mt-0.5" />
               )}
@@ -109,8 +111,9 @@ const Pricing: React.FC = () => {
   const [plan, setPlan] = useState<PricingPlan>('monthly');
   
   const handleSubscribe = (tier: SubscriptionTier) => {
-    // In a real app, this would redirect to a checkout page
-    window.location.href = `/register?plan=${tier}&billing=${plan}`;
+    console.log(`Subscribing to ${tier} plan`);
+    // Redirect to registration with plan pre-selected
+    window.location.href = `/register?plan=${tier}`;
   };
   
   const pricingTiers = [
@@ -131,7 +134,7 @@ const Pricing: React.FC = () => {
         { text: 'Home value protection report', included: false },
       ],
       tier: 'basic' as SubscriptionTier,
-      icon: <Home className="h-6 w-6 text-blue-500" />,
+      icon: <Home className="h-6 w-6 text-[#A3BFFA]" />,
       homes: 1,
     },
     {
@@ -152,7 +155,7 @@ const Pricing: React.FC = () => {
       ],
       tier: 'pro' as SubscriptionTier,
       highlighted: true,
-      icon: <Shield className="h-6 w-6 text-blue-500" />,
+      icon: <Shield className="h-6 w-6 text-[#A3BFFA]" />,
       homes: 2,
     },
     {
@@ -172,45 +175,30 @@ const Pricing: React.FC = () => {
         { text: 'Annual home health assessment', included: true },
       ],
       tier: 'premium' as SubscriptionTier,
-      icon: <Zap className="h-6 w-6 text-blue-500" />,
+      icon: <Zap className="h-6 w-6 text-[#A3BFFA]" />,
       homes: 5,
     },
   ];
   
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-softWhite">
       <Navbar />
       
       {/* Hero Section */}
-      <section className="relative pt-32 pb-20 md:pt-40 md:pb-32 overflow-hidden bg-blue-500/90 noise-texture">
-        {/* Decorative circles */}
-        <div className="absolute top-20 right-10 w-64 h-64 rounded-full bg-white/10 blur-3xl animate-pulse-soft"></div>
-        <div className="absolute bottom-10 left-10 w-80 h-80 rounded-full bg-white/5 blur-3xl animate-pulse-soft"></div>
-        
-        <div className="container-width relative z-10">
+      <section className="pt-32 pb-20 bg-gradient-to-r from-[#A3BFFA] to-[#D4C7A9] text-white">
+        <div className="container mx-auto px-4 md:px-6">
           <div className="max-w-3xl mx-auto text-center">
-            <h1 className="text-white mb-6 animate-fade-in">
-              Simple, Transparent Pricing
-            </h1>
-            <p className="text-white/90 text-xl mb-8 max-w-2xl mx-auto animate-slide-in">
-              Choose the plan that's right for your home maintenance needs. All plans include our core AI-powered maintenance technology.
+            <h1 className="text-4xl md:text-5xl font-bold mb-6 font-poppins leading-tight animate-fade-in">Simple, Transparent Pricing</h1>
+            <p className="text-xl md:text-2xl mb-8 font-inter text-white/90 animate-slide-in">
+              Choose the plan that's right for your home maintenance needs.
             </p>
-            
-            <div className="flex flex-col sm:flex-row gap-4 justify-center animate-scale-in">
-              <Link to="/register" className="bg-white text-blue-500 hover:bg-white/90 px-8 py-3 rounded-full font-medium text-xl transition-all duration-300 flex items-center justify-center gap-2 shadow-md hover:shadow-lg transform hover:scale-105">
-                Get Started Now <ArrowRight className="w-5 h-5" />
-              </Link>
-              <Link to="/how-it-works" className="bg-white/10 text-white hover:bg-white/20 px-8 py-3 rounded-full font-medium text-xl transition-all duration-300 flex items-center justify-center gap-2 transform hover:scale-105">
-                How It Works
-              </Link>
-            </div>
           </div>
         </div>
       </section>
       
       {/* Pricing Tiers */}
-      <section className="section-padding bg-softWhite -mt-12 pt-24">
-        <div className="container-width">
+      <section className="py-20 bg-softWhite -mt-12 pt-24">
+        <div className="container mx-auto px-4 md:px-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {pricingTiers.map((tier) => (
               <PricingTier
@@ -230,17 +218,17 @@ const Pricing: React.FC = () => {
           </div>
           
           <div className="mt-12 text-center">
-            <p className="text-neutral/70">Have questions? <Link to="/contact" className="text-blue-500 hover:underline">Contact our team</Link></p>
+            <p className="text-neutral/70 font-inter">Have questions? <Link to="/contact" className="text-[#A3BFFA] hover:text-[#A3BFFA]/80">Contact our team</Link></p>
           </div>
         </div>
       </section>
       
       {/* FAQ Section */}
-      <section className="section-padding bg-white">
-        <div className="container-width">
+      <section className="py-20 bg-white">
+        <div className="container mx-auto px-4 md:px-6">
           <div className="text-center mb-16">
-            <h2 className="mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-amber-400">Frequently Asked Questions</h2>
-            <p className="text-neutral/80 max-w-2xl mx-auto text-lg">
+            <h2 className="text-3xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-[#A3BFFA] to-[#D4C7A9] font-poppins">Frequently Asked Questions</h2>
+            <p className="text-neutral/80 max-w-2xl mx-auto text-lg font-inter">
               Find answers to common questions about our pricing and plans
             </p>
           </div>
@@ -269,8 +257,8 @@ const Pricing: React.FC = () => {
               }
             ].map((faq, i) => (
               <div key={i} className="bg-softWhite p-6 rounded-xl border border-neutral/10 shadow-card hover:shadow-card-hover transition-all duration-300">
-                <h3 className="text-xl font-bold mb-2 text-neutral">{faq.question}</h3>
-                <p className="text-neutral/80">{faq.answer}</p>
+                <h3 className="text-xl font-bold mb-2 text-neutral font-poppins">{faq.question}</h3>
+                <p className="text-neutral/80 font-inter">{faq.answer}</p>
               </div>
             ))}
           </div>
@@ -278,25 +266,25 @@ const Pricing: React.FC = () => {
       </section>
       
       {/* CTA Section */}
-      <section className="section-padding bg-softWhite relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-amber-400/10"></div>
+      <section className="py-20 bg-softWhite relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-[#A3BFFA]/10 to-[#D4C7A9]/10"></div>
         
         {/* Decorative elements */}
-        <div className="absolute top-20 right-10 w-64 h-64 rounded-full bg-blue-500/10 blur-3xl"></div>
-        <div className="absolute bottom-10 left-10 w-80 h-80 rounded-full bg-amber-400/10 blur-3xl"></div>
+        <div className="absolute top-20 right-10 w-64 h-64 rounded-full bg-[#A3BFFA]/10 blur-3xl"></div>
+        <div className="absolute bottom-10 left-10 w-80 h-80 rounded-full bg-[#D4C7A9]/10 blur-3xl"></div>
         
-        <div className="container-width relative z-10">
+        <div className="container mx-auto px-4 md:px-6 relative z-10">
           <div className="bg-white rounded-2xl shadow-card p-8 md:p-12 text-center max-w-4xl mx-auto">
-            <h2 className="mb-4">Ready to Protect Your Home?</h2>
-            <p className="text-neutral/80 max-w-2xl mx-auto text-lg mb-8">
+            <h2 className="text-3xl font-bold mb-4 font-poppins">Ready to Protect Your Home?</h2>
+            <p className="text-neutral/80 max-w-2xl mx-auto text-lg mb-8 font-inter">
               Join thousands of homeowners who trust HomeGuardian to keep their homes in perfect condition.
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/register" className="bg-blue-500 text-white hover:bg-blue-500/90 px-8 py-3 rounded-full font-medium text-xl transition-all duration-300 flex items-center justify-center gap-2 shadow-md hover:shadow-lg transform hover:scale-105">
+              <Link to="/register" className="bg-[#A3BFFA] text-white hover:bg-[#A3BFFA]/90 px-8 py-3 rounded-lg font-medium text-xl transition-all duration-300 flex items-center justify-center gap-2 shadow-md hover:shadow-lg">
                 Get Started Now <ArrowRight className="w-5 h-5" />
               </Link>
-              <Link to="/contact" className="bg-softWhite text-neutral hover:bg-neutral/10 px-8 py-3 rounded-full font-medium text-xl transition-all duration-300 flex items-center justify-center gap-2 transform hover:scale-105">
+              <Link to="/contact" className="border border-[#A3BFFA] bg-transparent text-[#A3BFFA] hover:bg-[#A3BFFA]/5 px-8 py-3 rounded-lg font-medium text-xl transition-all duration-300 flex items-center justify-center gap-2">
                 Contact Sales
               </Link>
             </div>
