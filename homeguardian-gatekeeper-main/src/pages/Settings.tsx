@@ -152,7 +152,7 @@ const Settings: React.FC = () => {
     
     try {
       // Call API to update profile
-      const response = await api.put('/api/users/profile', data);
+      const response = await api.put('/users/profile', data);
       
       // Update user in context
       updateUser(response.data);
@@ -182,7 +182,7 @@ const Settings: React.FC = () => {
     
     try {
       // Call API to update password
-      await api.put('/api/users/password', {
+      await api.put('/users/password', {
         currentPassword: data.currentPassword,
         newPassword: data.newPassword,
       });
@@ -215,7 +215,7 @@ const Settings: React.FC = () => {
     
     try {
       // Call API to update notification settings
-      const response = await api.put('/api/users/notifications', data);
+      const response = await api.put('/users/notifications', data);
       
       // Update user in context
       updateUser({
@@ -251,7 +251,7 @@ const Settings: React.FC = () => {
     
     try {
       // Call API to delete account
-      await api.delete('/api/users/account');
+      await api.delete('/users/account');
       
       // Logout user
       logout();

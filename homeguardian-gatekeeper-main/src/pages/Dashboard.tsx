@@ -239,7 +239,7 @@ const Dashboard = () => {
       setLoadingHomes(true);
       setHomesError(null);
       
-      const response = await api.get("/api/homes");
+      const response = await api.get("/homes");
       console.log("Homes response:", response.data);
       
       // Ensure homes is always an array
@@ -279,7 +279,7 @@ const Dashboard = () => {
       setLoadingUserData(true);
       
       // Use the auth/me endpoint instead of users/me
-      const response = await api.get("/api/auth/me");
+      const response = await api.get("/auth/me");
       if (response.data && response.data.user) {
         setUserData({
           id: response.data.user.id,

@@ -77,7 +77,7 @@ const AddTask = () => {
         home_id: homeId,
       };
       
-      await api.post("/api/tasks", taskData);
+      await api.post("/tasks", taskData);
       
       toast({
         title: "Task created",

@@ -53,7 +53,7 @@ export async function getMaintenancePlan(homeDetails: HomeDetails): Promise<Main
 async function getProductionMaintenancePlan(homeDetails: HomeDetails): Promise<MaintenancePlan> {
   try {
     // Instead of calling OpenAI directly, call our backend API
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/maintenance/generate-plan`, {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/maintenance/generate-plan`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
