@@ -97,12 +97,16 @@ const Register: React.FC = () => {
     setIsLoading(true);
     
     try {
+      console.log('Attempting to register user with:', { email: data.email, name: data.name });
+      
       // Call the API to register
       const response = await api.post('/auth/register', {
         name: data.name,
         email: data.email,
         password: data.password
       });
+      
+      console.log('Registration response:', response.data);
       
       // Extract token and user data
       const { accessToken, user } = response.data;
@@ -121,10 +125,22 @@ const Register: React.FC = () => {
     } catch (error: any) {
       console.error('Registration error:', error);
       
-      // Show error toast
+      // Get detailed error information
+      const statusCode = error.response?.status;
+      const errorMessage = error.response?.data?.message || 'An error occurred during registration.';
+      const requestUrl = error.config?.url;
+      
+      console.error('Registration error details:', {
+        statusCode,
+        errorMessage,
+        requestUrl,
+        baseURL: error.config?.baseURL
+      });
+      
+      // Show error toast with more details
       toast({
-        title: 'Registration failed',
-        description: error.response?.data?.message || 'An error occurred during registration. Please try again.',
+        title: `Registration failed (${statusCode || 'Error'})`,
+        description: `${errorMessage} Please try again or contact support if the issue persists.`,
         variant: 'destructive',
       });
     } finally {

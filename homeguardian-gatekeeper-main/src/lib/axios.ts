@@ -5,6 +5,8 @@ import { toast } from 'sonner';
 // Get the API base URL from environment variables
 let API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001';
 
+console.log('Original API Base URL:', API_BASE_URL);
+
 // Remove trailing slash if present
 if (API_BASE_URL.endsWith('/')) {
   API_BASE_URL = API_BASE_URL.slice(0, -1);
@@ -15,7 +17,28 @@ if (API_BASE_URL.endsWith('/api')) {
   API_BASE_URL = API_BASE_URL.slice(0, -4);
 }
 
-console.log('API Base URL:', API_BASE_URL);
+// Make sure the URL is properly formatted
+if (!API_BASE_URL.startsWith('http://') && !API_BASE_URL.startsWith('https://')) {
+  API_BASE_URL = 'https://' + API_BASE_URL;
+}
+
+// For production, ensure we're using the correct backend URL
+if (import.meta.env.PROD) {
+  // If we're in production and the URL contains 'maintainmint-backend.com'
+  // Make sure it's properly formatted
+  if (API_BASE_URL.includes('maintainmint-backend')) {
+    // Extract the domain part
+    const urlParts = API_BASE_URL.split('//');
+    const domainPart = urlParts[1].split('/')[0];
+    
+    // Ensure it has the correct format
+    API_BASE_URL = `https://maintainmint-backend-6dfe05c4ba93.herokuapp.com`;
+    
+    console.log('Corrected API Base URL for production:', API_BASE_URL);
+  }
+}
+
+console.log('Final API Base URL:', API_BASE_URL);
 
 // Create a base axios instance with common configuration
 const api = axios.create({
