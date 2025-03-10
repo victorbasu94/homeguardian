@@ -36,7 +36,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onComplete, onViewDetails }) 
   const getStatusBadge = () => {
     if (task.status === 'completed') {
       return (
-        <Badge variant="outline" className="bg-green-100 text-green-800 flex items-center gap-1">
+        <Badge variant="outline" className="bg-green-50 text-green-600 border-green-100 text-xs font-normal flex items-center gap-1">
           <CheckCircle className="w-3 h-3" /> Completed
         </Badge>
       );
@@ -44,7 +44,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onComplete, onViewDetails }) 
     
     if (isOverdue) {
       return (
-        <Badge variant="destructive" className="flex items-center gap-1">
+        <Badge variant="outline" className="bg-red-50 text-red-600 border-red-100 text-xs font-normal flex items-center gap-1">
           <AlertTriangle className="w-3 h-3" /> Overdue
         </Badge>
       );
@@ -52,7 +52,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onComplete, onViewDetails }) 
     
     if (isDueToday) {
       return (
-        <Badge variant="outline" className="bg-amber-100 text-amber-800 flex items-center gap-1">
+        <Badge variant="outline" className="bg-amber-50 text-amber-600 border-amber-100 text-xs font-normal flex items-center gap-1">
           <Clock className="w-3 h-3" /> Due Today
         </Badge>
       );
@@ -60,7 +60,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onComplete, onViewDetails }) 
     
     if (isDueTomorrow) {
       return (
-        <Badge variant="outline" className="bg-blue-100 text-blue-800 flex items-center gap-1">
+        <Badge variant="outline" className="bg-blue-50 text-blue-600 border-blue-100 text-xs font-normal flex items-center gap-1">
           <Clock className="w-3 h-3" /> Due Tomorrow
         </Badge>
       );
@@ -68,14 +68,14 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onComplete, onViewDetails }) 
     
     if (isDueSoon) {
       return (
-        <Badge variant="outline" className="bg-green-100 text-green-800 flex items-center gap-1">
+        <Badge variant="outline" className="bg-green-50 text-green-600 border-green-100 text-xs font-normal flex items-center gap-1">
           <Calendar className="w-3 h-3" /> Due Soon
         </Badge>
       );
     }
     
     return (
-      <Badge variant="outline" className="flex items-center gap-1">
+      <Badge variant="outline" className="text-xs font-normal flex items-center gap-1">
         <Calendar className="w-3 h-3" /> Upcoming
       </Badge>
     );
@@ -84,31 +84,31 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onComplete, onViewDetails }) 
   const getPriorityBadge = () => {
     switch (task.priority) {
       case 'high':
-        return <Badge variant="outline" className="bg-red-50 text-red-700">High</Badge>;
+        return <Badge variant="outline" className="bg-red-50 text-red-600 border-red-100 text-xs font-normal">High</Badge>;
       case 'medium':
-        return <Badge variant="outline" className="bg-amber-50 text-amber-700">Medium</Badge>;
+        return <Badge variant="outline" className="bg-amber-50 text-amber-600 border-amber-100 text-xs font-normal">Medium</Badge>;
       default:
-        return <Badge variant="outline" className="bg-blue-50 text-blue-700">Low</Badge>;
+        return <Badge variant="outline" className="bg-blue-50 text-blue-600 border-blue-100 text-xs font-normal">Low</Badge>;
     }
   };
   
   return (
-    <Card className="overflow-hidden hover:shadow-md transition-shadow">
-      <CardHeader className="bg-muted/50 pb-3">
+    <Card className="overflow-hidden transition-shadow hover:shadow-card-hover">
+      <CardHeader className="pb-2">
         <div className="flex justify-between items-start">
           <div>
             {task.is_ai_generated && (
-              <div className="flex items-center gap-2 mb-1">
-                <Sparkles className="h-4 w-4 text-primary" />
-                <Badge variant="secondary" className="text-xs">AI Generated</Badge>
+              <div className="flex items-center gap-1.5 mb-1">
+                <Sparkles className="h-3.5 w-3.5 text-primary" />
+                <Badge variant="outline" className="bg-primary/5 text-primary border-primary/10 text-xs font-normal">AI Generated</Badge>
               </div>
             )}
-            <CardTitle className="text-lg">{task.title}</CardTitle>
-            <CardDescription>{task.description}</CardDescription>
+            <CardTitle className="text-sm font-medium">{task.title}</CardTitle>
+            <CardDescription className="text-xs mt-1 line-clamp-2">{task.description}</CardDescription>
           </div>
-          <div className="flex flex-col gap-2 items-end">
+          <div className="flex flex-col gap-1.5 items-end">
             {task.estimated_cost !== undefined && (
-              <Badge variant="outline" className="ml-2">
+              <Badge variant="outline" className="text-xs font-normal">
                 ${task.estimated_cost}
               </Badge>
             )}
@@ -116,48 +116,49 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onComplete, onViewDetails }) 
           </div>
         </div>
       </CardHeader>
-      <CardContent className="pt-4">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
+      <CardContent className="pt-0 pb-2">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-1.5">
             {getStatusBadge()}
-            <span className="text-muted-foreground text-sm">
-              {format(dueDate, 'MMM d, yyyy')}
-            </span>
           </div>
-          <div className="text-sm text-muted-foreground">
-            {task.estimated_time ? `${task.estimated_time} min` : ''}
+          <div className="text-xs text-muted-foreground">
+            {format(dueDate, 'MMM d, yyyy')}
+            {task.estimated_time ? ` • ${task.estimated_time} min` : ''}
           </div>
         </div>
         
         {task.sub_tasks && task.sub_tasks.length > 0 && (
           <div className="mt-2">
-            <h4 className="text-sm font-medium mb-2">Subtasks:</h4>
-            <ul className="list-disc pl-5 text-sm text-muted-foreground space-y-1">
-              {task.sub_tasks.map((subtask, idx) => (
+            <h4 className="text-xs font-medium mb-1">Subtasks:</h4>
+            <ul className="list-disc pl-4 text-xs text-muted-foreground space-y-0.5">
+              {task.sub_tasks.slice(0, 2).map((subtask, idx) => (
                 <li key={idx}>{subtask}</li>
               ))}
+              {task.sub_tasks.length > 2 && (
+                <li className="text-primary">+{task.sub_tasks.length - 2} more</li>
+              )}
             </ul>
           </div>
         )}
       </CardContent>
-      <CardFooter className="flex justify-between pt-2 pb-3 gap-2">
+      <CardFooter className="flex justify-between pt-0 pb-3 gap-2">
         {task.status !== 'completed' && (
           <Button 
             variant="default" 
             size="sm" 
             onClick={() => onComplete(task.id)}
-            className="w-full"
+            className="w-full text-xs h-8"
           >
             Complete
           </Button>
         )}
         <Button 
-          variant="ghost" 
+          variant={task.status === 'completed' ? 'default' : 'outline'} 
           size="sm"
           onClick={() => onViewDetails(task)}
-          className="w-full"
+          className="w-full text-xs h-8"
         >
-          View Details <ArrowRight className="w-4 h-4 ml-1" />
+          Details <ArrowRight className="w-3.5 h-3.5 ml-1" />
         </Button>
       </CardFooter>
     </Card>

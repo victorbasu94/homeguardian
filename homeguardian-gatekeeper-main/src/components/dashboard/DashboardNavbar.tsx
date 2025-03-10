@@ -1,12 +1,14 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { Shield, LogOut } from 'lucide-react';
+import { Shield, LogOut, User, Bell, Settings } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 const DashboardNavbar = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   
   const onLogout = () => {
     logout();
@@ -17,21 +19,45 @@ const DashboardNavbar = () => {
     navigate('/login');
   };
   
+  const getInitials = (email: string) => {
+    return email
+      .split('@')[0]
+      .substring(0, 2)
+      .toUpperCase();
+  };
+  
   return (
-    <header className="border-b border-border/40 backdrop-blur-sm bg-background/95 sticky top-0 z-50">
-      <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+    <header className="border-b border-border bg-white sticky top-0 z-50 h-16">
+      <div className="container mx-auto px-4 h-full flex items-center justify-between">
         <Link to="/dashboard" className="flex items-center space-x-2">
-          <Shield className="h-6 w-6 text-primary" />
-          <span className="text-lg font-medium">HomeGuardian</span>
+          <Shield className="h-5 w-5 text-primary" />
+          <span className="text-base font-medium">HomeGuardian</span>
         </Link>
         
-        <button
-          onClick={onLogout}
-          className="flex items-center space-x-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <LogOut className="h-4 w-4" />
-          <span>Log out</span>
-        </button>
+        <div className="flex items-center space-x-4">
+          <Button variant="ghost" size="icon" className="text-muted-foreground">
+            <Bell className="h-5 w-5" />
+          </Button>
+          
+          <Button variant="ghost" size="icon" className="text-muted-foreground" onClick={() => navigate('/settings')}>
+            <Settings className="h-5 w-5" />
+          </Button>
+          
+          <div className="flex items-center space-x-3 pl-2 border-l border-border">
+            <Avatar className="h-8 w-8 bg-primary/10">
+              <AvatarFallback className="text-primary text-xs">
+                {user?.email ? getInitials(user.email) : 'U'}
+              </AvatarFallback>
+            </Avatar>
+            
+            <button
+              onClick={onLogout}
+              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Log out
+            </button>
+          </div>
+        </div>
       </div>
     </header>
   );
