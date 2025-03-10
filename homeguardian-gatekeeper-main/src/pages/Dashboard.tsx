@@ -377,12 +377,14 @@ const Dashboard = () => {
         hvac_type: home.hvac_type
       };
       
+      console.log('Fetching maintenance plan for home:', home.id);
+      
       // Call the API to get maintenance plan
       const maintenancePlan = await getMaintenancePlan(homeDetails);
       
       // If we got tasks back, update the context
-      if (maintenancePlan && maintenancePlan.tasks) {
-        console.log("Maintenance plan fetched:", maintenancePlan);
+      if (maintenancePlan && maintenancePlan.tasks && maintenancePlan.tasks.length > 0) {
+        console.log("Maintenance plan fetched successfully:", maintenancePlan);
         
         // Convert to the format expected by MaintenanceContext
         const formattedTasks = maintenancePlan.tasks.map(task => ({
@@ -395,14 +397,35 @@ const Dashboard = () => {
         }));
         
         setMaintenanceTasks(formattedTasks);
+      } else {
+        // This shouldn't happen as the API should throw an error if no tasks are returned
+        console.error("No tasks in maintenance plan");
+        throw new Error("No maintenance tasks were found in the plan");
       }
     } catch (error) {
       console.error("Error fetching maintenance plan:", error);
-      setMaintenanceError("Failed to load AI maintenance plan. Using mock data instead.");
       
-      // Fall back to mock data in case of error
-      if (process.env.NODE_ENV === 'development') {
+      // Create a user-friendly error message
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : "Unknown error occurred while generating maintenance plan";
+      
+      // In development, we can fall back to mock data
+      if (import.meta.env.DEV) {
+        console.warn("DEV environment: Falling back to mock data");
+        setMaintenanceError(`Failed to load AI maintenance plan: ${errorMessage}. Using mock data instead.`);
         setMaintenanceTasks(MOCK_MAINTENANCE_TASKS);
+      } else {
+        // In production, we can also fall back to mock data if needed
+        // This allows the application to function even if the AI service is down
+        console.warn("PROD environment: Error occurred with AI maintenance plan");
+        setMaintenanceError(`Failed to load AI maintenance plan: ${errorMessage}`);
+        
+        // Uncomment the following line if you want to fall back to mock data in production
+        // setMaintenanceTasks(MOCK_MAINTENANCE_TASKS);
+        
+        // Or keep this line if you don't want to use mock data in production
+        setMaintenanceTasks([]);
       }
     } finally {
       setLoadingMaintenanceTasks(false);

@@ -74,6 +74,7 @@ Generate a detailed maintenance plan as a JSON object with the following structu
       "suggestedCompletionDate": "YYYY-MM-DD",
       "estimatedCost": 150,
       "estimatedTime": "X hours",
+      "category": "hvac|plumbing|electrical|exterior|interior|safety|appliances|landscaping|general",
       "subTasks": ["Subtask 1", "Subtask 2", "Subtask 3"]
     }
   ]
@@ -88,6 +89,7 @@ Important guidelines:
 6. Ensure all dates are in YYYY-MM-DD format.
 7. Ensure estimatedCost is a number (not a string).
 8. Provide at least 10 maintenance tasks.
+9. For each task, assign an appropriate category from: hvac, plumbing, electrical, exterior, interior, safety, appliances, landscaping, or general.
 
 Return ONLY the JSON object with no additional text or explanation.`
           }

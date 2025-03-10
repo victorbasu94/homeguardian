@@ -52,6 +52,8 @@ export async function getMaintenancePlan(homeDetails: HomeDetails): Promise<Main
  */
 async function getProductionMaintenancePlan(homeDetails: HomeDetails): Promise<MaintenancePlan> {
   try {
+    console.log('Fetching production maintenance plan for home:', homeDetails.id);
+    
     // Instead of calling OpenAI directly, call our backend API
     const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/maintenance/generate-plan`, {
       method: 'POST',
@@ -63,16 +65,18 @@ async function getProductionMaintenancePlan(homeDetails: HomeDetails): Promise<M
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to generate maintenance plan');
+      const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+      console.error('Error response from maintenance API:', errorData);
+      throw new Error(errorData.message || errorData.error || `Failed to generate maintenance plan: ${response.status}`);
     }
 
     const data = await response.json();
+    console.log('Maintenance plan API response:', data);
     
-    // If no tasks were returned, fall back to mock data
+    // If no tasks were returned, throw an error
     if (!data.tasks || data.tasks.length === 0) {
-      console.warn('No tasks returned from API, falling back to mock data');
-      return getMockMaintenancePlan(homeDetails);
+      console.error('No tasks returned from API');
+      throw new Error('No maintenance tasks were returned from the API');
     }
     
     return {
@@ -83,7 +87,7 @@ async function getProductionMaintenancePlan(homeDetails: HomeDetails): Promise<M
         due_date: task.due_date || task.suggestedCompletionDate,
         status: 'pending',
         priority: getPriorityFromDueDate(task.due_date || task.suggestedCompletionDate),
-        category: task.category || 'maintenance',
+        category: task.category || 'general',
         estimated_time: task.estimated_time || task.estimatedTime,
         estimated_cost: task.estimated_cost || task.estimatedCost,
         subtasks: task.subtasks || task.subTasks || []
@@ -92,9 +96,8 @@ async function getProductionMaintenancePlan(homeDetails: HomeDetails): Promise<M
     };
   } catch (error) {
     console.error('Error generating maintenance plan:', error);
-    // Fall back to mock data if the API call fails
-    console.warn('Falling back to mock data due to API error');
-    return getMockMaintenancePlan(homeDetails);
+    // Throw a more descriptive error that can be handled by the calling code
+    throw new Error(`Failed to generate AI maintenance plan: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
 

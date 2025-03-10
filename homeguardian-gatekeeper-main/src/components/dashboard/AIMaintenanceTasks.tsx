@@ -13,10 +13,15 @@ const AIMaintenanceTasks: React.FC<AIMaintenanceTasksProps> = ({ homeId }) => {
   const { maintenanceTasks, isLoading, error } = useMaintenance();
   const [showAll, setShowAll] = useState(false);
   
-  // Use mock data in development environment if no tasks are available
+  // By default, only use mock data in development environment if no tasks are available
+  // To enable mock data in production as a fallback, change the condition to:
+  // const useMockData = maintenanceTasks.length === 0;
+  const useMockData = maintenanceTasks.length === 0 && import.meta.env.DEV;
+  
+  // Use real tasks if available, otherwise use mock data if allowed
   const tasks = maintenanceTasks.length > 0 
     ? maintenanceTasks 
-    : (process.env.NODE_ENV === 'development' ? MOCK_MAINTENANCE_TASKS : []);
+    : (useMockData ? MOCK_MAINTENANCE_TASKS : []);
   
   // Show only 3 tasks initially, unless showAll is true
   const displayedTasks = showAll ? tasks : tasks.slice(0, 3);
