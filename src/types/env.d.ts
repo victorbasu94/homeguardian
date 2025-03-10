@@ -1,4 +1,5 @@
 /// <reference types="vite/client" />
+/// <reference types="react" />
 
 interface ImportMetaEnv {
   readonly VITE_API_BASE_URL: string
@@ -30,4 +31,31 @@ declare module "@/components/ui/skeleton" {
 declare module "@/lib/maintenanceApi" {
   const getMaintenancePlan: any;
   export { getMaintenancePlan };
+}
+
+declare module "@/contexts/MaintenanceContext" {
+  interface MaintenanceTask {
+    task: string;
+    taskDescription: string;
+    suggestedCompletionDate: string;
+    estimatedCost: number;
+    estimatedTime: string;
+    subTasks: string[];
+    status?: 'pending' | 'completed';
+    priority?: 'high' | 'medium' | 'low';
+    category?: string;
+    home_id?: string;
+  }
+
+  interface MaintenanceContextType {
+    maintenanceTasks: MaintenanceTask[];
+    setMaintenanceTasks: React.Dispatch<React.SetStateAction<MaintenanceTask[]>>;
+    isLoading: boolean;
+    setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;
+    error: string | null;
+    setError: React.Dispatch<React.SetStateAction<string | null>>;
+  }
+
+  const useMaintenance: () => MaintenanceContextType;
+  export { useMaintenance, MaintenanceTask };
 } 

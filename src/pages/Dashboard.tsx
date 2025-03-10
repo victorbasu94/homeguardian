@@ -4,19 +4,19 @@ import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getMaintenancePlan } from '@/lib/maintenanceApi';
+import { useMaintenance } from '@/contexts/MaintenanceContext';
 
 interface Task {
-  id: string;
-  title: string;
-  description: string;
-  due_date: string;
-  status: 'pending' | 'completed';
-  priority: 'high' | 'medium' | 'low';
-  category: string;
-  estimated_time: string | number;
-  estimated_cost: number;
-  subtasks: string[];
-  home_id: string;
+  task: string;
+  taskDescription: string;
+  suggestedCompletionDate: string;
+  status?: 'pending' | 'completed';
+  priority?: 'high' | 'medium' | 'low';
+  category?: string;
+  estimatedTime: string;
+  estimatedCost: number;
+  subTasks: string[];
+  home_id?: string;
 }
 
 interface HomeData {
@@ -33,13 +33,11 @@ const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [selectedHome, setSelectedHome] = useState<HomeData | null>(null);
-  const [maintenanceTasks, setMaintenanceTasks] = useState<Task[]>([]);
-  const [loadingMaintenanceTasks, setLoadingMaintenanceTasks] = useState(false);
-  const [maintenanceError, setMaintenanceError] = useState<string | null>(null);
-
+  const { maintenanceTasks, setMaintenanceTasks, setIsLoading, setError } = useMaintenance();
+  
   const fetchTasks = async (homeId: string) => {
-    setLoadingMaintenanceTasks(true);
-    setMaintenanceError(null);
+    setIsLoading(true);
+    setError(null);
     
     try {
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/tasks/${homeId}`);
@@ -50,7 +48,7 @@ const Dashboard: React.FC = () => {
       
       const data = await response.json();
       if (!data.tasks || data.tasks.length === 0) {
-        setMaintenanceError('No maintenance tasks found for this home.');
+        setError('No maintenance tasks found for this home.');
         setMaintenanceTasks([]);
       } else {
         setMaintenanceTasks(data.tasks);
@@ -62,10 +60,10 @@ const Dashboard: React.FC = () => {
         ? error.message 
         : "Unknown error occurred while fetching maintenance plan";
       
-      setMaintenanceError(`Failed to load maintenance plan: ${errorMessage}`);
+      setError(`Failed to load maintenance plan: ${errorMessage}`);
       setMaintenanceTasks([]);
     } finally {
-      setLoadingMaintenanceTasks(false);
+      setIsLoading(false);
     }
   };
 
@@ -83,8 +81,8 @@ const Dashboard: React.FC = () => {
   // Fetch maintenance plan from OpenAI
   const fetchMaintenancePlan = async (home: HomeData) => {
     try {
-      setLoadingMaintenanceTasks(true);
-      setMaintenanceError(null);
+      setIsLoading(true);
+      setError(null);
       
       // Convert HomeData to HomeDetails format expected by getMaintenancePlan
       const homeDetails = {
@@ -112,9 +110,14 @@ const Dashboard: React.FC = () => {
           suggestedCompletionDate: task.due_date,
           estimatedCost: task.estimated_cost || 0,
           estimatedTime: task.estimated_time || "1 hour",
-          subTasks: task.subtasks || []
+          subTasks: task.subtasks || [],
+          status: 'pending',
+          priority: task.priority || 'medium',
+          category: task.category || 'general',
+          home_id: home.id
         }));
         
+        console.log("Formatted tasks:", formattedTasks);
         setMaintenanceTasks(formattedTasks);
       } else {
         // This shouldn't happen as the API should throw an error if no tasks are returned
@@ -123,11 +126,11 @@ const Dashboard: React.FC = () => {
       }
     } catch (error) {
       console.error('Error fetching maintenance plan:', error);
-      setMaintenanceError('Failed to generate maintenance plan. Please try again.');
+      setError('Failed to generate maintenance plan. Please try again.');
       // Clear any existing tasks
       setMaintenanceTasks([]);
     } finally {
-      setLoadingMaintenanceTasks(false);
+      setIsLoading(false);
     }
   };
 
