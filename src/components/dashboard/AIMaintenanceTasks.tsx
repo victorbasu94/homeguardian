@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Sparkles, AlertCircle, Loader2 } from 'lucide-react';
-import { useMaintenance } from '@/contexts/MaintenanceContext';
-import AITaskCard from './AITaskCard';
+import { useMaintenance, MaintenanceTask } from '@/contexts/MaintenanceContext';
+import { AITaskCard, TaskModal } from '@/components/dashboard';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 
@@ -12,6 +12,7 @@ interface AIMaintenanceTasksProps {
 const AIMaintenanceTasks: React.FC<AIMaintenanceTasksProps> = ({ homeId }) => {
   const { maintenanceTasks, isLoading, error } = useMaintenance();
   const [showAll, setShowAll] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<MaintenanceTask | null>(null);
   
   // By default, only use mock data in development environment if no tasks are available
   const tasks = maintenanceTasks;
@@ -51,10 +52,14 @@ const AIMaintenanceTasks: React.FC<AIMaintenanceTasksProps> = ({ homeId }) => {
     );
   }
   
-  const handleAddToTasks = (task: any) => {
+  const handleAddToTasks = (task: MaintenanceTask) => {
     // This would be implemented to add the AI task to the user's regular tasks
     console.log('Adding task to my tasks:', task);
     // In a real implementation, you would call an API to save this task
+  };
+
+  const handleViewDetails = (task: MaintenanceTask) => {
+    setSelectedTask(task);
   };
   
   return (
@@ -70,6 +75,7 @@ const AIMaintenanceTasks: React.FC<AIMaintenanceTasksProps> = ({ homeId }) => {
             key={index} 
             task={task} 
             onAddToTasks={handleAddToTasks}
+            onViewDetails={handleViewDetails}
           />
         ))}
       </div>
@@ -83,6 +89,18 @@ const AIMaintenanceTasks: React.FC<AIMaintenanceTasksProps> = ({ homeId }) => {
             {showAll ? 'Show Less' : `Show All (${tasks.length})`}
           </Button>
         </div>
+      )}
+
+      {selectedTask && (
+        <TaskModal
+          isOpen={!!selectedTask}
+          task={selectedTask}
+          onClose={() => setSelectedTask(null)}
+          onComplete={() => {
+            // Handle task completion if needed
+            setSelectedTask(null);
+          }}
+        />
       )}
     </div>
   );
