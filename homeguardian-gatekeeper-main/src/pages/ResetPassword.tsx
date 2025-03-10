@@ -58,7 +58,7 @@ const ResetPassword = () => {
     
     try {
       // Send reset password request to API
-      await api.post('/auth/reset-password', {
+      await api.post('/api/auth/reset-password', {
         token,
         password: data.password
       });

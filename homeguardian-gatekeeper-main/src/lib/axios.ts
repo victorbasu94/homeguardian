@@ -12,11 +12,6 @@ if (API_BASE_URL.endsWith('/')) {
   API_BASE_URL = API_BASE_URL.slice(0, -1);
 }
 
-// Remove '/api' from the end if it exists, as our backend routes already include it
-if (API_BASE_URL.endsWith('/api')) {
-  API_BASE_URL = API_BASE_URL.slice(0, -4);
-}
-
 // Make sure the URL is properly formatted
 if (!API_BASE_URL.startsWith('http://') && !API_BASE_URL.startsWith('https://')) {
   API_BASE_URL = 'https://' + API_BASE_URL;
@@ -24,19 +19,18 @@ if (!API_BASE_URL.startsWith('http://') && !API_BASE_URL.startsWith('https://'))
 
 // For production, ensure we're using the correct backend URL
 if (import.meta.env.PROD) {
-  // If we're in production and the URL contains 'maintainmint-backend.com'
+  // If we're in production and the URL contains 'maintainmint-backend'
   // Make sure it's properly formatted
   if (API_BASE_URL.includes('maintainmint-backend')) {
-    // Extract the domain part
-    const urlParts = API_BASE_URL.split('//');
-    const domainPart = urlParts[1].split('/')[0];
-    
     // Ensure it has the correct format
     API_BASE_URL = `https://maintainmint-backend-6dfe05c4ba93.herokuapp.com`;
     
     console.log('Corrected API Base URL for production:', API_BASE_URL);
   }
 }
+
+// DO NOT remove '/api' from the end as our backend routes include it
+// The backend routes are mounted with the '/api/' prefix
 
 console.log('Final API Base URL:', API_BASE_URL);
 

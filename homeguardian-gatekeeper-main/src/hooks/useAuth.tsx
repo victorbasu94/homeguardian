@@ -40,7 +40,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           
           // Fetch user data
           try {
-            const response = await api.get('/auth/me');
+            const response = await api.get('/api/auth/me');
             if (response.data.user) {
               console.log('User data fetched successfully:', response.data.user);
               setUser(response.data.user);

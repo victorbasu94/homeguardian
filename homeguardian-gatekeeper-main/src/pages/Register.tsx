@@ -99,8 +99,8 @@ const Register: React.FC = () => {
     try {
       console.log('Attempting to register user with:', { email: data.email, name: data.name });
       
-      // Call the API to register
-      const response = await api.post('/auth/register', {
+      // Call the API to register with the correct endpoint
+      const response = await api.post('/api/auth/register', {
         name: data.name,
         email: data.email,
         password: data.password

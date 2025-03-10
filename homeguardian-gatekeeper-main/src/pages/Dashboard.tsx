@@ -239,7 +239,7 @@ const Dashboard = () => {
       setLoadingHomes(true);
       setHomesError(null);
       
-      const response = await api.get("/homes");
+      const response = await api.get("/api/homes");
       console.log("Homes response:", response.data);
       
       // Ensure homes is always an array
@@ -279,7 +279,7 @@ const Dashboard = () => {
       setLoadingUserData(true);
       
       // Use the auth/me endpoint instead of users/me
-      const response = await api.get("/auth/me");
+      const response = await api.get("/api/auth/me");
       if (response.data && response.data.user) {
         setUserData({
           id: response.data.user.id,
@@ -308,7 +308,7 @@ const Dashboard = () => {
       let regularTasks = [];
       
       try {
-        const response = await api.get(`/tasks/${homeId}`);
+        const response = await api.get(`/api/tasks/${homeId}`);
         console.log("Tasks response:", response.data);
         regularTasks = response.data?.data || [];
       } catch (apiError) {
@@ -373,7 +373,7 @@ const Dashboard = () => {
       setIsUpdating(true);
       
       // Update task status in the API
-      await api.patch(`/tasks/${taskId}`, { completed: true });
+      await api.patch(`/api/tasks/${taskId}`, { completed: true });
       
       // Update the local state
       setTasks(prevTasks => 

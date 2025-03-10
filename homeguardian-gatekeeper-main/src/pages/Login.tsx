@@ -58,7 +58,7 @@ const Login: React.FC = () => {
     
     try {
       // Call the API to authenticate
-      const response = await api.post('/auth/login', {
+      const response = await api.post('/api/auth/login', {
         email: data.email,
         password: data.password
       });

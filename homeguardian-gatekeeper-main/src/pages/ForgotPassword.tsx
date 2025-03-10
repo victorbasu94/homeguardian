@@ -32,7 +32,7 @@ const ForgotPassword = () => {
     
     try {
       // Send forgot password request to API
-      await api.post('/auth/forgot-password', {
+      await api.post('/api/auth/forgot-password', {
         email: data.email
       });
       
