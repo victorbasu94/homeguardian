@@ -15,9 +15,10 @@ import {
   CheckCircle, 
   Sparkles,
   CheckIcon,
-  LayoutDashboard
+  LayoutDashboard,
+  ArrowRight
 } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, isPast, isToday, addDays } from 'date-fns';
 import { useAuth } from '@/hooks/useAuth';
 import api from '@/lib/axios';
 import HomeCard, { HomeData, HomeCardProps } from '@/components/dashboard/HomeCard';
@@ -639,39 +640,177 @@ const Dashboard = () => {
     // Create a safe user name display
     const userName = userData?.name || 'there';
     
+    // Calculate task statistics
+    const totalTasks = tasks.length;
+    const completedTasks = tasks.filter(task => task.status === 'completed').length;
+    const pendingTasks = tasks.filter(task => task.status === 'pending').length;
+    const overdueTasks = tasks.filter(task => 
+      task.status !== 'completed' && 
+      isPast(new Date(task.due_date)) && 
+      !isToday(new Date(task.due_date))
+    ).length;
+    
+    // Get upcoming tasks (due in the next 7 days)
+    const upcomingTasks = tasks.filter(task => 
+      task.status !== 'completed' && 
+      !isPast(new Date(task.due_date)) && 
+      new Date(task.due_date) <= addDays(new Date(), 7)
+    ).sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
+    
     return (
-      <div className="space-y-6">
+      <div className="space-y-8">
         <div>
-          <h2 className="text-[36px] font-bold text-[#1A2526]">
-            Hi, {userName}
-          </h2>
-          <p className="text-[20px] text-[#4A4A4A] font-serif">
-            Welcome to your HomeGuardian dashboard
+          <h1 className="text-2xl font-semibold text-foreground">
+            Welcome back, {userName}
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Here's an overview of your home maintenance status
           </p>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Stat Card 1 */}
-          <div className="w-full max-w-[300px] bg-gradient-to-br from-[#D4C7A9]/20 to-[#F5F5F5] border border-[#4A4A4A] rounded-xl shadow-md p-3">
-            <h3 className="font-medium text-[#1A2526]">Tasks</h3>
-            <p className="text-2xl font-bold text-[#2E7D32]">{tasks.length}</p>
-            <p className="text-sm text-[#4A4A4A]">Active maintenance tasks</p>
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-white rounded-md border border-border/40 p-4 shadow-sm">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-sm text-muted-foreground">Total Homes</p>
+                <h3 className="text-2xl font-semibold mt-1">{homes.length}</h3>
+              </div>
+              <div className="p-2 bg-primary/10 rounded-md">
+                <HomeIcon className="h-5 w-5 text-primary" />
+              </div>
+            </div>
+            <div className="mt-4 text-xs text-muted-foreground">
+              <Button variant="ghost" size="sm" className="p-0 h-auto text-primary hover:text-primary-dark" onClick={() => setActiveTab('homes')}>
+                View all homes
+              </Button>
+            </div>
           </div>
           
-          {/* Stat Card 2 */}
-          <div className="w-full max-w-[300px] bg-gradient-to-br from-[#D4C7A9]/20 to-[#F5F5F5] border border-[#4A4A4A] rounded-xl shadow-md p-3">
-            <h3 className="font-medium text-[#1A2526]">Homes</h3>
-            <p className="text-2xl font-bold text-[#2E7D32]">{homes.length}</p>
-            <p className="text-sm text-[#4A4A4A]">Properties being managed</p>
+          <div className="bg-white rounded-md border border-border/40 p-4 shadow-sm">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-sm text-muted-foreground">Total Tasks</p>
+                <h3 className="text-2xl font-semibold mt-1">{totalTasks}</h3>
+              </div>
+              <div className="p-2 bg-primary/10 rounded-md">
+                <ClipboardList className="h-5 w-5 text-primary" />
+              </div>
+            </div>
+            <div className="mt-4 text-xs text-muted-foreground">
+              <span className="text-green-600 font-medium">{completedTasks} completed</span> • <span className="text-amber-600 font-medium">{pendingTasks} pending</span>
+            </div>
           </div>
           
-          {/* Stat Card 3 */}
-          <div className="w-full max-w-[300px] bg-gradient-to-br from-[#D4C7A9]/20 to-[#F5F5F5] border border-[#4A4A4A] rounded-xl shadow-md p-3">
-            <h3 className="font-medium text-[#1A2526]">Plan</h3>
-            <p className="text-2xl font-bold text-[#2E7D32]">{userData?.subscription_plan || 'Basic'}</p>
-            <p className="text-sm text-[#4A4A4A]">Current subscription</p>
+          <div className="bg-white rounded-md border border-border/40 p-4 shadow-sm">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-sm text-muted-foreground">Overdue Tasks</p>
+                <h3 className="text-2xl font-semibold mt-1">{overdueTasks}</h3>
+              </div>
+              <div className="p-2 bg-red-100 rounded-md">
+                <AlertCircle className="h-5 w-5 text-red-600" />
+              </div>
+            </div>
+            <div className="mt-4 text-xs text-muted-foreground">
+              {overdueTasks > 0 ? (
+                <span className="text-red-600 font-medium">Requires attention</span>
+              ) : (
+                <span className="text-green-600 font-medium">All tasks on schedule</span>
+              )}
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-md border border-border/40 p-4 shadow-sm">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-sm text-muted-foreground">Subscription</p>
+                <h3 className="text-2xl font-semibold mt-1 capitalize">{userData?.subscription_plan || 'Free'}</h3>
+              </div>
+              <div className="p-2 bg-primary/10 rounded-md">
+                <Sparkles className="h-5 w-5 text-primary" />
+              </div>
+            </div>
+            <div className="mt-4 text-xs text-muted-foreground">
+              <Button variant="ghost" size="sm" className="p-0 h-auto text-primary hover:text-primary-dark" onClick={() => setActiveTab('plan')}>
+                Manage subscription
+              </Button>
+            </div>
           </div>
         </div>
+        
+        {/* Upcoming Tasks Section */}
+        <div className="bg-white rounded-md border border-border/40 p-5 shadow-sm">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-semibold">Upcoming Tasks</h2>
+            <Button variant="outline" size="sm" onClick={() => setActiveTab('tasks')}>
+              View all
+            </Button>
+          </div>
+          
+          {upcomingTasks.length === 0 ? (
+            <div className="text-center py-8 bg-background/50 rounded-md">
+              <CheckCircle className="h-12 w-12 text-primary/40 mx-auto mb-3" />
+              <h3 className="text-base font-medium">No upcoming tasks</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                You're all caught up with your maintenance schedule
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {upcomingTasks.slice(0, 5).map(task => {
+                const dueDate = new Date(task.due_date);
+                const isToday = format(dueDate, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
+                const isTomorrow = format(dueDate, 'yyyy-MM-dd') === format(addDays(new Date(), 1), 'yyyy-MM-dd');
+                
+                let dueDateText = format(dueDate, 'MMM d, yyyy');
+                if (isToday) dueDateText = 'Today';
+                if (isTomorrow) dueDateText = 'Tomorrow';
+                
+                return (
+                  <div 
+                    key={task.id} 
+                    className="flex items-center justify-between p-3 rounded-md border border-border/40 hover:bg-background/50 cursor-pointer"
+                    onClick={() => handleTaskClick(task)}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className={`w-2 h-2 rounded-full ${
+                        isToday ? 'bg-amber-500' : 'bg-primary'
+                      }`} />
+                      <div>
+                        <h4 className="text-sm font-medium">{task.title}</h4>
+                        <p className="text-xs text-muted-foreground">
+                          {task.home_id && homes.find(h => h.id === task.home_id)?.name}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center">
+                      <span className={`text-xs ${
+                        isToday ? 'text-amber-600 font-medium' : 'text-muted-foreground'
+                      }`}>
+                        {dueDateText}
+                      </span>
+                      <Button variant="ghost" size="sm" className="ml-2 h-8 w-8 p-0">
+                        <ArrowRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+              
+              {upcomingTasks.length > 5 && (
+                <div className="text-center pt-2">
+                  <Button variant="ghost" size="sm" onClick={() => setActiveTab('tasks')}>
+                    View {upcomingTasks.length - 5} more tasks
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+        
+        {/* Subscription Status */}
+        {renderSubscriptionStatus()}
       </div>
     );
   };
@@ -756,90 +895,105 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F5F5F5] flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Navbar */}
       <DashboardNavbar />
       
       {/* Main Content */}
-      <div className="flex flex-col md:flex-row flex-grow">
-        {/* Sidebar - 250px wide */}
-        <aside className="w-full md:w-[250px] bg-gradient-to-br from-[#D4C7A9]/20 to-[#F5F5F5] p-3 min-h-[calc(100vh-64px)]">
-          <nav className="space-y-2">
+      <div className="flex flex-grow">
+        {/* Sidebar - fixed width */}
+        <aside className="w-[220px] bg-white border-r border-border/40 min-h-[calc(100vh-64px)] flex-shrink-0">
+          <div className="p-4 pb-2">
+            <h2 className="text-sm font-medium text-muted-foreground">MENU</h2>
+          </div>
+          <nav className="space-y-1 px-2">
             <button
               onClick={() => setActiveTab('overview')}
-              className={`w-full text-left px-4 py-2 rounded-md flex items-center space-x-2 ${
+              className={`w-full text-left px-3 py-2 rounded-md flex items-center space-x-3 text-sm ${
                 activeTab === 'overview' 
-                  ? 'border-l-4 border-[#A3BFFA] bg-white/50' 
-                  : 'text-[#1A2526]'
+                  ? 'bg-primary/10 text-primary font-medium' 
+                  : 'text-foreground hover:bg-background'
               }`}
             >
-              <LayoutDashboard className="h-5 w-5" />
+              <LayoutDashboard className="h-4 w-4" />
               <span>Overview</span>
             </button>
             
             <button
               onClick={() => setActiveTab('tasks')}
-              className={`w-full text-left px-4 py-2 rounded-md flex items-center space-x-2 ${
+              className={`w-full text-left px-3 py-2 rounded-md flex items-center space-x-3 text-sm ${
                 activeTab === 'tasks' 
-                  ? 'border-l-4 border-[#A3BFFA] bg-white/50' 
-                  : 'text-[#1A2526]'
+                  ? 'bg-primary/10 text-primary font-medium' 
+                  : 'text-foreground hover:bg-background'
               }`}
             >
-              <ClipboardList className="h-5 w-5" />
+              <ClipboardList className="h-4 w-4" />
               <span>Tasks</span>
             </button>
             
             <button
               onClick={() => setActiveTab('homes')}
-              className={`w-full text-left px-4 py-2 rounded-md flex items-center space-x-2 ${
+              className={`w-full text-left px-3 py-2 rounded-md flex items-center space-x-3 text-sm ${
                 activeTab === 'homes' 
-                  ? 'border-l-4 border-[#A3BFFA] bg-white/50' 
-                  : 'text-[#1A2526]'
+                  ? 'bg-primary/10 text-primary font-medium' 
+                  : 'text-foreground hover:bg-background'
               }`}
             >
-              <HomeIcon className="h-5 w-5" />
+              <HomeIcon className="h-4 w-4" />
               <span>Homes</span>
             </button>
             
             <button
               onClick={() => setActiveTab('plan')}
-              className={`w-full text-left px-4 py-2 rounded-md flex items-center space-x-2 ${
+              className={`w-full text-left px-3 py-2 rounded-md flex items-center space-x-3 text-sm ${
                 activeTab === 'plan' 
-                  ? 'border-l-4 border-[#A3BFFA] bg-white/50' 
-                  : 'text-[#1A2526]'
+                  ? 'bg-primary/10 text-primary font-medium' 
+                  : 'text-foreground hover:bg-background'
               }`}
             >
-              <Sparkles className="h-5 w-5" />
-              <span>Plan</span>
+              <Sparkles className="h-4 w-4" />
+              <span>Subscription</span>
             </button>
           </nav>
+          
+          {/* User section at bottom */}
+          <div className="absolute bottom-0 left-0 w-full p-4 border-t border-border/40">
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-medium">
+                {userData?.name ? userData.name.substring(0, 2).toUpperCase() : 'U'}
+              </div>
+              <div className="overflow-hidden">
+                <p className="text-sm font-medium truncate">{userData?.name || 'User'}</p>
+                <p className="text-xs text-muted-foreground truncate">{userData?.email || ''}</p>
+              </div>
+            </div>
+          </div>
         </aside>
         
         {/* Main Content Area */}
-        <main className="flex-1 p-6">
-          {activeTab === 'overview' && renderOverview()}
-          {activeTab === 'tasks' && renderTasks()}
-          {activeTab === 'homes' && renderHomes()}
-          {activeTab === 'plan' && renderPlan()}
-          
-          {/* Task Modal */}
-          {selectedTask && (
-            <TaskModal
-              isOpen={!!selectedTask}
-              task={selectedTask}
-              onClose={() => setSelectedTask(null)}
-              onComplete={() => {
-                if (selectedTask) {
-                  void handleTaskComplete(selectedTask.id);
-                }
-              }}
-            />
-          )}
+        <main className="flex-1 p-6 bg-background overflow-auto">
+          <div className="max-w-6xl mx-auto">
+            {activeTab === 'overview' && renderOverview()}
+            {activeTab === 'tasks' && renderTasks()}
+            {activeTab === 'homes' && renderHomes()}
+            {activeTab === 'plan' && renderPlan()}
+            
+            {/* Task Modal */}
+            {selectedTask && (
+              <TaskModal
+                isOpen={!!selectedTask}
+                task={selectedTask}
+                onClose={() => setSelectedTask(null)}
+                onComplete={() => {
+                  if (selectedTask) {
+                    void handleTaskComplete(selectedTask.id);
+                  }
+                }}
+              />
+            )}
+          </div>
         </main>
       </div>
-      
-      {/* Footer */}
-      <Footer />
     </div>
   );
 };
