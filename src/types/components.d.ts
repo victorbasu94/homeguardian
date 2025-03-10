@@ -5,47 +5,56 @@ declare module '@/components/dashboard/AIMaintenanceTasks' {
   const AIMaintenanceTasks: React.FC<AIMaintenanceTasksProps>;
 }
 
+import { MaintenanceTask } from '@/contexts/MaintenanceContext';
+import type { ReactNode } from 'react';
+
 declare module '@/components/ui/alert' {
-  export const Alert: React.FC<{
+  interface AlertProps {
     variant?: 'default' | 'destructive';
-    children: React.ReactNode;
-  }>;
-  export const AlertTitle: React.FC<{ children: React.ReactNode }>;
-  export const AlertDescription: React.FC<{ children: React.ReactNode }>;
+    children: ReactNode;
+  }
+
+  export const Alert: React.FC<AlertProps>;
+  export const AlertTitle: React.FC<{ children: ReactNode }>;
+  export const AlertDescription: React.FC<{ children: ReactNode }>;
 }
 
 declare module '@/components/ui/button' {
-  export const Button: React.FC<{
+  interface ButtonProps {
     variant?: 'default' | 'destructive' | 'outline' | 'ghost';
     size?: 'default' | 'sm' | 'lg';
     onClick?: () => void;
-    children: React.ReactNode;
+    children: ReactNode;
     className?: string;
-  }>;
+  }
+
+  export const Button: React.FC<ButtonProps>;
 }
 
 declare module 'lucide-react' {
-  export const Sparkles: React.FC<{ className?: string }>;
-  export const AlertCircle: React.FC<{ className?: string }>;
-  export const Loader2: React.FC<{ className?: string }>;
+  interface IconProps {
+    className?: string;
+  }
+
+  export const Sparkles: React.FC<IconProps>;
+  export const AlertCircle: React.FC<IconProps>;
+  export const Loader2: React.FC<IconProps>;
 }
 
 declare module '@/components/dashboard' {
-  import { MaintenanceTask } from '@/contexts/MaintenanceContext';
-  
-  export interface TaskModalProps {
+  interface TaskModalProps {
     isOpen: boolean;
     task: MaintenanceTask;
     onClose: () => void;
     onComplete: () => void;
   }
-  
-  export interface AITaskCardProps {
+
+  interface AITaskCardProps {
     task: MaintenanceTask;
     onAddToTasks?: (task: MaintenanceTask) => void;
     onViewDetails?: (task: MaintenanceTask) => void;
   }
-  
+
   export const TaskModal: React.FC<TaskModalProps>;
   export const AITaskCard: React.FC<AITaskCardProps>;
 } 

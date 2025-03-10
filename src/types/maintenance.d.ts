@@ -7,9 +7,10 @@ declare module '@/contexts/MaintenanceContext' {
     status?: 'pending' | 'completed' | 'overdue';
     priority?: 'low' | 'medium' | 'high';
     estimated_cost?: number;
-    estimated_time?: number;
+    estimated_time?: string | number;
     subtasks?: string[];
     home_id?: string;
+    category?: string;
   }
 
   export interface MaintenanceContextType {
