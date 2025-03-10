@@ -2,9 +2,13 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 import { toast } from 'sonner';
 
+// Get the API base URL from environment variables
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001';
+console.log('API Base URL:', API_BASE_URL);
+
 // Create a base axios instance with common configuration
 const api = axios.create({
-  baseURL: 'http://localhost:5001', // Local development backend server
+  baseURL: API_BASE_URL, // Use environment variable with localhost fallback
   headers: {
     'Content-Type': 'application/json',
   },
@@ -119,7 +123,7 @@ api.interceptors.response.use(
               }
               
               // Call the refresh token endpoint
-              const response = await axios.post('http://localhost:5001/api/auth/refresh', {
+              const response = await axios.post(`${API_BASE_URL}/api/auth/refresh`, {
                 refreshToken
               });
               
