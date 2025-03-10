@@ -516,32 +516,26 @@ const Dashboard = () => {
   const renderTasks = () => {
     if (!selectedHome) {
       return (
-        <div className="bg-muted/30 border border-border rounded-lg p-6 text-center">
-          <h3 className="text-lg font-medium mb-2">Select a home to view tasks</h3>
-          <p className="text-muted-foreground mb-4">
-            Choose a home from the list to view and manage its maintenance tasks
-          </p>
-        </div>
-      );
-    }
-    
-    if (loadingTasks) {
-      return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[1, 2, 3, 4].map(i => (
-            <Skeleton key={i} className="h-64 w-full rounded-lg" />
-          ))}
-        </div>
-      );
-    }
-    
-    if (tasksError) {
-      return (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-800">
-          <p className="flex items-center gap-2">
-            <AlertCircle className="h-5 w-5" />
-            {tasksError}
-          </p>
+        <div className="space-y-6">
+          <div>
+            <h1 className="text-2xl font-semibold text-foreground">Maintenance Tasks</h1>
+            <p className="text-muted-foreground mt-1">
+              Select a home to view and manage its maintenance tasks
+            </p>
+          </div>
+          
+          <div className="bg-white border border-border/40 rounded-md p-8 text-center">
+            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <HomeIcon className="h-8 w-8 text-primary" />
+            </div>
+            <h2 className="text-lg font-medium mb-2">No home selected</h2>
+            <p className="text-muted-foreground max-w-md mx-auto mb-6">
+              Please select a home from the list to view and manage its maintenance tasks.
+            </p>
+            <Button onClick={() => setActiveTab('homes')}>
+              View Homes
+            </Button>
+          </div>
         </div>
       );
     }
@@ -558,73 +552,158 @@ const Dashboard = () => {
     // Ensure tasks are properly typed
     const typedTasks = filteredTasks as TaskData[];
     
+    // Group tasks by status
+    const completedTasks = typedTasks.filter(task => task.status === 'completed');
+    const pendingTasks = typedTasks.filter(task => task.status === 'pending');
+    const overdueTasks = typedTasks.filter(task => 
+      task.status !== 'completed' && 
+      isPast(new Date(task.due_date)) && 
+      !isToday(new Date(task.due_date))
+    );
+    
     return (
       <div className="space-y-6">
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-bold text-[#1A2526]">Maintenance Tasks</h2>
-            {selectedHome && (
-              <Button onClick={() => navigate(`/homes/${selectedHome.id}/tasks/add`)} className="flex items-center gap-2">
-                <Plus className="h-4 w-4" /> Add Task
-              </Button>
-            )}
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-semibold text-foreground">
+              Tasks for {selectedHome.name || `Home in ${selectedHome.location}`}
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              Manage maintenance tasks for this property
+            </p>
           </div>
+          <Button 
+            onClick={() => navigate(`/homes/${selectedHome.id}/tasks/add`)} 
+            className="flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" /> Add Task
+          </Button>
+        </div>
+        
+        <div className="flex items-center gap-2 mb-4">
+          <Input
+            placeholder="Search tasks..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="max-w-sm"
+          />
           
-          {selectedHome ? (
-            <div className="flex items-center gap-2 mb-4">
-              <Input
-                placeholder="Search tasks..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="max-w-sm"
-              />
+          <div className="ml-auto flex items-center gap-2">
+            <div className="text-sm text-muted-foreground">
+              Home: <span className="font-medium text-foreground">{selectedHome.name || selectedHome.location}</span>
             </div>
-          ) : (
-            <div className="bg-amber-50 border border-amber-200 rounded-md p-4 mb-4">
-              <p className="text-amber-800 flex items-center gap-2">
-                <AlertCircle className="h-4 w-4" />
-                Select a home to view and manage its tasks
-              </p>
-            </div>
-          )}
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setActiveTab('homes')}
+              className="ml-2"
+            >
+              Change
+            </Button>
+          </div>
         </div>
         
         {loadingTasks ? (
           <div className="space-y-4">
             {[...Array(3)].map((_, i) => (
-              <Skeleton key={i} className="h-32 w-full rounded-lg" />
+              <Skeleton key={i} className="h-32 w-full rounded-md" />
             ))}
           </div>
         ) : tasksError ? (
-          <div className="text-center py-8">
-            <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
-            <h3 className="text-lg font-medium">Error Loading Tasks</h3>
-            <p className="text-muted-foreground">{tasksError}</p>
+          <div className="bg-red-50 border border-red-200 rounded-md p-4 text-red-800 flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
+            <div>
+              <h3 className="font-medium">Error Loading Tasks</h3>
+              <p className="mt-1 text-sm">{tasksError}</p>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="mt-3 text-red-800 border-red-300"
+                onClick={() => fetchTasks(selectedHome.id)}
+              >
+                Try Again
+              </Button>
+            </div>
           </div>
         ) : typedTasks.length === 0 ? (
-          <div className="text-center py-12 border rounded-lg bg-background">
-            <ClipboardList className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-medium">No Tasks Found</h3>
-            <p className="text-muted-foreground mb-6">
-              {selectedHome ? "This home doesn't have any tasks yet." : "Select a home to view its tasks."}
+          <div className="bg-white border border-border/40 rounded-md p-8 text-center">
+            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <ClipboardList className="h-8 w-8 text-primary" />
+            </div>
+            <h2 className="text-lg font-medium mb-2">No tasks found</h2>
+            <p className="text-muted-foreground max-w-md mx-auto mb-6">
+              {searchQuery.trim() !== '' 
+                ? "No tasks match your search criteria. Try a different search term."
+                : "This home doesn't have any maintenance tasks yet. Add your first task to get started."}
             </p>
-            {selectedHome && (
+            {searchQuery.trim() !== '' ? (
+              <Button variant="outline" onClick={() => setSearchQuery('')}>
+                Clear Search
+              </Button>
+            ) : (
               <Button onClick={() => navigate(`/homes/${selectedHome.id}/tasks/add`)}>
                 Add Your First Task
               </Button>
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {typedTasks.map((task) => (
-              <div key={task.id}>
-                <TaskCard
-                  task={task}
-                  onViewDetails={(taskData) => handleTaskClick(taskData)}
-                  onComplete={(taskId) => handleTaskComplete(taskId)}
-                />
+          <div className="space-y-8">
+            {/* Overdue Tasks */}
+            {overdueTasks.length > 0 && (
+              <div>
+                <h2 className="text-base font-medium mb-3 flex items-center text-red-600">
+                  <AlertCircle className="h-4 w-4 mr-2" /> Overdue Tasks
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {overdueTasks.map((task) => (
+                    <TaskCard
+                      key={task.id}
+                      task={task}
+                      onViewDetails={(taskData) => handleTaskClick(taskData)}
+                      onComplete={(taskId) => handleTaskComplete(taskId)}
+                    />
+                  ))}
+                </div>
               </div>
-            ))}
+            )}
+            
+            {/* Pending Tasks */}
+            {pendingTasks.length > 0 && (
+              <div>
+                <h2 className="text-base font-medium mb-3 flex items-center">
+                  <ClipboardList className="h-4 w-4 mr-2" /> Pending Tasks
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {pendingTasks.map((task) => (
+                    <TaskCard
+                      key={task.id}
+                      task={task}
+                      onViewDetails={(taskData) => handleTaskClick(taskData)}
+                      onComplete={(taskId) => handleTaskComplete(taskId)}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Completed Tasks */}
+            {completedTasks.length > 0 && (
+              <div>
+                <h2 className="text-base font-medium mb-3 flex items-center text-green-600">
+                  <CheckCircle className="h-4 w-4 mr-2" /> Completed Tasks
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {completedTasks.map((task) => (
+                    <TaskCard
+                      key={task.id}
+                      task={task}
+                      onViewDetails={(taskData) => handleTaskClick(taskData)}
+                      onComplete={(taskId) => handleTaskComplete(taskId)}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -811,79 +890,166 @@ const Dashboard = () => {
     );
   };
 
-  // Render the plan section
+  // Render subscription plan section
   const renderPlan = () => {
+    const isSubscribed = userData?.subscription_status === 'active';
+    const plan = userData?.subscription_plan || 'free';
+    const endDate = userData?.subscription_end_date 
+      ? new Date(userData.subscription_end_date) 
+      : null;
+    
     return (
       <div className="space-y-6">
-        <h2 className="text-2xl font-bold text-[#1A2526]">Your Plan</h2>
-        
-        <div className="bg-gradient-to-br from-[#D4C7A9]/20 to-[#F5F5F5] border border-[#4A4A4A] rounded-xl shadow-md p-6">
-          <h3 className="text-xl font-medium text-[#1A2526] mb-2">
-            Current Plan: {userData?.subscription_plan || 'Basic'}
-          </h3>
-          <p className="text-[#4A4A4A] mb-4">
-            {userData?.subscription_status === 'active' 
-              ? `Your plan is active until ${userData?.subscription_end_date || 'N/A'}`
-              : 'Your plan is not currently active'}
+        <div>
+          <h1 className="text-2xl font-semibold text-foreground">Subscription</h1>
+          <p className="text-muted-foreground mt-1">
+            Manage your HomeGuardian subscription plan
           </p>
-          
-          <Button className="border-[#A3BFFA] bg-[#D4C7A9]/10 text-[#1A2526] hover:bg-[#A3BFFA]/20">
-            Upgrade Your Plan
-          </Button>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="border rounded-xl p-4">
-            <h3 className="font-medium">Basic</h3>
-            <p className="text-2xl font-bold">$9.99/mo</p>
-            <ul className="mt-4 space-y-2">
-              <li className="flex items-center">
-                <CheckCircle className="h-5 w-5 text-[#2E7D32] mr-2" />
-                <span>Up to 2 homes</span>
-              </li>
-              <li className="flex items-center">
-                <CheckCircle className="h-5 w-5 text-[#2E7D32] mr-2" />
-                <span>Basic maintenance reminders</span>
-              </li>
-            </ul>
+        <div className="bg-white border border-border/40 rounded-md shadow-sm overflow-hidden">
+          <div className="p-6 border-b border-border/40">
+            <div className="flex justify-between items-start">
+              <div>
+                <h2 className="text-lg font-medium">Current Plan</h2>
+                <p className="text-muted-foreground text-sm mt-1">
+                  {isSubscribed 
+                    ? "Your subscription is active" 
+                    : "You are currently on the free plan"}
+                </p>
+              </div>
+              <div className="bg-primary/10 p-2 rounded-md">
+                <Sparkles className="h-5 w-5 text-primary" />
+              </div>
+            </div>
+            
+            <div className="mt-4">
+              <div className="flex items-baseline">
+                <h3 className="text-2xl font-semibold capitalize">{plan}</h3>
+                {isSubscribed && (
+                  <span className="ml-2 text-sm text-muted-foreground">
+                    {endDate ? `Renews on ${format(endDate, 'MMMM d, yyyy')}` : ''}
+                  </span>
+                )}
+              </div>
+              
+              <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-background p-4 rounded-md">
+                  <h4 className="text-sm font-medium mb-2">Plan Features</h4>
+                  <ul className="space-y-2">
+                    {plan === 'premium' ? (
+                      <>
+                        <li className="flex items-center text-sm">
+                          <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
+                          Unlimited homes
+                        </li>
+                        <li className="flex items-center text-sm">
+                          <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
+                          AI-powered maintenance recommendations
+                        </li>
+                        <li className="flex items-center text-sm">
+                          <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
+                          Priority support
+                        </li>
+                        <li className="flex items-center text-sm">
+                          <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
+                          Advanced analytics
+                        </li>
+                      </>
+                    ) : plan === 'pro' ? (
+                      <>
+                        <li className="flex items-center text-sm">
+                          <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
+                          Up to 5 homes
+                        </li>
+                        <li className="flex items-center text-sm">
+                          <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
+                          AI-powered maintenance recommendations
+                        </li>
+                        <li className="flex items-center text-sm">
+                          <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
+                          Email support
+                        </li>
+                      </>
+                    ) : (
+                      <>
+                        <li className="flex items-center text-sm">
+                          <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
+                          Up to 1 home
+                        </li>
+                        <li className="flex items-center text-sm">
+                          <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
+                          Basic maintenance tracking
+                        </li>
+                      </>
+                    )}
+                  </ul>
+                </div>
+                
+                <div className="bg-background p-4 rounded-md">
+                  <h4 className="text-sm font-medium mb-2">Subscription Management</h4>
+                  <div className="space-y-3">
+                    {isSubscribed ? (
+                      <>
+                        <Button 
+                          variant="outline" 
+                          className="w-full justify-start"
+                          onClick={() => navigate('/settings/billing')}
+                        >
+                          Manage Billing
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          className="w-full justify-start text-red-600 border-red-200 hover:bg-red-50"
+                          onClick={() => navigate('/settings/cancel-subscription')}
+                        >
+                          Cancel Subscription
+                        </Button>
+                      </>
+                    ) : (
+                      <Button 
+                        className="w-full justify-start"
+                        onClick={() => navigate('/pricing')}
+                      >
+                        Upgrade Plan
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
           
-          <div className="border rounded-xl p-4 border-[#A3BFFA] bg-[#D4C7A9]/10">
-            <h3 className="font-medium">Pro</h3>
-            <p className="text-2xl font-bold">$19.99/mo</p>
-            <ul className="mt-4 space-y-2">
-              <li className="flex items-center">
-                <CheckCircle className="h-5 w-5 text-[#2E7D32] mr-2" />
-                <span>Up to 5 homes</span>
-              </li>
-              <li className="flex items-center">
-                <CheckCircle className="h-5 w-5 text-[#2E7D32] mr-2" />
-                <span>Advanced maintenance tracking</span>
-              </li>
-              <li className="flex items-center">
-                <CheckCircle className="h-5 w-5 text-[#2E7D32] mr-2" />
-                <span>AI maintenance suggestions</span>
-              </li>
-            </ul>
-          </div>
-          
-          <div className="border rounded-xl p-4">
-            <h3 className="font-medium">Premium</h3>
-            <p className="text-2xl font-bold">$29.99/mo</p>
-            <ul className="mt-4 space-y-2">
-              <li className="flex items-center">
-                <CheckCircle className="h-5 w-5 text-[#2E7D32] mr-2" />
-                <span>Unlimited homes</span>
-              </li>
-              <li className="flex items-center">
-                <CheckCircle className="h-5 w-5 text-[#2E7D32] mr-2" />
-                <span>Priority support</span>
-              </li>
-              <li className="flex items-center">
-                <CheckCircle className="h-5 w-5 text-[#2E7D32] mr-2" />
-                <span>Advanced analytics</span>
-              </li>
-            </ul>
+          <div className="p-6 bg-background/50">
+            <h3 className="text-base font-medium mb-3">Available Plans</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className={`border rounded-md p-4 ${plan === 'free' ? 'border-primary bg-primary/5' : 'border-border/40'}`}>
+                <h4 className="font-medium">Free</h4>
+                <p className="text-2xl font-semibold mt-2">$0<span className="text-sm font-normal text-muted-foreground">/month</span></p>
+                <p className="text-sm text-muted-foreground mt-2">Basic home maintenance tracking for one property</p>
+              </div>
+              
+              <div className={`border rounded-md p-4 ${plan === 'pro' ? 'border-primary bg-primary/5' : 'border-border/40'}`}>
+                <h4 className="font-medium">Pro</h4>
+                <p className="text-2xl font-semibold mt-2">$9.99<span className="text-sm font-normal text-muted-foreground">/month</span></p>
+                <p className="text-sm text-muted-foreground mt-2">Advanced features for up to 5 properties</p>
+              </div>
+              
+              <div className={`border rounded-md p-4 ${plan === 'premium' ? 'border-primary bg-primary/5' : 'border-border/40'}`}>
+                <h4 className="font-medium">Premium</h4>
+                <p className="text-2xl font-semibold mt-2">$19.99<span className="text-sm font-normal text-muted-foreground">/month</span></p>
+                <p className="text-sm text-muted-foreground mt-2">Unlimited properties with all premium features</p>
+              </div>
+            </div>
+            
+            <div className="mt-4 text-center">
+              <Button 
+                variant="outline"
+                onClick={() => navigate('/pricing')}
+              >
+                Compare Plans
+              </Button>
+            </div>
           </div>
         </div>
       </div>
