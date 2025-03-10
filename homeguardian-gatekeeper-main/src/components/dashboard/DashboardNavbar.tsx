@@ -27,7 +27,7 @@ const DashboardNavbar = () => {
   };
   
   return (
-    <header className="border-b border-border bg-white sticky top-0 z-50 h-16">
+    <header className="border-b border-border bg-background/95 backdrop-blur-sm sticky top-0 z-50 h-16">
       <div className="container mx-auto px-4 h-full flex items-center justify-between">
         <Link to="/dashboard" className="flex items-center space-x-2">
           <Shield className="h-5 w-5 text-primary" />
@@ -43,7 +43,7 @@ const DashboardNavbar = () => {
             <Settings className="h-5 w-5" />
           </Button>
           
-          <div className="flex items-center space-x-3 pl-2 border-l border-border">
+          <div className="flex items-center space-x-3 pl-2 border-l border-border/40">
             <Avatar className="h-8 w-8 bg-primary/10">
               <AvatarFallback className="text-primary text-xs">
                 {user?.email ? getInitials(user.email) : 'U'}

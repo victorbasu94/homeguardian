@@ -36,7 +36,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onComplete, onViewDetails }) 
   const getStatusBadge = () => {
     if (task.status === 'completed') {
       return (
-        <Badge variant="outline" className="bg-green-50 text-green-600 border-green-100 text-xs font-normal flex items-center gap-1">
+        <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200 text-xs font-normal flex items-center gap-1">
           <CheckCircle className="w-3 h-3" /> Completed
         </Badge>
       );
@@ -44,7 +44,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onComplete, onViewDetails }) 
     
     if (isOverdue) {
       return (
-        <Badge variant="outline" className="bg-red-50 text-red-600 border-red-100 text-xs font-normal flex items-center gap-1">
+        <Badge variant="outline" className="bg-red-100 text-red-800 border-red-200 text-xs font-normal flex items-center gap-1">
           <AlertTriangle className="w-3 h-3" /> Overdue
         </Badge>
       );
@@ -52,7 +52,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onComplete, onViewDetails }) 
     
     if (isDueToday) {
       return (
-        <Badge variant="outline" className="bg-amber-50 text-amber-600 border-amber-100 text-xs font-normal flex items-center gap-1">
+        <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-200 text-xs font-normal flex items-center gap-1">
           <Clock className="w-3 h-3" /> Due Today
         </Badge>
       );
@@ -60,7 +60,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onComplete, onViewDetails }) 
     
     if (isDueTomorrow) {
       return (
-        <Badge variant="outline" className="bg-blue-50 text-blue-600 border-blue-100 text-xs font-normal flex items-center gap-1">
+        <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200 text-xs font-normal flex items-center gap-1">
           <Clock className="w-3 h-3" /> Due Tomorrow
         </Badge>
       );
@@ -68,7 +68,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onComplete, onViewDetails }) 
     
     if (isDueSoon) {
       return (
-        <Badge variant="outline" className="bg-green-50 text-green-600 border-green-100 text-xs font-normal flex items-center gap-1">
+        <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200 text-xs font-normal flex items-center gap-1">
           <Calendar className="w-3 h-3" /> Due Soon
         </Badge>
       );
@@ -84,23 +84,23 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onComplete, onViewDetails }) 
   const getPriorityBadge = () => {
     switch (task.priority) {
       case 'high':
-        return <Badge variant="outline" className="bg-red-50 text-red-600 border-red-100 text-xs font-normal">High</Badge>;
+        return <Badge variant="outline" className="bg-red-100 text-red-800 border-red-200 text-xs font-normal">High</Badge>;
       case 'medium':
-        return <Badge variant="outline" className="bg-amber-50 text-amber-600 border-amber-100 text-xs font-normal">Medium</Badge>;
+        return <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-200 text-xs font-normal">Medium</Badge>;
       default:
-        return <Badge variant="outline" className="bg-blue-50 text-blue-600 border-blue-100 text-xs font-normal">Low</Badge>;
+        return <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200 text-xs font-normal">Low</Badge>;
     }
   };
   
   return (
     <Card className="overflow-hidden transition-shadow hover:shadow-card-hover">
-      <CardHeader className="pb-2">
+      <CardHeader className="pb-2 bg-muted/5">
         <div className="flex justify-between items-start">
           <div>
             {task.is_ai_generated && (
               <div className="flex items-center gap-1.5 mb-1">
                 <Sparkles className="h-3.5 w-3.5 text-primary" />
-                <Badge variant="outline" className="bg-primary/5 text-primary border-primary/10 text-xs font-normal">AI Generated</Badge>
+                <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 text-xs font-normal">AI Generated</Badge>
               </div>
             )}
             <CardTitle className="text-sm font-medium">{task.title}</CardTitle>

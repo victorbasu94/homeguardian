@@ -41,14 +41,14 @@ const HomeCard: React.FC<HomeCardProps> = ({
     <Card 
       className={`cursor-pointer transition-all ${
         isSelected 
-          ? 'ring-2 ring-primary' 
+          ? 'ring-2 ring-primary bg-primary/5' 
           : 'hover:border-primary/30'
       }`}
       onClick={onClick}
     >
       <CardHeader className="flex flex-row items-start justify-between pb-2">
         <div className="flex items-center gap-3">
-          <div className={`p-1.5 rounded-md ${isSelected ? 'bg-primary text-white' : 'bg-accent text-primary'}`}>
+          <div className={`p-1.5 rounded-md ${isSelected ? 'bg-primary text-white' : 'bg-primary/10 text-primary'}`}>
             <Home className="h-4 w-4" />
           </div>
           <div>
@@ -75,11 +75,11 @@ const HomeCard: React.FC<HomeCardProps> = ({
       
       <CardContent className="pb-4">
         <div className="grid grid-cols-2 gap-3 mb-3">
-          <div className="bg-secondary p-2 rounded-md">
+          <div className="bg-background/80 p-2 rounded-md border border-border/20">
             <div className="text-xs text-muted-foreground mb-0.5">Year Built</div>
             <div className="font-medium text-sm">{home.year_built}</div>
           </div>
-          <div className="bg-secondary p-2 rounded-md">
+          <div className="bg-background/80 p-2 rounded-md border border-border/20">
             <div className="text-xs text-muted-foreground mb-0.5">Square Feet</div>
             <div className="font-medium text-sm">{home.square_footage.toLocaleString()}</div>
           </div>
@@ -101,7 +101,7 @@ const HomeCard: React.FC<HomeCardProps> = ({
                 {home.completed_tasks_count || 0}/{home.tasks_count}
               </div>
             </div>
-            <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
+            <div className="h-1.5 bg-background rounded-full overflow-hidden">
               <div 
                 className="h-full bg-primary rounded-full transition-all duration-500"
                 style={{ width: `${completionRate}%` }}

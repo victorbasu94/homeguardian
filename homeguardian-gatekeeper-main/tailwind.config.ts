@@ -33,34 +33,34 @@ export default {
 				background: 'hsl(var(--background))',
 				foreground: 'hsl(var(--foreground))',
 				primary: {
-					DEFAULT: '#0055FF', // Mercury blue
-					light: '#3377FF',
-					dark: '#0044CC',
+					DEFAULT: '#A3BFFA', // Serenity Blue
+					light: '#B9CFFB',
+					dark: '#8AACF9',
 					foreground: '#FFFFFF'
 				},
 				secondary: {
-					DEFAULT: '#F5F7FA', // Mercury light gray
-					light: '#FFFFFF',
-					dark: '#E5E9F0',
-					foreground: '#1A1F36'
+					DEFAULT: '#D4C7A9', // Warm Taupe
+					light: '#E2D9C4',
+					dark: '#C6B58E',
+					foreground: '#1A2526'
 				},
 				tertiary: {
-					DEFAULT: '#1A1F36', // Mercury dark blue/black
-					light: '#2D3452',
-					dark: '#0F1225',
-					foreground: '#FFFFFF'
+					DEFAULT: '#FBBF24', // Yellow
+					light: '#FCCC55',
+					dark: '#E5A91F',
+					foreground: '#4A5568'
 				},
 				destructive: {
-					DEFAULT: '#FF4D4F',
-					foreground: '#FFFFFF'
+					DEFAULT: 'hsl(var(--destructive))',
+					foreground: 'hsl(var(--destructive-foreground))'
 				},
 				muted: {
-					DEFAULT: '#6B7280', // Mercury muted text
+					DEFAULT: '#4A4A4A', // Soft Graphite
 					foreground: 'hsl(var(--muted-foreground))'
 				},
 				accent: {
-					DEFAULT: '#F0F4FF', // Mercury light blue accent
-					foreground: '#0055FF'
+					DEFAULT: '#D4C7A9', // Warm Taupe (same as secondary)
+					foreground: '#1A2526'
 				},
 				popover: {
 					DEFAULT: 'hsl(var(--popover))',
@@ -71,27 +71,27 @@ export default {
 					foreground: 'hsl(var(--card-foreground))'
 				},
 				sidebar: {
-					DEFAULT: '#1A1F36', // Mercury sidebar dark
-					foreground: '#FFFFFF',
-					primary: '#0055FF',
-					'primary-foreground': '#FFFFFF',
-					accent: '#F0F4FF',
-					'accent-foreground': '#0055FF',
-					border: '#2D3452',
-					ring: '#0055FF'
+					DEFAULT: 'hsl(var(--sidebar-background))',
+					foreground: 'hsl(var(--sidebar-foreground))',
+					primary: 'hsl(var(--sidebar-primary))',
+					'primary-foreground': 'hsl(var(--sidebar-primary-foreground))',
+					accent: 'hsl(var(--sidebar-accent))',
+					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
+					border: 'hsl(var(--sidebar-border))',
+					ring: 'hsl(var(--sidebar-ring))'
 				},
-				neutral: '#6B7280', // Mercury neutral text
-				softWhite: '#FFFFFF', // Mercury white
+				neutral: '#4A4A4A', // Soft Graphite for text
+				softWhite: '#F5F5F5', // Guardian White for backgrounds
 				success: {
-					DEFAULT: '#52C41A', // Mercury success green
+					DEFAULT: '#2E7D32', // Success green
 					foreground: '#FFFFFF'
 				},
 				warning: {
-					DEFAULT: '#FAAD14', // Mercury warning yellow
+					DEFAULT: '#F59E0B', // Warning yellow
 					foreground: '#FFFFFF'
 				},
 				info: {
-					DEFAULT: '#1890FF', // Mercury info blue
+					DEFAULT: '#3B82F6', // Info blue
 					foreground: '#FFFFFF'
 				}
 			},
@@ -156,8 +156,8 @@ export default {
 					'50%': { transform: 'translateY(-10px)' }
 				},
 				'pulse-glow': {
-					'0%, 100%': { boxShadow: '0 0 0 0 rgba(0, 85, 255, 0.4)' },
-					'50%': { boxShadow: '0 0 20px 10px rgba(0, 85, 255, 0.2)' }
+					'0%, 100%': { boxShadow: '0 0 0 0 rgba(163, 191, 250, 0.4)' },
+					'50%': { boxShadow: '0 0 20px 10px rgba(163, 191, 250, 0.2)' }
 				},
 				'bounce-subtle': {
 					'0%, 100%': { transform: 'translateY(0)' },
@@ -200,11 +200,11 @@ export default {
 				'200': '200ms',
 			},
 			backgroundImage: {
-				'auth-gradient': 'linear-gradient(to right bottom, #F5F7FA, #FFFFFF)',
-				'primary-gradient': 'linear-gradient(to right, #0055FF, #3377FF)',
-				'secondary-gradient': 'linear-gradient(to right, #F5F7FA, #FFFFFF)',
-				'dark-gradient': 'linear-gradient(135deg, #1A1F36 0%, #2D3452 100%)',
-				'soft-gradient': 'linear-gradient(to bottom right, #F5F7FA, #FFFFFF)',
+				'auth-gradient': 'linear-gradient(to right bottom, #F5F5F5, #FFFFFF)',
+				'primary-gradient': 'linear-gradient(to right, #A3BFFA, #B9CFFB)',
+				'secondary-gradient': 'linear-gradient(to right, #D4C7A9, #E2D9C4)',
+				'taupe-blue-gradient': 'linear-gradient(135deg, #D4C7A9 0%, #A3BFFA 100%)',
+				'soft-gradient': 'linear-gradient(to bottom right, #F5F5F5, #FFFFFF)',
 			},
 			backdropBlur: {
 				'xs': '2px',
@@ -216,8 +216,8 @@ export default {
 			boxShadow: {
 				'card': '0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.1)',
 				'card-hover': '0 4px 6px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.1)',
-				'button': '0 1px 2px rgba(0, 85, 255, 0.1)',
-				'button-hover': '0 2px 4px rgba(0, 85, 255, 0.2)',
+				'button': '0 1px 2px rgba(163, 191, 250, 0.2)',
+				'button-hover': '0 2px 4px rgba(163, 191, 250, 0.3)',
 				'dropdown': '0 4px 12px rgba(0, 0, 0, 0.1)',
 				'sidebar': '0 0 15px rgba(0, 0, 0, 0.05)'
 			}
