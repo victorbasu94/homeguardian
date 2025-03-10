@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ],
+  "buildCommand": "cd homeguardian-gatekeeper-main && npm install && npm run build",
+  "outputDirectory": "homeguardian-gatekeeper-main/dist",
+  "framework": "vite"
+} 
