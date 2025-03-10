@@ -39,7 +39,7 @@ interface ImportMeta {
  */
 export async function getMaintenancePlan(homeDetails: HomeDetails): Promise<MaintenancePlan> {
   try {
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/tasks/generate-ai-plan`, {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/maintenance/generate-plan`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

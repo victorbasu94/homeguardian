@@ -75,7 +75,10 @@ Return a JSON object with this structure:
       throw new Error('Invalid response format from OpenAI API');
     }
 
-    return parsedResponse;
+    return {
+      tasks: parsedResponse.tasks,
+      generated_at: new Date().toISOString()
+    };
   } catch (error) {
     logger.error('Error calling OpenAI API:', error.response?.data || error.message);
     
