@@ -54,17 +54,33 @@ Return a JSON object with this structure:
 {
   "tasks": [
     {
-      "task_name": "Task name",
+      "title": "Task name",
       "description": "Detailed description",
       "due_date": "YYYY-MM-DD",
-      "estimated_cost": 150,
-      "estimated_time": "2 hours",
+      "status": "pending",
+      "priority": "high|medium|low",
       "category": "hvac|plumbing|electrical|exterior|interior|safety|appliances|landscaping|general",
-      "steps": ["Step 1", "Step 2", "Step 3"],
-      "priority": "high|medium|low"
+      "estimated_time": "2 hours",
+      "estimated_cost": 150,
+      "subtasks": ["Step 1", "Step 2", "Step 3"]
     }
-  ]
-}`
+  ],
+  "generated_at": "2024-03-10T22:23:27.053Z"
+}
+
+Important guidelines:
+1. Consider the home's age, size, location, and climate when creating tasks
+2. Provide realistic cost estimates based on the location
+3. Include seasonal maintenance tasks appropriate for the climate
+4. Suggest completion dates that make sense for the task and location
+5. Include both routine maintenance and preventative tasks
+6. Ensure all dates are in YYYY-MM-DD format
+7. Ensure estimatedCost is a number (not a string)
+8. Provide at least 10 maintenance tasks
+9. Set appropriate priorities based on task urgency and due dates
+10. Use relevant categories from the list provided
+
+Return ONLY the JSON object with no additional text or explanation.`
         }
       ],
       temperature: 0.7,
@@ -108,17 +124,11 @@ Return a JSON object with this structure:
 
     logger.info('Successfully parsed OpenAI response');
 
-    const result = {
+    // Return the response in the format expected by the frontend
+    return {
       tasks: parsedResponse.tasks,
-      generated_at: new Date().toISOString()
+      generated_at: parsedResponse.generated_at || new Date().toISOString()
     };
-
-    logger.info('Returning maintenance plan:', { 
-      taskCount: result.tasks.length,
-      generated_at: result.generated_at
-    });
-
-    return result;
   } catch (error) {
     logger.error('Error in OpenAI service:', {
       name: error.name,
