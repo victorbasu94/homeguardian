@@ -1,7 +1,9 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronUp, Search } from 'lucide-react';
+import { ChevronDown, ChevronUp, Search, ArrowRight } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import { Button } from '@/components/ui/button';
+import { Link } from 'react-router-dom';
 
 interface FAQItem {
   question: string;
@@ -91,20 +93,22 @@ const FAQ = () => {
   });
 
   return (
-    <div className="min-h-screen flex flex-col bg-softWhite">
+    <div className="min-h-screen flex flex-col bg-[#F5F5F5]">
       <Navbar />
       
-      {/* Hero Section */}
+      {/* Hero Section - Keep gradient background */}
       <section className="pt-32 pb-20 bg-gradient-to-r from-[#A3BFFA] to-[#D4C7A9] text-white">
         <div className="container mx-auto px-4 md:px-6">
           <div className="max-w-3xl mx-auto text-center">
-            <h1 className="text-4xl md:text-5xl font-bold mb-6 font-poppins leading-tight animate-fade-in">Frequently Asked Questions</h1>
-            <p className="text-xl md:text-2xl mb-8 font-inter text-white/90 animate-slide-in">
+            <h1 className="text-4xl md:text-5xl font-bold mb-6 leading-tight">
+              Frequently Asked Questions
+            </h1>
+            <p className="text-xl md:text-2xl mb-8 text-white/90">
               Find answers to common questions about HomeGuardian.
             </p>
             
             {/* Search Bar */}
-            <div className="relative max-w-xl mx-auto animate-scale-in">
+            <div className="relative max-w-xl mx-auto">
               <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
                 <Search className="h-5 w-5 text-white/60" />
               </div>
@@ -113,15 +117,15 @@ const FAQ = () => {
                 placeholder="Search questions..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 rounded-full bg-white/10 border border-white/20 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/50 shadow-lg"
+                className="w-full pl-10 pr-4 py-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/50"
               />
             </div>
           </div>
         </div>
       </section>
       
-      {/* FAQ Content */}
-      <section className="py-20">
+      {/* FAQ Content - Mercury Style */}
+      <section className="py-20 -mt-12 pt-24">
         <div className="container mx-auto px-4 md:px-6">
           {/* Category Filter */}
           <div className="flex flex-wrap gap-2 justify-center mb-12">
@@ -129,10 +133,10 @@ const FAQ = () => {
               <button
                 key={category}
                 onClick={() => setSelectedCategory(category)}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   selectedCategory === category
-                    ? 'bg-[#A3BFFA] text-white shadow-md'
-                    : 'bg-gray-100 text-neutral hover:bg-gray-200'
+                    ? 'bg-[#A3BFFA] text-white'
+                    : 'bg-white text-[#1A2526] border border-[#4A4A4A]/10 hover:bg-[#A3BFFA]/10'
                 }`}
               >
                 {category}
@@ -140,25 +144,25 @@ const FAQ = () => {
             ))}
           </div>
           
-          {/* FAQ Accordion */}
+          {/* FAQ Accordion - Mercury Style */}
           <div className="max-w-3xl mx-auto space-y-4">
             {filteredFAQs.length > 0 ? (
               filteredFAQs.map((faq, index) => (
                 <div 
                   key={index} 
-                  className="border border-gray-200 rounded-xl overflow-hidden transition-all duration-300 bg-white shadow-card hover:shadow-card-hover"
+                  className="border border-[#4A4A4A]/10 rounded-lg overflow-hidden bg-white shadow-sm"
                 >
                   <button
                     onClick={() => toggleQuestion(index)}
                     className="flex justify-between items-center w-full p-6 text-left"
                     aria-expanded={activeIndex === index}
                   >
-                    <h3 className="text-lg font-semibold font-poppins pr-8 text-neutral">{faq.question}</h3>
+                    <h3 className="text-lg font-medium pr-8 text-[#1A2526]">{faq.question}</h3>
                     <div className="flex-shrink-0">
                       {activeIndex === index ? (
                         <ChevronUp className="h-5 w-5 text-[#A3BFFA]" />
                       ) : (
-                        <ChevronDown className="h-5 w-5 text-gray-500" />
+                        <ChevronDown className="h-5 w-5 text-[#4A4A4A]" />
                       )}
                     </div>
                   </button>
@@ -168,15 +172,15 @@ const FAQ = () => {
                       activeIndex === index ? 'max-h-96' : 'max-h-0'
                     }`}
                   >
-                    <div className="p-6 pt-0 border-t border-gray-100 font-inter text-neutral/80">
+                    <div className="p-6 pt-0 border-t border-[#4A4A4A]/10 text-[#4A4A4A]">
                       {faq.answer}
                     </div>
                   </div>
                 </div>
               ))
             ) : (
-              <div className="text-center py-12 bg-white rounded-xl shadow-card p-8">
-                <p className="text-neutral text-lg font-inter">No results found. Try adjusting your search.</p>
+              <div className="text-center py-12 bg-white rounded-lg border border-[#4A4A4A]/10 p-8">
+                <p className="text-[#1A2526] text-lg">No results found. Try adjusting your search.</p>
                 <button 
                   onClick={() => {
                     setSearchQuery('');
@@ -192,65 +196,68 @@ const FAQ = () => {
         </div>
       </section>
       
-      {/* Still Have Questions */}
-      <section className="py-16 bg-soft-gradient">
+      {/* Topic Categories - Mercury Style */}
+      <section className="py-20 bg-white border-y border-[#4A4A4A]/10">
         <div className="container mx-auto px-4 md:px-6">
-          <div className="max-w-3xl mx-auto text-center">
-            <h2 className="text-3xl font-bold mb-6 font-poppins text-[#A3BFFA]">Still Have Questions?</h2>
-            <p className="text-lg mb-8 font-inter text-neutral">
-              Our support team is here to help you with any questions you might have about HomeGuardian.
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-semibold mb-4 text-[#1A2526]">Browse by Topic</h2>
+            <p className="text-[#4A4A4A] max-w-2xl mx-auto">
+              Find answers organized by category
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <a 
-                href="mailto:support@homeguardian.com" 
-                className="bg-[#A3BFFA] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#A3BFFA]/90 transition-colors shadow-md"
-              >
-                Contact Support
-              </a>
-              <a 
-                href="/demo" 
-                className="bg-white text-[#A3BFFA] border border-[#A3BFFA] px-6 py-3 rounded-lg font-medium hover:bg-[#A3BFFA]/5 transition-colors"
-              >
-                Request a Demo
-              </a>
-            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            {[
+              {
+                title: "Getting Started",
+                description: "New to HomeGuardian? Learn how to set up your account and create your first maintenance plan.",
+                link: "/how-it-works"
+              },
+              {
+                title: "Pricing & Plans",
+                description: "Explore our different subscription options to find the perfect fit for your home.",
+                link: "/pricing"
+              },
+              {
+                title: "Using the Platform",
+                description: "Learn how to get the most out of HomeGuardian's features and tools.",
+                link: "/how-it-works"
+              }
+            ].map((topic, i) => (
+              <div key={i} className="bg-white p-6 rounded-lg border border-[#4A4A4A]/10 shadow-sm">
+                <h3 className="text-xl font-semibold mb-2 text-[#1A2526]">{topic.title}</h3>
+                <p className="text-[#4A4A4A] mb-4">{topic.description}</p>
+                <Link to={topic.link} className="text-[#A3BFFA] text-sm font-medium inline-flex items-center hover:underline">
+                  Learn more
+                  <ArrowRight className="ml-1 h-3.5 w-3.5" />
+                </Link>
+              </div>
+            ))}
           </div>
         </div>
       </section>
       
-      {/* Quick Links */}
-      <section className="py-16">
-        <div className="container mx-auto px-4 md:px-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-            <div className="bg-white p-6 rounded-xl shadow-card text-center hover:shadow-card-hover transition-shadow">
-              <h3 className="text-xl font-bold mb-3 font-poppins text-neutral">Getting Started</h3>
-              <p className="text-neutral/80 mb-4 font-inter">
-                New to HomeGuardian? Learn how to set up your account and create your first maintenance plan.
-              </p>
-              <a href="/how-it-works" className="text-[#A3BFFA] font-medium hover:underline">
-                View Guide
-              </a>
-            </div>
-            
-            <div className="bg-white p-6 rounded-xl shadow-card text-center hover:shadow-card-hover transition-shadow">
-              <h3 className="text-xl font-bold mb-3 font-poppins text-neutral">Pricing Plans</h3>
-              <p className="text-neutral/80 mb-4 font-inter">
-                Explore our different subscription options to find the perfect fit for your home.
-              </p>
-              <a href="/pricing" className="text-[#A3BFFA] font-medium hover:underline">
-                Compare Plans
-              </a>
-            </div>
-            
-            <div className="bg-white p-6 rounded-xl shadow-card text-center hover:shadow-card-hover transition-shadow">
-              <h3 className="text-xl font-bold mb-3 font-poppins text-neutral">Knowledge Base</h3>
-              <p className="text-neutral/80 mb-4 font-inter">
-                Browse our extensive library of home maintenance articles and tutorials.
-              </p>
-              <a href="/resources" className="text-[#A3BFFA] font-medium hover:underline">
-                Explore Resources
-              </a>
-            </div>
+      {/* CTA Section - Mercury Style */}
+      <section className="py-20 bg-[#A3BFFA]">
+        <div className="container mx-auto px-4 md:px-6 text-center">
+          <h2 className="text-3xl font-semibold text-white mb-6">Still have questions?</h2>
+          <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
+            Our support team is here to help you with any questions you might have about HomeGuardian.
+          </p>
+          
+          <div className="flex flex-col sm:flex-row justify-center gap-4 max-w-md mx-auto">
+            <Link 
+              to="/contact" 
+              className="bg-white text-[#A3BFFA] px-6 py-3 rounded-lg text-base font-medium hover:bg-white/90 transition-all duration-300"
+            >
+              Contact Support
+            </Link>
+            <Link 
+              to="/demo" 
+              className="border border-white text-white px-6 py-3 rounded-lg text-base font-medium hover:bg-white/10 transition-all duration-300"
+            >
+              Request a Demo
+            </Link>
           </div>
         </div>
       </section>
