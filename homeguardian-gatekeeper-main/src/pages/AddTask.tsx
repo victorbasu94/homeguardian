@@ -114,7 +114,7 @@ const AddTask = () => {
           <h1 className="text-3xl font-bold tracking-tight">Add Maintenance Task</h1>
           {home && (
             <p className="text-muted-foreground mt-1">
-              For {home.name} • {home.address}
+              For {home.name} • {home.location}
             </p>
           )}
         </div>

@@ -36,21 +36,21 @@ router.get('/', (req, res) => {
 });
 
 // Mount authentication routes
-router.use('/api/auth', authRoutes);
+router.use('/auth', authRoutes);
 
 // Mount homes routes
-router.use('/api/homes', homesRoutes);
+router.use('/homes', homesRoutes);
 
 // Mount tasks routes
-router.use('/api/tasks', tasksRoutes);
+router.use('/tasks', tasksRoutes);
 
 // Mount subscriptions routes
-router.use('/api/subscriptions', subscriptionsRoutes);
+router.use('/subscriptions', subscriptionsRoutes);
 
 // Mount vendors routes
-router.use('/api/vendors', vendorsRoutes);
+router.use('/vendors', vendorsRoutes);
 
 // Mount maintenance routes
-router.use('/api/maintenance', maintenanceRoutes);
+router.use('/maintenance', maintenanceRoutes);
 
 module.exports = router; 

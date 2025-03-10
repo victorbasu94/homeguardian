@@ -29,8 +29,10 @@ if (import.meta.env.PROD) {
   }
 }
 
-// DO NOT remove '/api' from the end as our backend routes include it
-// The backend routes are mounted with the '/api/' prefix
+// Remove '/api' from the end if it exists, as we've updated the backend routes to not include it
+if (API_BASE_URL.endsWith('/api')) {
+  API_BASE_URL = API_BASE_URL.slice(0, -4);
+}
 
 console.log('Final API Base URL:', API_BASE_URL);
 
