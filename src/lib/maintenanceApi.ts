@@ -39,6 +39,16 @@ interface ImportMeta {
  */
 export async function getMaintenancePlan(homeDetails: HomeDetails): Promise<MaintenancePlan> {
   try {
+    console.log('Generating maintenance plan for home:', homeDetails);
+
+    // Validate required fields
+    const requiredFields = ['id', 'location', 'year_built', 'square_footage'] as const;
+    const missingFields = requiredFields.filter(field => !homeDetails[field]);
+    
+    if (missingFields.length > 0) {
+      throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
+    }
+
     const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/maintenance/generate-plan`, {
       method: 'POST',
       headers: {
@@ -48,18 +58,25 @@ export async function getMaintenancePlan(homeDetails: HomeDetails): Promise<Main
       body: JSON.stringify(homeDetails)
     });
 
+    console.log('Received response from server:', {
+      status: response.status,
+      statusText: response.statusText
+    });
+
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+      console.error('Error response from server:', errorData);
       throw new Error(errorData.message || `Failed to generate maintenance plan: ${response.status}`);
     }
 
     const data = await response.json();
+    console.log('Parsed response data:', data);
     
     if (!data.tasks || data.tasks.length === 0) {
       throw new Error('No maintenance tasks were returned from the API');
     }
 
-    return {
+    const maintenancePlan = {
       home_id: homeDetails.id,
       tasks: data.tasks.map((task: any) => ({
         title: task.title || task.task_name,
@@ -74,6 +91,9 @@ export async function getMaintenancePlan(homeDetails: HomeDetails): Promise<Main
       })),
       generated_at: data.generated_at || new Date().toISOString()
     };
+
+    console.log('Generated maintenance plan:', maintenancePlan);
+    return maintenancePlan;
   } catch (error) {
     console.error('Error generating maintenance plan:', error);
     throw error;

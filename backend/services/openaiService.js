@@ -8,8 +8,11 @@ const logger = require('../utils/logger');
  */
 async function generateMaintenancePlanWithAI(homeDetails) {
   try {
+    logger.info('Starting AI maintenance plan generation:', { homeDetails });
+
     // Validate environment variables
     if (!process.env.OPENAI_API_KEY) {
+      logger.error('OpenAI API key not configured');
       throw new Error('OpenAI API key is not configured');
     }
 
@@ -21,20 +24,20 @@ async function generateMaintenancePlanWithAI(homeDetails) {
       ${homeDetails.hvac_type ? `HVAC Type: ${homeDetails.hvac_type}` : ''}
     `.trim();
 
+    logger.info('Prepared home details string for OpenAI');
+
     // Prepare the OpenAI API request
-    const response = await axios.post(
-      'https://api.openai.com/v1/chat/completions',
-      {
-        model: process.env.OPENAI_MODEL || 'gpt-4',
-        response_format: { type: 'json_object' },
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a home maintenance expert. Provide detailed, practical maintenance plans based on home details.'
-          },
-          {
-            role: 'user',
-            content: `Generate a detailed maintenance plan for the following home:
+    const requestBody = {
+      model: process.env.OPENAI_MODEL || 'gpt-4',
+      response_format: { type: 'json_object' },
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a home maintenance expert. Provide detailed, practical maintenance plans based on home details.'
+        },
+        {
+          role: 'user',
+          content: `Generate a detailed maintenance plan for the following home:
 
 ${homeDetailsString}
 
@@ -53,11 +56,21 @@ Return a JSON object with this structure:
     }
   ]
 }`
-          }
-        ],
-        temperature: 0.7,
-        max_tokens: 2000
-      },
+        }
+      ],
+      temperature: 0.7,
+      max_tokens: 2000
+    };
+
+    logger.info('Calling OpenAI API with request:', {
+      model: requestBody.model,
+      temperature: requestBody.temperature,
+      max_tokens: requestBody.max_tokens
+    });
+
+    const response = await axios.post(
+      'https://api.openai.com/v1/chat/completions',
+      requestBody,
       {
         headers: {
           'Content-Type': 'application/json',
@@ -66,21 +79,39 @@ Return a JSON object with this structure:
       }
     );
 
+    logger.info('Received response from OpenAI API');
+
     // Parse and validate the response
     const aiResponse = response.data.choices[0].message.content;
+    logger.debug('OpenAI raw response:', { content: aiResponse });
+
     const parsedResponse = JSON.parse(aiResponse);
 
     // Ensure the response has the expected structure
     if (!parsedResponse.tasks || !Array.isArray(parsedResponse.tasks)) {
+      logger.error('Invalid response format from OpenAI:', { parsedResponse });
       throw new Error('Invalid response format from OpenAI API');
     }
 
-    return {
+    logger.info('Successfully parsed OpenAI response');
+
+    const result = {
       tasks: parsedResponse.tasks,
       generated_at: new Date().toISOString()
     };
+
+    logger.info('Returning maintenance plan:', { 
+      taskCount: result.tasks.length,
+      generated_at: result.generated_at
+    });
+
+    return result;
   } catch (error) {
-    logger.error('Error calling OpenAI API:', error.response?.data || error.message);
+    logger.error('Error in OpenAI service:', {
+      error: error.message,
+      response: error.response?.data,
+      status: error.response?.status
+    });
     
     // Provide more specific error messages based on the error type
     if (error.response?.status === 401) {
