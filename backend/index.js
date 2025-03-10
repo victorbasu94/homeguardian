@@ -30,7 +30,28 @@ app.use(helmet());
 
 // CORS configuration
 app.use(cors({
-  origin: ['http://localhost:8081', 'http://localhost:5173', 'http://localhost:8080', 'http://localhost:8082', process.env.FRONTEND_URL],
+  origin: function(origin, callback) {
+    // Allow requests with no origin (like mobile apps, curl requests)
+    if(!origin) return callback(null, true);
+    
+    // List of allowed origins
+    const allowedOrigins = [
+      'http://localhost:8081', 
+      'http://localhost:5173', 
+      'http://localhost:8080', 
+      'http://localhost:8082', 
+      process.env.FRONTEND_URL,
+      'https://maintainmint.vercel.app',
+      'https://maintainmint-34b22d6a27f5.herokuapp.com'
+    ];
+    
+    if(allowedOrigins.indexOf(origin) !== -1 || !origin) {
+      callback(null, true);
+    } else {
+      console.log('CORS blocked origin:', origin);
+      callback(null, true); // Temporarily allow all origins
+    }
+  },
   credentials: true
 }));
 
