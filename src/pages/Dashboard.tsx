@@ -4,20 +4,11 @@ import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getMaintenancePlan } from '@/lib/maintenanceApi';
-import { useMaintenance } from '@/contexts/MaintenanceContext';
+import { useMaintenance, MaintenanceTask } from '@/contexts/MaintenanceContext';
+import AIMaintenanceTasks from '@/components/dashboard/AIMaintenanceTasks';
 
-interface Task {
-  task: string;
-  taskDescription: string;
-  suggestedCompletionDate: string;
-  status?: 'pending' | 'completed';
-  priority?: 'high' | 'medium' | 'low';
-  category?: string;
-  estimatedTime: string;
-  estimatedCost: number;
-  subTasks: string[];
-  home_id?: string;
-}
+// Use MaintenanceTask interface instead of redefining Task
+type Task = MaintenanceTask;
 
 interface HomeData {
   id: string;
@@ -103,17 +94,9 @@ const Dashboard: React.FC = () => {
       if (maintenancePlan && maintenancePlan.tasks && maintenancePlan.tasks.length > 0) {
         console.log("Maintenance plan fetched successfully:", maintenancePlan);
         
-        // Convert to the format expected by MaintenanceContext
+        // The tasks are already in the correct format, just add home_id
         const formattedTasks = maintenancePlan.tasks.map(task => ({
-          task: task.title,
-          taskDescription: task.description,
-          suggestedCompletionDate: task.due_date,
-          estimatedCost: task.estimated_cost || 0,
-          estimatedTime: task.estimated_time || "1 hour",
-          subTasks: task.subtasks || [],
-          status: 'pending',
-          priority: task.priority || 'medium',
-          category: task.category || 'general',
+          ...task,
           home_id: home.id
         }));
         
@@ -134,7 +117,22 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  // ... rest of your component JSX ...
+  return (
+    <div className="container mx-auto px-4 py-8">
+      {/* Add your dashboard JSX here */}
+      <div className="space-y-8">
+        {selectedHome ? (
+          <>
+            <AIMaintenanceTasks homeId={selectedHome.id} />
+          </>
+        ) : (
+          <div className="text-center">
+            <h2 className="text-xl font-semibold">Select a home to view maintenance tasks</h2>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 };
 
 export default Dashboard; 
