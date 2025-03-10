@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -59,7 +58,7 @@ const ResetPassword = () => {
     
     try {
       // Send reset password request to API
-      await api.post('/api/auth/reset-password', {
+      await api.post('/auth/reset-password', {
         token,
         password: data.password
       });

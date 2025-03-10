@@ -34,7 +34,7 @@ const AddTask = () => {
     const fetchHome = async () => {
       try {
         setLoadingHome(true);
-        const response = await api.get(`/api/homes/${homeId}`);
+        const response = await api.get(`/homes/${homeId}`);
         setHome(response.data);
       } catch (error) {
         console.error("Error fetching home:", error);

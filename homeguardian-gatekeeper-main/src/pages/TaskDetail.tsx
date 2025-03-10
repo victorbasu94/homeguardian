@@ -320,7 +320,7 @@ const TaskDetail: React.FC = () => {
       
       try {
         // In a real app, this would be an API call
-        // const response = await api.get(`/api/tasks/${taskId}`);
+        // const response = await api.get(`/tasks/${taskId}`);
         // setTask(response.data);
         
         // For now, we'll use mock data
@@ -352,7 +352,7 @@ const TaskDetail: React.FC = () => {
     
     try {
       // In a real app, this would be an API call
-      // await api.post(`/api/tasks/${taskId}/comments`, { text: newComment });
+      // await api.post(`/tasks/${taskId}/comments`, { text: newComment });
       
       // For now, we'll update the local state
       const newCommentObj: Comment = {
@@ -398,7 +398,7 @@ const TaskDetail: React.FC = () => {
     
     try {
       // In a real app, this would be an API call
-      // await api.patch(`/api/tasks/${taskId}/steps/${stepId}`, { isCompleted });
+      // await api.patch(`/tasks/${taskId}/steps/${stepId}`, { isCompleted });
       
       // For now, we'll update the local state
       setTask((prevTask) => {
@@ -450,7 +450,7 @@ const TaskDetail: React.FC = () => {
     
     try {
       // In a real app, this would be an API call
-      // await api.delete(`/api/tasks/${taskId}`);
+      // await api.delete(`/tasks/${taskId}`);
       
       toast({
         title: 'Task deleted',
@@ -490,7 +490,7 @@ const TaskDetail: React.FC = () => {
         setVendors(mockVendors);
       } else {
         // In production, fetch from API
-        const response = await api.get('/api/vendors');
+        const response = await api.get('/vendors');
         setVendors(response.data);
       }
     } catch (err) {

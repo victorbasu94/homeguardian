@@ -3,7 +3,18 @@ import Cookies from 'js-cookie';
 import { toast } from 'sonner';
 
 // Get the API base URL from environment variables
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001';
+let API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001';
+
+// Remove trailing slash if present
+if (API_BASE_URL.endsWith('/')) {
+  API_BASE_URL = API_BASE_URL.slice(0, -1);
+}
+
+// Remove '/api' from the end if it exists, as our backend routes already include it
+if (API_BASE_URL.endsWith('/api')) {
+  API_BASE_URL = API_BASE_URL.slice(0, -4);
+}
+
 console.log('API Base URL:', API_BASE_URL);
 
 // Create a base axios instance with common configuration

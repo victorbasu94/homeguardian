@@ -215,7 +215,7 @@ const Onboarding: React.FC = () => {
     
     try {
       // Call API to create home
-      await api.post('/api/homes', {
+      await api.post('/homes', {
         name: `My ${completeFormData.home_type.replace('_', ' ')} Home`,
         home_type: completeFormData.home_type,
         location: `${completeFormData.address}, ${completeFormData.city}, ${completeFormData.state} ${completeFormData.zipCode}`,

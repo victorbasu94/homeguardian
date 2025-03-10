@@ -308,7 +308,7 @@ const Dashboard = () => {
       let regularTasks = [];
       
       try {
-        const response = await api.get(`/api/tasks/${homeId}`);
+        const response = await api.get(`/tasks/${homeId}`);
         console.log("Tasks response:", response.data);
         regularTasks = response.data?.data || [];
       } catch (apiError) {
@@ -372,8 +372,8 @@ const Dashboard = () => {
     try {
       setIsUpdating(true);
       
-      // Make the API call to update the task status
-      await api.patch(`/api/tasks/${taskId}`, { completed: true });
+      // Update task status in the API
+      await api.patch(`/tasks/${taskId}`, { completed: true });
       
       // Update the local state
       setTasks(prevTasks => 

@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -33,7 +32,7 @@ const ForgotPassword = () => {
     
     try {
       // Send forgot password request to API
-      await api.post('/api/auth/forgot-password', {
+      await api.post('/auth/forgot-password', {
         email: data.email
       });
       

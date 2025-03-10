@@ -90,7 +90,7 @@ const HomeDetails = () => {
         console.log("Fetching home details for homeId:", homeId);
         
         // Fetch home details
-        const homeResponse = await api.get(`/api/homes/${homeId}`);
+        const homeResponse = await api.get(`/homes/${homeId}`);
         console.log("Home details response:", homeResponse.data);
         
         if (!homeResponse.data || !homeResponse.data.data) {
@@ -100,7 +100,7 @@ const HomeDetails = () => {
         setHome(homeResponse.data.data);
         
         // Fetch tasks for this home
-        const tasksResponse = await api.get(`/api/tasks/${homeId}`);
+        const tasksResponse = await api.get(`/tasks/${homeId}`);
         console.log("Tasks response:", tasksResponse.data);
         
         if (!tasksResponse.data || !tasksResponse.data.data) {
@@ -126,7 +126,7 @@ const HomeDetails = () => {
   
   const handleTaskComplete = async (taskId: string) => {
     try {
-      await api.patch(`/api/tasks/${taskId}/complete`);
+      await api.patch(`/tasks/${taskId}/complete`);
       
       // Update local state
       setTasks(prevTasks => 
