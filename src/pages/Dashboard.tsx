@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useToast } from '@/components/ui/use-toast';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { getMaintenancePlan } from '@/lib/maintenanceApi';
 
 interface Task {
   id: string;
@@ -27,6 +31,7 @@ interface HomeData {
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [selectedHome, setSelectedHome] = useState<HomeData | null>(null);
   const [maintenanceTasks, setMaintenanceTasks] = useState<Task[]>([]);
   const [loadingMaintenanceTasks, setLoadingMaintenanceTasks] = useState(false);
@@ -73,6 +78,57 @@ const Dashboard: React.FC = () => {
 
   const handleTaskClick = (task: Task) => {
     navigate(`/tasks/${task.id}`);
+  };
+
+  // Fetch maintenance plan from OpenAI
+  const fetchMaintenancePlan = async (home: HomeData) => {
+    try {
+      setLoadingMaintenanceTasks(true);
+      setMaintenanceError(null);
+      
+      // Convert HomeData to HomeDetails format expected by getMaintenancePlan
+      const homeDetails = {
+        id: home.id,
+        location: home.location,
+        year_built: home.year_built,
+        square_footage: home.square_footage,
+        roof_type: home.roof_type,
+        hvac_type: home.hvac_type
+      };
+      
+      console.log('Fetching maintenance plan for home:', home.id);
+      
+      // Call the API to get maintenance plan
+      const maintenancePlan = await getMaintenancePlan(homeDetails);
+      
+      // If we got tasks back, update the context
+      if (maintenancePlan && maintenancePlan.tasks && maintenancePlan.tasks.length > 0) {
+        console.log("Maintenance plan fetched successfully:", maintenancePlan);
+        
+        // Convert to the format expected by MaintenanceContext
+        const formattedTasks = maintenancePlan.tasks.map(task => ({
+          task: task.title,
+          taskDescription: task.description,
+          suggestedCompletionDate: task.due_date,
+          estimatedCost: task.estimated_cost || 0,
+          estimatedTime: task.estimated_time || "1 hour",
+          subTasks: task.subtasks || []
+        }));
+        
+        setMaintenanceTasks(formattedTasks);
+      } else {
+        // This shouldn't happen as the API should throw an error if no tasks are returned
+        console.error("No tasks in maintenance plan");
+        throw new Error("No maintenance tasks were found in the plan");
+      }
+    } catch (error) {
+      console.error('Error fetching maintenance plan:', error);
+      setMaintenanceError('Failed to generate maintenance plan. Please try again.');
+      // Clear any existing tasks
+      setMaintenanceTasks([]);
+    } finally {
+      setLoadingMaintenanceTasks(false);
+    }
   };
 
   // ... rest of your component JSX ...
