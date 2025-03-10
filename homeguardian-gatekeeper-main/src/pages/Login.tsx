@@ -72,7 +72,7 @@ const Login: React.FC = () => {
       // Show success toast
       toast({
         title: 'Login successful',
-        description: 'Welcome back to HomeGuardian!',
+        description: 'Welcome back to MaintainMint!',
       });
       
       // Redirect to the page they were trying to access or dashboard
@@ -109,7 +109,7 @@ const Login: React.FC = () => {
             </div>
             <h1 className="text-3xl font-bold mb-2">Welcome Back</h1>
             <p className="text-neutral/70">
-              Sign in to your HomeGuardian account
+              Sign in to your MaintainMint account
             </p>
           </div>
           

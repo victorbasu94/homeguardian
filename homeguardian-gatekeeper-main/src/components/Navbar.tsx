@@ -35,7 +35,7 @@ const Navbar = () => {
           <Link to="/" className="flex items-center gap-2 z-10">
             <Shield className={`h-5 w-5 ${isScrolled ? 'text-primary' : 'text-white'}`} />
             <span className={`text-base font-medium ${isScrolled ? 'text-foreground' : 'text-white'}`}>
-              HomeGuardian
+              MaintainMint
             </span>
           </Link>
 

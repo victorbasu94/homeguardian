@@ -113,7 +113,7 @@ const Register: React.FC = () => {
       // Show success toast
       toast({
         title: 'Registration successful',
-        description: 'Welcome to HomeGuardian!',
+        description: 'Welcome to MaintainMint!',
       });
       
       // Redirect to onboarding
@@ -154,7 +154,7 @@ const Register: React.FC = () => {
             </div>
             <h1 className="text-3xl font-bold mb-2">Create Your Account</h1>
             <p className="text-neutral/70">
-              Join HomeGuardian and start protecting your home
+              Join MaintainMint and start protecting your home
             </p>
           </div>
           

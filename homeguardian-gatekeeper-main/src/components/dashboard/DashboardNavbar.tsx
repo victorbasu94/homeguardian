@@ -31,7 +31,7 @@ const DashboardNavbar = () => {
       <div className="container mx-auto px-4 h-full flex items-center justify-between">
         <Link to="/" className="flex items-center space-x-2">
           <Shield className="h-5 w-5 text-primary" />
-          <span className="text-base font-medium">HomeGuardian</span>
+          <span className="text-base font-medium">MaintainMint</span>
         </Link>
         
         <div className="flex items-center space-x-4">

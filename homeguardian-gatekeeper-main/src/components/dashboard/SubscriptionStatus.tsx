@@ -58,7 +58,7 @@ const SubscriptionStatus: React.FC<SubscriptionStatusProps> = ({
         return {
           icon: <AlertCircle className="h-5 w-5 text-blue-500" />,
           title: 'No Subscription',
-          description: 'Subscribe now to unlock all features and get the most out of HomeGuardian.',
+          description: 'Subscribe now to unlock all features and get the most out of MaintainMint.',
           bgColor: 'bg-blue-50',
           borderColor: 'border-blue-200',
           textColor: 'text-blue-800',

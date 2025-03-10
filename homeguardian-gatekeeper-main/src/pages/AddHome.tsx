@@ -348,7 +348,7 @@ const AddHome: React.FC = () => {
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="flex items-center">
             <Shield className="h-8 w-8 text-primary mr-2" />
-            <span className="text-xl font-bold">HomeGuardian</span>
+            <span className="text-xl font-bold">MaintainMint</span>
           </div>
           <Button variant="ghost" onClick={() => navigate('/dashboard')}>
             Cancel

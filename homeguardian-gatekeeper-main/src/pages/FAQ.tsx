@@ -13,8 +13,8 @@ interface FAQItem {
 
 const faqData: FAQItem[] = [
   {
-    question: "What is HomeGuardian?",
-    answer: "HomeGuardian is an AI-driven platform that provides personalized home maintenance plans to help homeowners protect their investment. We analyze your home's specific needs based on factors like age, location, and materials to create custom maintenance schedules and reminders.",
+    question: "What is MaintainMint?",
+    answer: "MaintainMint is an AI-driven platform that provides personalized home maintenance plans to help homeowners protect their investment. We analyze your home's specific needs based on factors like age, location, and materials to create custom maintenance schedules and reminders.",
     category: "General"
   },
   {
@@ -23,23 +23,23 @@ const faqData: FAQItem[] = [
     category: "Technology"
   },
   {
-    question: "Is HomeGuardian difficult to use?",
-    answer: "Not at all! HomeGuardian is designed to be user-friendly and intuitive. After a simple setup process where you answer questions about your home, the platform does all the heavy lifting. You'll receive easy-to-follow maintenance reminders and guides through our mobile app or email.",
+    question: "Is MaintainMint difficult to use?",
+    answer: "Not at all! MaintainMint is designed to be user-friendly and intuitive. After a simple setup process where you answer questions about your home, the platform does all the heavy lifting. You'll receive easy-to-follow maintenance reminders and guides through our mobile app or email.",
     category: "Usage"
   },
   {
-    question: "How much does HomeGuardian cost?",
-    answer: "HomeGuardian offers several subscription tiers to fit different needs and budgets. Our Basic plan starts at $9.99/month, while our Premium plan with all features is $29.99/month. All plans come with a 14-day free trial, and we offer a 20% discount on annual subscriptions.",
+    question: "How much does MaintainMint cost?",
+    answer: "MaintainMint offers several subscription tiers to fit different needs and budgets. Our Basic plan starts at $9.99/month, while our Premium plan with all features is $29.99/month. All plans come with a 14-day free trial, and we offer a 20% discount on annual subscriptions.",
     category: "Pricing"
   },
   {
     question: "Can I cancel my subscription anytime?",
-    answer: "Yes, you can cancel your HomeGuardian subscription at any time with no cancellation fees. Your subscription will remain active until the end of your current billing period.",
+    answer: "Yes, you can cancel your MaintainMint subscription at any time with no cancellation fees. Your subscription will remain active until the end of your current billing period.",
     category: "Pricing"
   },
   {
-    question: "How does HomeGuardian save me money?",
-    answer: "HomeGuardian helps you avoid costly repairs by catching small issues before they become major problems. Regular maintenance extends the lifespan of your home systems and appliances, improves energy efficiency, and helps maintain or even increase your property value over time.",
+    question: "How does MaintainMint save me money?",
+    answer: "MaintainMint helps you avoid costly repairs by catching small issues before they become major problems. Regular maintenance extends the lifespan of your home systems and appliances, improves energy efficiency, and helps maintain or even increase your property value over time.",
     category: "General"
   },
   {
@@ -48,7 +48,7 @@ const faqData: FAQItem[] = [
     category: "Usage"
   },
   {
-    question: "Can I use HomeGuardian for multiple properties?",
+    question: "Can I use MaintainMint for multiple properties?",
     answer: "Yes! Our Pro and Premium plans allow you to manage multiple properties under one account. This is perfect for rental property owners, vacation homes, or helping family members maintain their homes.",
     category: "Usage"
   },
@@ -68,7 +68,7 @@ const faqData: FAQItem[] = [
     category: "Usage"
   },
   {
-    question: "Does HomeGuardian work with smart home devices?",
+    question: "Does MaintainMint work with smart home devices?",
     answer: "Our Premium plan integrates with select smart home devices and systems to provide enhanced monitoring and maintenance recommendations. We currently support integration with Nest, Ecobee, Ring, and several other popular smart home platforms.",
     category: "Technology"
   }
@@ -104,7 +104,7 @@ const FAQ = () => {
               Frequently Asked Questions
             </h1>
             <p className="text-xl md:text-2xl mb-8 text-white/90">
-              Find answers to common questions about HomeGuardian.
+              Find answers to common questions about MaintainMint.
             </p>
             
             {/* Search Bar */}
@@ -210,7 +210,7 @@ const FAQ = () => {
             {[
               {
                 title: "Getting Started",
-                description: "New to HomeGuardian? Learn how to set up your account and create your first maintenance plan.",
+                description: "New to MaintainMint? Learn how to set up your account and create your first maintenance plan.",
                 link: "/how-it-works"
               },
               {
@@ -220,7 +220,7 @@ const FAQ = () => {
               },
               {
                 title: "Using the Platform",
-                description: "Learn how to get the most out of HomeGuardian's features and tools.",
+                description: "Learn how to get the most out of MaintainMint's features and tools.",
                 link: "/how-it-works"
               }
             ].map((topic, i) => (
@@ -242,7 +242,7 @@ const FAQ = () => {
         <div className="container mx-auto px-4 md:px-6 text-center">
           <h2 className="text-3xl font-semibold text-white mb-6">Still have questions?</h2>
           <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
-            Our support team is here to help you with any questions you might have about HomeGuardian.
+            Our support team is here to help you with any questions you might have about MaintainMint.
           </p>
           
           <div className="flex flex-col sm:flex-row justify-center gap-4 max-w-md mx-auto">

@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 
 const testimonials = [
   {
-    quote: "HomeGuardian caught a leak I'd have missed—saved me thousands!",
+    quote: "MaintainMint caught a leak I'd have missed—saved me thousands!",
     name: "Sarah Johnson",
     title: "Homeowner, Atlanta"
   },
@@ -138,7 +138,7 @@ const Index = () => {
           <div className="text-center mb-16">
             <h2 className="text-3xl font-semibold mb-4 text-[#1A2526]">Turn home maintenance chaos into confidence</h2>
             <p className="text-[#4A4A4A] max-w-2xl mx-auto">
-              Stop worrying about what you might be missing. HomeGuardian transforms overwhelming home care into simple, manageable steps.
+              Stop worrying about what you might be missing. MaintainMint transforms overwhelming home care into simple, manageable steps.
             </p>
           </div>
           
@@ -493,14 +493,14 @@ const Index = () => {
           <div className="text-center mb-16">
             <h2 className="text-3xl font-semibold mb-4 text-[#1A2526]">What our customers say</h2>
             <p className="text-[#4A4A4A] max-w-2xl mx-auto">
-              Join thousands of homeowners who trust HomeGuardian
+              Join thousands of homeowners who trust MaintainMint
             </p>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
             {[
               {
-                quote: "HomeGuardian caught a leak I'd have missed—saved me thousands!",
+                quote: "MaintainMint caught a leak I'd have missed—saved me thousands!",
                 author: "Sarah Johnson",
                 role: "Homeowner, Atlanta"
               },
@@ -537,7 +537,7 @@ const Index = () => {
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-3xl font-semibold text-white mb-6">Ready to protect your home?</h2>
           <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
-            Join thousands of homeowners who trust HomeGuardian for smarter, simpler home maintenance.
+            Join thousands of homeowners who trust MaintainMint for smarter, simpler home maintenance.
           </p>
           
           <div className="flex flex-col sm:flex-row justify-center gap-4 max-w-md mx-auto">

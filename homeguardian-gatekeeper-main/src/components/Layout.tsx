@@ -29,7 +29,7 @@ const Layout = ({ children, showStickyCallToAction = false }: LayoutProps) => {
         <div className="container mx-auto px-4 h-20 flex items-center justify-between">
           <Link to="/" className="flex items-center space-x-2">
             <Shield className="h-7 w-7 text-primary" />
-            <span className="text-xl font-bold font-poppins text-primary">HomeGuardian</span>
+            <span className="text-xl font-bold font-poppins text-primary">MaintainMint</span>
           </Link>
           
           <div className="flex items-center space-x-6">

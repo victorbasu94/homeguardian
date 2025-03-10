@@ -28,7 +28,7 @@ const HowItWorks: React.FC = () => {
         <div className="container mx-auto px-4 md:px-6">
           <div className="max-w-3xl mx-auto text-center">
             <h1 className="text-4xl md:text-5xl font-bold mb-6 leading-tight">
-              How HomeGuardian Works
+              How MaintainMint Works
             </h1>
             <p className="text-xl md:text-2xl mb-8 text-white/90">
               Our simple process helps you protect your biggest investment with personalized maintenance plans and timely reminders.
@@ -50,7 +50,7 @@ const HowItWorks: React.FC = () => {
       <section className="py-20 bg-white">
         <div className="container mx-auto px-4 md:px-6">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-semibold mb-4 text-[#1A2526]">The HomeGuardian Process</h2>
+            <h2 className="text-3xl font-semibold mb-4 text-[#1A2526]">The MaintainMint Process</h2>
             <p className="text-[#4A4A4A] max-w-2xl mx-auto text-lg">
               From setup to maintenance, we've designed a seamless experience to keep your home in perfect condition
             </p>
@@ -299,7 +299,7 @@ const HowItWorks: React.FC = () => {
       <section className="py-20 bg-[#F5F5F5]">
         <div className="container mx-auto px-4 md:px-6">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-semibold mb-4 text-[#1A2526]">Why Choose HomeGuardian?</h2>
+            <h2 className="text-3xl font-semibold mb-4 text-[#1A2526]">Why Choose MaintainMint?</h2>
             <p className="text-[#4A4A4A] max-w-2xl mx-auto">
               Our platform is designed to make home maintenance simple, effective, and stress-free
             </p>
@@ -340,7 +340,7 @@ const HowItWorks: React.FC = () => {
         <div className="container mx-auto px-4 md:px-6 text-center">
           <h2 className="text-3xl font-semibold text-white mb-6">Ready to simplify your home maintenance?</h2>
           <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
-            Join thousands of homeowners who trust HomeGuardian to protect their biggest investment.
+            Join thousands of homeowners who trust MaintainMint to protect their biggest investment.
           </p>
           
           <div className="flex flex-col sm:flex-row justify-center gap-4 max-w-md mx-auto">

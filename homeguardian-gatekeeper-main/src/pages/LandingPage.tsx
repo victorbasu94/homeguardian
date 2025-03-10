@@ -49,7 +49,7 @@ const LandingPage: React.FC = () => {
           <div className="bg-white rounded-lg shadow-xl overflow-hidden">
             <img 
               src="/dashboard-preview.png" 
-              alt="HomeGuardian Dashboard" 
+              alt="MaintainMint Dashboard" 
               className="w-full h-auto"
               onError={(e) => {
                 e.currentTarget.style.height = '300px';
@@ -62,7 +62,7 @@ const LandingPage: React.FC = () => {
             />
           </div>
           <div className="text-center text-white/80 text-sm mt-4">
-            HomeGuardian is a home maintenance technology company, not a bank. Services provided by trusted partners.
+            MaintainMint is a home maintenance technology company, not a bank. Services provided by trusted partners.
           </div>
         </div>
       </section>
@@ -230,7 +230,7 @@ const LandingPage: React.FC = () => {
       <section className="py-20 bg-white border-y border-border/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl mx-auto">
-            <h2 className="text-3xl font-semibold mb-12 text-center">How HomeGuardian Works</h2>
+            <h2 className="text-3xl font-semibold mb-12 text-center">How MaintainMint Works</h2>
             
             <div className="space-y-12">
               {[
@@ -278,14 +278,14 @@ const LandingPage: React.FC = () => {
           <div className="text-center mb-16">
             <h2 className="text-3xl font-semibold mb-4">What our customers say</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Join thousands of homeowners who trust HomeGuardian
+              Join thousands of homeowners who trust MaintainMint
             </p>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
               {
-                quote: "HomeGuardian has saved me thousands in potential repairs by catching issues early.",
+                quote: "MaintainMint has saved me thousands in potential repairs by catching issues early.",
                 author: "Sarah J.",
                 role: "Homeowner since 2022"
               },
@@ -322,7 +322,7 @@ const LandingPage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl font-semibold text-white mb-6">Ready to protect your home?</h2>
           <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
-            Join thousands of homeowners who trust HomeGuardian for their home maintenance needs.
+            Join thousands of homeowners who trust MaintainMint for their home maintenance needs.
           </p>
           
           <div className="flex flex-col sm:flex-row justify-center gap-4 max-w-md mx-auto">

@@ -196,7 +196,7 @@ const Dashboard = () => {
         title: 'Subscription Activated',
         description: isMock 
           ? 'Your subscription has been activated in development mode.' 
-          : 'Your subscription has been successfully activated. Welcome to HomeGuardian!',
+          : 'Your subscription has been successfully activated. Welcome to MaintainMint!',
         variant: 'default',
       });
       
@@ -903,7 +903,7 @@ const Dashboard = () => {
         <div>
           <h1 className="text-2xl font-semibold text-foreground">Subscription</h1>
           <p className="text-muted-foreground mt-1">
-            Manage your HomeGuardian subscription plan
+            Manage your MaintainMint subscription plan
           </p>
         </div>
         

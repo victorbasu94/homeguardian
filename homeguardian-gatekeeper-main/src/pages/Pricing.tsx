@@ -314,7 +314,7 @@ const Pricing: React.FC = () => {
               },
               {
                 question: "Can I get a refund if I'm not satisfied?",
-                answer: "Yes, we offer a 30-day money-back guarantee. If you're not completely satisfied with HomeGuardian within the first 30 days after your trial ends, contact our support team for a full refund."
+                answer: "Yes, we offer a 30-day money-back guarantee. If you're not completely satisfied with MaintainMint within the first 30 days after your trial ends, contact our support team for a full refund."
               },
               {
                 question: "Do you offer discounts for annual billing?",
@@ -335,7 +335,7 @@ const Pricing: React.FC = () => {
         <div className="container mx-auto px-4 md:px-6 text-center">
           <h2 className="text-3xl font-semibold text-white mb-6">Ready to simplify your home maintenance?</h2>
           <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
-            Join thousands of homeowners who trust HomeGuardian to protect their biggest investment.
+            Join thousands of homeowners who trust MaintainMint to protect their biggest investment.
           </p>
           
           <div className="flex flex-col sm:flex-row justify-center gap-4 max-w-md mx-auto">

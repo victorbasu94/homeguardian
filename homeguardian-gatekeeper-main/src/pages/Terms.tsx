@@ -25,7 +25,7 @@ const Terms = () => {
             <div className="mb-10">
               <h2 className="text-2xl font-bold mb-4 font-outfit text-primary">Agreement to Terms</h2>
               <p className="text-gray-700 font-manrope">
-                These Terms of Service constitute a legally binding agreement made between you and HomeGuardian, concerning your 
+                These Terms of Service constitute a legally binding agreement made between you and MaintainMint, concerning your 
                 access to and use of our website and services. By accessing or using our service, you agree to be bound by these 
                 Terms. If you disagree with any part of the terms, you may not access the service.
               </p>
@@ -96,7 +96,7 @@ const Terms = () => {
               <p className="text-gray-700 mb-4 font-manrope">
                 You can cancel your subscription at any time by logging into your account or contacting us. Your cancellation will 
                 take effect at the end of the current paid term. If you are unsatisfied with our services, please email us 
-                at support@homeguardian.com.
+                at support@maintainmint.com.
               </p>
             </div>
             
@@ -146,7 +146,7 @@ const Terms = () => {
               </p>
               <div className="mt-4 p-4 bg-gray-50 rounded-lg">
                 <p className="font-manrope">
-                  <strong>Email:</strong> legal@homeguardian.com<br />
+                  <strong>Email:</strong> legal@maintainmint.com<br />
                   <strong>Address:</strong> 123 Guardian Street, Suite 456, San Francisco, CA 94107<br />
                   <strong>Phone:</strong> (123) 456-7890
                 </p>

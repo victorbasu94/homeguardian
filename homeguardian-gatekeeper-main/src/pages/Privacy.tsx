@@ -25,7 +25,7 @@ const Privacy = () => {
             <div className="mb-10">
               <h2 className="text-2xl font-bold mb-4 font-outfit text-primary">Introduction</h2>
               <p className="text-gray-700 font-manrope">
-                At HomeGuardian, we take your privacy seriously. This Privacy Policy explains how we collect, use, disclose, 
+                At MaintainMint, we take your privacy seriously. This Privacy Policy explains how we collect, use, disclose, 
                 and safeguard your information when you visit our website or use our service. Please read this privacy policy 
                 carefully. If you do not agree with the terms of this privacy policy, please do not access the site.
               </p>
@@ -126,7 +126,7 @@ const Privacy = () => {
               </p>
               <div className="mt-4 p-4 bg-gray-50 rounded-lg">
                 <p className="font-manrope">
-                  <strong>Email:</strong> privacy@homeguardian.com<br />
+                  <strong>Email:</strong> privacy@maintainmint.com<br />
                   <strong>Address:</strong> 123 Guardian Street, Suite 456, San Francisco, CA 94107<br />
                   <strong>Phone:</strong> (123) 456-7890
                 </p>

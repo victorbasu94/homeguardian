@@ -18,7 +18,7 @@ const Footer = () => {
           <div>
             <div className="flex items-center gap-2 mb-6">
               <Shield className="h-8 w-8 text-white" />
-              <span className="text-2xl font-bold font-poppins">HomeGuardian</span>
+              <span className="text-2xl font-bold font-poppins">MaintainMint</span>
             </div>
             <p className="text-white/90 mb-8 font-inter text-base">
               Your home's smart guardian, providing personalized maintenance plans to protect your biggest investment.
@@ -110,11 +110,11 @@ const Footer = () => {
         
         <div className="border-t border-white/20 pt-8 mt-8 flex flex-col md:flex-row justify-between items-center">
           <p className="text-white/70 text-base mb-4 md:mb-0 font-inter">
-            © {currentYear} HomeGuardian. All rights reserved.
+            © {currentYear} MaintainMint. All rights reserved.
           </p>
           <div className="flex items-center gap-6">
-            <a href="mailto:info@homeguardian.com" className="text-white/70 hover:text-secondary transition-colors duration-300 flex items-center gap-2">
-              <Mail size={18} /> info@homeguardian.com
+            <a href="mailto:info@maintainmint.com" className="text-white/70 hover:text-secondary transition-colors duration-300 flex items-center gap-2">
+              <Mail size={18} /> info@maintainmint.com
             </a>
             <a href="tel:+1234567890" className="text-white/70 hover:text-secondary transition-colors duration-300 flex items-center gap-2">
               <Phone size={18} /> (123) 456-7890
