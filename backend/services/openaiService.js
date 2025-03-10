@@ -1,52 +1,25 @@
 const axios = require('axios');
-const logger = require('winston');
+const logger = require('../utils/logger');
 
 /**
- * Generates a home maintenance plan using OpenAI API
+ * Generate a maintenance plan using OpenAI's API
  * @param {Object} homeDetails - Details about the home
- * @returns {Object} - JSON object with maintenance plan
+ * @returns {Promise<Object>} The maintenance plan
  */
 async function generateMaintenancePlanWithAI(homeDetails) {
   try {
-    // Format home details as a string
-    let homeDetailsString;
-    if (typeof homeDetails === 'string') {
-      homeDetailsString = homeDetails;
-    } else {
-      // Convert home object to a descriptive string
-      const {
-        address = {},
-        size = {},
-        yearBuilt,
-        propertyType,
-        features = {}
-      } = homeDetails;
-
-      const location = address.city && address.state 
-        ? `${address.city}, ${address.state}` 
-        : address.zipCode 
-          ? `zip code ${address.zipCode}` 
-          : 'unknown location';
-
-      const squareFootage = size.totalSquareFeet || 'unknown size';
-      const year = yearBuilt || 'unknown year';
-      const type = propertyType || 'residential';
-
-      // Create a descriptive string about the home
-      homeDetailsString = `A ${squareFootage} sq ft ${type} property built in ${year} in ${location}`;
-
-      // Add additional details if available
-      const additionalDetails = [];
-      if (features.roofType) additionalDetails.push(`roof type: ${features.roofType}`);
-      if (features.heatingSystem) additionalDetails.push(`heating system: ${features.heatingSystem}`);
-      if (features.coolingSystem) additionalDetails.push(`cooling system: ${features.coolingSystem}`);
-      if (features.hasPool) additionalDetails.push('has a pool');
-      if (features.hasGarden) additionalDetails.push('has a garden');
-      
-      if (additionalDetails.length > 0) {
-        homeDetailsString += ` with ${additionalDetails.join(', ')}`;
-      }
+    // Validate environment variables
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error('OpenAI API key is not configured');
     }
+
+    const homeDetailsString = `
+      Location: ${homeDetails.location}
+      Year Built: ${homeDetails.year_built}
+      Square Footage: ${homeDetails.square_footage}
+      ${homeDetails.roof_type ? `Roof Type: ${homeDetails.roof_type}` : ''}
+      ${homeDetails.hvac_type ? `HVAC Type: ${homeDetails.hvac_type}` : ''}
+    `.trim();
 
     // Prepare the OpenAI API request
     const response = await axios.post(
@@ -61,37 +34,25 @@ async function generateMaintenancePlanWithAI(homeDetails) {
           },
           {
             role: 'user',
-            content: `You are a home maintenance expert. Based on the following home details, create a comprehensive home maintenance plan.
+            content: `Generate a detailed maintenance plan for the following home:
 
-Home details: ${homeDetailsString}
+${homeDetailsString}
 
-Generate a detailed maintenance plan as a JSON object with the following structure:
+Return a JSON object with this structure:
 {
-  "maintenancePlan": [
+  "tasks": [
     {
-      "task": "Task name",
-      "taskDescription": "Brief one-line description of the task",
-      "suggestedCompletionDate": "YYYY-MM-DD",
-      "estimatedCost": 150,
-      "estimatedTime": "X hours",
+      "task_name": "Task name",
+      "description": "Detailed description",
+      "due_date": "YYYY-MM-DD",
+      "estimated_cost": 150,
+      "estimated_time": "2 hours",
       "category": "hvac|plumbing|electrical|exterior|interior|safety|appliances|landscaping|general",
-      "subTasks": ["Subtask 1", "Subtask 2", "Subtask 3"]
+      "steps": ["Step 1", "Step 2", "Step 3"],
+      "priority": "high|medium|low"
     }
   ]
-}
-
-Important guidelines:
-1. Consider the home's age, size, location, and climate when creating tasks.
-2. Provide realistic cost estimates based on the location.
-3. Include seasonal maintenance tasks appropriate for the climate.
-4. Suggest completion dates that make sense for the task and location.
-5. Include both routine maintenance and preventative tasks.
-6. Ensure all dates are in YYYY-MM-DD format.
-7. Ensure estimatedCost is a number (not a string).
-8. Provide at least 10 maintenance tasks.
-9. For each task, assign an appropriate category from: hvac, plumbing, electrical, exterior, interior, safety, appliances, landscaping, or general.
-
-Return ONLY the JSON object with no additional text or explanation.`
+}`
           }
         ],
         temperature: 0.7,
@@ -105,12 +66,29 @@ Return ONLY the JSON object with no additional text or explanation.`
       }
     );
 
-    // Parse the response
+    // Parse and validate the response
     const aiResponse = response.data.choices[0].message.content;
-    return JSON.parse(aiResponse);
+    const parsedResponse = JSON.parse(aiResponse);
+
+    // Ensure the response has the expected structure
+    if (!parsedResponse.tasks || !Array.isArray(parsedResponse.tasks)) {
+      throw new Error('Invalid response format from OpenAI API');
+    }
+
+    return parsedResponse;
   } catch (error) {
     logger.error('Error calling OpenAI API:', error.response?.data || error.message);
-    throw new Error(`Failed to generate maintenance plan with AI: ${error.message}`);
+    
+    // Provide more specific error messages based on the error type
+    if (error.response?.status === 401) {
+      throw new Error('Invalid OpenAI API key');
+    } else if (error.response?.status === 429) {
+      throw new Error('OpenAI API rate limit exceeded');
+    } else if (error.response?.status === 500) {
+      throw new Error('OpenAI API service error');
+    }
+    
+    throw new Error(`Failed to generate maintenance plan: ${error.message}`);
   }
 }
 
