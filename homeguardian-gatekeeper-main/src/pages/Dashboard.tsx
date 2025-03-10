@@ -33,6 +33,7 @@ import HomesLoading from '@/components/dashboard/HomesLoading';
 import SubscriptionStatus from '@/components/dashboard/SubscriptionStatus';
 import AIMaintenanceTasks from '@/components/dashboard/AIMaintenanceTasks';
 import { useMaintenance, MOCK_MAINTENANCE_TASKS } from '@/contexts/MaintenanceContext';
+import { getMaintenancePlan } from '@/lib/maintenanceApi';
 
 // Define interfaces
 export interface UserData {
@@ -155,7 +156,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
-  const { maintenanceTasks } = useMaintenance();
+  const { maintenanceTasks, setMaintenanceTasks, setIsLoading: setLoadingMaintenanceTasks, setError: setMaintenanceError } = useMaintenance();
   
   // State for homes
   const [homes, setHomes] = useState<HomeData[]>([]);
@@ -229,6 +230,7 @@ const Dashboard = () => {
   useEffect(() => {
     if (selectedHome) {
       fetchTasks(selectedHome.id);
+      fetchMaintenancePlan(selectedHome);
     } else {
       setTasks([]);
     }
@@ -356,6 +358,54 @@ const Dashboard = () => {
       setTasks([]);
     } finally {
       setLoadingTasks(false);
+    }
+  };
+  
+  // Fetch maintenance plan from OpenAI
+  const fetchMaintenancePlan = async (home: HomeData) => {
+    try {
+      setLoadingMaintenanceTasks(true);
+      setMaintenanceError(null);
+      
+      // Convert HomeData to HomeDetails format expected by getMaintenancePlan
+      const homeDetails = {
+        id: home.id,
+        location: home.location,
+        year_built: home.year_built,
+        square_footage: home.square_footage,
+        roof_type: home.roof_type,
+        hvac_type: home.hvac_type
+      };
+      
+      // Call the API to get maintenance plan
+      const maintenancePlan = await getMaintenancePlan(homeDetails);
+      
+      // If we got tasks back, update the context
+      if (maintenancePlan && maintenancePlan.tasks) {
+        console.log("Maintenance plan fetched:", maintenancePlan);
+        
+        // Convert to the format expected by MaintenanceContext
+        const formattedTasks = maintenancePlan.tasks.map(task => ({
+          task: task.title,
+          taskDescription: task.description,
+          suggestedCompletionDate: task.due_date,
+          estimatedCost: task.estimated_cost || 0,
+          estimatedTime: task.estimated_time || "1 hour",
+          subTasks: task.subtasks || []
+        }));
+        
+        setMaintenanceTasks(formattedTasks);
+      }
+    } catch (error) {
+      console.error("Error fetching maintenance plan:", error);
+      setMaintenanceError("Failed to load AI maintenance plan. Using mock data instead.");
+      
+      // Fall back to mock data in case of error
+      if (process.env.NODE_ENV === 'development') {
+        setMaintenanceTasks(MOCK_MAINTENANCE_TASKS);
+      }
+    } finally {
+      setLoadingMaintenanceTasks(false);
     }
   };
   
