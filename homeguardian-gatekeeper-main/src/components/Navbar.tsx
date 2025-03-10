@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, ShieldCheck, ArrowRight, User } from 'lucide-react';
+import { Menu, X, Shield, ChevronDown, User } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 
@@ -26,14 +26,15 @@ const Navbar = () => {
   return (
     <header 
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled ? 'bg-[#F5F5F5]/95 backdrop-blur-md shadow-md border-b border-[#D4C7A9]/30' : 'bg-transparent'
+        isScrolled ? 'bg-background/95 backdrop-blur-md shadow-sm border-b border-border/20' : 'bg-transparent'
       }`}
     >
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-20">
-          <Link to={user ? "/dashboard" : "/"} className="flex items-center gap-2 z-10">
-            <ShieldCheck className={`h-6 w-6 ${isScrolled ? 'text-[#1A2526]' : 'text-white'} stroke-[1.5px]`} />
-            <span className={`text-xl font-bold ${isScrolled ? 'text-[#1A2526]' : 'text-white'}`}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16 md:h-20">
+          {/* Logo - always links to root */}
+          <Link to="/" className="flex items-center gap-2 z-10">
+            <Shield className={`h-5 w-5 ${isScrolled ? 'text-primary' : 'text-white'}`} />
+            <span className={`text-base font-medium ${isScrolled ? 'text-foreground' : 'text-white'}`}>
               HomeGuardian
             </span>
           </Link>
@@ -41,170 +42,160 @@ const Navbar = () => {
           {/* Mobile menu button */}
           <button 
             onClick={() => setIsMenuOpen(!isMenuOpen)} 
-            className={`md:hidden ${isScrolled ? 'text-[#1A2526]' : 'text-white'}`}
+            className={`md:hidden ${isScrolled ? 'text-foreground' : 'text-white'}`}
             aria-label="Toggle menu"
           >
-            {isMenuOpen ? <X size={24} className="stroke-[1.5px]" /> : <Menu size={24} className="stroke-[1.5px]" />}
+            {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
 
-          {/* Desktop navigation */}
-          <nav className="hidden md:flex items-center space-x-8">
-            <Link 
-              to="/" 
-              className={`font-medium text-base transition-colors ${
-                isActive('/') 
-                  ? (isScrolled ? 'text-[#1A2526]' : 'text-white font-semibold') 
-                  : (isScrolled ? 'text-[#4A4A4A] hover:text-[#A3BFFA]' : 'text-white/90 hover:text-white')
-              }`}
-            >
-              Home
-            </Link>
-            <Link 
-              to="/how-it-works" 
-              className={`font-medium text-base transition-colors ${
-                isActive('/how-it-works') 
-                  ? (isScrolled ? 'text-[#1A2526]' : 'text-white font-semibold') 
-                  : (isScrolled ? 'text-[#4A4A4A] hover:text-[#A3BFFA]' : 'text-white/90 hover:text-white')
-              }`}
-            >
-              How It Works
-            </Link>
-            <Link 
-              to="/pricing" 
-              className={`font-medium text-base transition-colors ${
-                isActive('/pricing') 
-                  ? (isScrolled ? 'text-[#1A2526]' : 'text-white font-semibold') 
-                  : (isScrolled ? 'text-[#4A4A4A] hover:text-[#A3BFFA]' : 'text-white/90 hover:text-white')
-              }`}
-            >
-              Pricing
-            </Link>
-            <Link 
-              to="/faq" 
-              className={`font-medium text-base transition-colors ${
-                isActive('/faq') 
-                  ? (isScrolled ? 'text-[#1A2526]' : 'text-white font-semibold') 
-                  : (isScrolled ? 'text-[#4A4A4A] hover:text-[#A3BFFA]' : 'text-white/90 hover:text-white')
-              }`}
-            >
-              FAQ
-            </Link>
+          {/* Desktop navigation - centered */}
+          <nav className="hidden md:flex items-center justify-center flex-1 mx-4">
+            <div className="flex items-center space-x-8">
+              <Link 
+                to="/how-it-works" 
+                className={`font-medium text-sm transition-colors ${
+                  isActive('/how-it-works') 
+                    ? (isScrolled ? 'text-foreground' : 'text-white') 
+                    : (isScrolled ? 'text-muted-foreground hover:text-foreground' : 'text-white/80 hover:text-white')
+                }`}
+              >
+                How It Works
+              </Link>
+              
+              <Link 
+                to="/pricing" 
+                className={`font-medium text-sm transition-colors ${
+                  isActive('/pricing') 
+                    ? (isScrolled ? 'text-foreground' : 'text-white') 
+                    : (isScrolled ? 'text-muted-foreground hover:text-foreground' : 'text-white/80 hover:text-white')
+                }`}
+              >
+                Pricing
+              </Link>
+              
+              <Link 
+                to="/faq" 
+                className={`font-medium text-sm transition-colors ${
+                  isActive('/faq') 
+                    ? (isScrolled ? 'text-foreground' : 'text-white') 
+                    : (isScrolled ? 'text-muted-foreground hover:text-foreground' : 'text-white/80 hover:text-white')
+                }`}
+              >
+                FAQ
+              </Link>
+            </div>
+          </nav>
             
-            <div className="flex items-center space-x-4">
-              {user ? (
-                <Link 
-                  to="/dashboard" 
-                  className={`flex items-center space-x-2 text-base font-medium transition-colors ${
-                    isScrolled ? 'text-[#A3BFFA] hover:text-[#A3BFFA]/80' : 'text-white hover:text-[#A3BFFA]'
+          <div className="flex items-center space-x-4">
+            {user ? (
+              <Link to="/dashboard">
+                <Button 
+                  size="default"
+                  className={`${
+                    isScrolled 
+                      ? 'bg-primary text-white hover:bg-primary-dark' 
+                      : 'bg-white text-primary hover:bg-white/90'
                   }`}
                 >
-                  <User className="h-4 w-4 stroke-[1.5px]" />
-                  <span>Dashboard</span>
-                </Link>
-              ) : (
-                <>
-                  <Link 
-                    to="/login" 
-                    className={`text-base font-medium transition-colors ${
-                      isScrolled ? 'text-[#A3BFFA] hover:text-[#A3BFFA]/80' : 'text-white hover:text-[#A3BFFA]'
+                  Dashboard
+                </Button>
+              </Link>
+            ) : (
+              <>
+                <Link to="/login">
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    className={`font-medium ${
+                      isScrolled ? 'text-foreground hover:text-primary' : 'text-white hover:text-white/80'
                     }`}
                   >
                     Log In
-                  </Link>
-                  <Link 
-                    to="/register" 
-                    className="bg-[#A3BFFA] text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-[#A3BFFA]/90 transition-all duration-300 flex items-center"
+                  </Button>
+                </Link>
+                <Link to="/register">
+                  <Button 
+                    size="sm"
+                    className={`${
+                      isScrolled 
+                        ? 'bg-primary text-white hover:bg-primary-dark' 
+                        : 'bg-white text-primary hover:bg-white/90'
+                    }`}
                   >
-                    Get Started <ArrowRight className="ml-2 h-4 w-4 stroke-[1.5px]" />
-                  </Link>
-                </>
-              )}
-            </div>
-          </nav>
+                    Open Account
+                  </Button>
+                </Link>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Mobile menu */}
-      {isMenuOpen && (
-        <div className="md:hidden fixed inset-0 z-40 bg-[#F5F5F5] noise-texture">
-          <div className="container mx-auto px-4 py-4">
-            <div className="flex justify-between items-center mb-6">
-              <Link to="/" className="flex items-center gap-2" onClick={closeMenu}>
-                <ShieldCheck className="h-6 w-6 text-[#1A2526] stroke-[1.5px]" />
-                <span className="text-xl font-bold text-[#1A2526]">HomeGuardian</span>
-              </Link>
-              <button 
-                onClick={closeMenu} 
-                className="text-[#1A2526]"
-                aria-label="Close menu"
-              >
-                <X size={24} className="stroke-[1.5px]" />
-              </button>
-            </div>
-            
-            <nav className="flex flex-col space-y-4">
+      <div 
+        className={`md:hidden transition-all duration-300 overflow-hidden ${
+          isMenuOpen ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0'
+        }`}
+      >
+        <div className="px-4 pt-2 pb-6 bg-background border-t border-border/20 space-y-1">
+          <Link 
+            to="/how-it-works" 
+            className={`block py-2 text-base font-medium ${isActive('/how-it-works') ? 'text-primary' : 'text-foreground'}`}
+            onClick={closeMenu}
+          >
+            How It Works
+          </Link>
+          <Link 
+            to="/pricing" 
+            className={`block py-2 text-base font-medium ${isActive('/pricing') ? 'text-primary' : 'text-foreground'}`}
+            onClick={closeMenu}
+          >
+            Pricing
+          </Link>
+          <Link 
+            to="/faq" 
+            className={`block py-2 text-base font-medium ${isActive('/faq') ? 'text-primary' : 'text-foreground'}`}
+            onClick={closeMenu}
+          >
+            FAQ
+          </Link>
+          
+          <div className="pt-4 border-t border-border/20 flex flex-col space-y-3">
+            {user ? (
               <Link 
-                to="/" 
-                className="text-lg font-medium text-[#1A2526]"
+                to="/dashboard" 
+                className="w-full"
                 onClick={closeMenu}
               >
-                Home
+                <Button className="w-full">
+                  Dashboard
+                </Button>
               </Link>
-              <Link 
-                to="/how-it-works" 
-                className="text-lg font-medium text-[#1A2526]"
-                onClick={closeMenu}
-              >
-                How It Works
-              </Link>
-              <Link 
-                to="/pricing" 
-                className="text-lg font-medium text-[#1A2526]"
-                onClick={closeMenu}
-              >
-                Pricing
-              </Link>
-              <Link 
-                to="/faq" 
-                className="text-lg font-medium text-[#1A2526]"
-                onClick={closeMenu}
-              >
-                FAQ
-              </Link>
-              
-              <div className="pt-4 flex flex-col space-y-3">
-                {user ? (
-                  <Link 
-                    to="/dashboard" 
-                    className="flex items-center space-x-2 text-lg font-medium text-[#A3BFFA]"
-                    onClick={closeMenu}
-                  >
-                    <User className="h-5 w-5 stroke-[1.5px]" />
-                    <span>Dashboard</span>
-                  </Link>
-                ) : (
-                  <>
-                    <Link 
-                      to="/login" 
-                      className="text-lg font-medium text-[#A3BFFA]"
-                      onClick={closeMenu}
-                    >
-                      Log In
-                    </Link>
-                    <Link 
-                      to="/register" 
-                      className="bg-[#A3BFFA] text-white px-3 py-2 rounded-lg text-base font-medium hover:bg-[#A3BFFA]/90 transition-all duration-300 inline-flex items-center w-fit"
-                      onClick={closeMenu}
-                    >
-                      Get Started <ArrowRight className="ml-2 h-4 w-4 stroke-[1.5px]" />
-                    </Link>
-                  </>
-                )}
-              </div>
-            </nav>
+            ) : (
+              <>
+                <Link 
+                  to="/login" 
+                  className="w-full"
+                  onClick={closeMenu}
+                >
+                  <Button variant="outline" className="w-full">
+                    Log In
+                  </Button>
+                </Link>
+                <Link 
+                  to="/register" 
+                  className="w-full"
+                  onClick={closeMenu}
+                >
+                  <Button className="w-full">
+                    Open Account
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
-      )}
+      </div>
     </header>
   );
 };
