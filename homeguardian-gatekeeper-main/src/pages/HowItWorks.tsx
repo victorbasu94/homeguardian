@@ -10,8 +10,9 @@ import {
   Shield, 
   Clock, 
   Smartphone, 
-  Home, 
-  ChevronDown 
+  Home,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -19,25 +20,25 @@ import { Button } from '@/components/ui/button';
 
 const HowItWorks: React.FC = () => {
   return (
-    <div className="min-h-screen flex flex-col bg-softWhite">
+    <div className="min-h-screen flex flex-col bg-[#F5F5F5]">
       <Navbar />
       
-      {/* Hero Section */}
+      {/* Hero Section - Keep gradient background */}
       <section className="pt-32 pb-20 bg-gradient-to-r from-[#A3BFFA] to-[#D4C7A9] text-white">
         <div className="container mx-auto px-4 md:px-6">
           <div className="max-w-3xl mx-auto text-center">
-            <h1 className="text-4xl md:text-5xl font-bold mb-6 font-poppins leading-tight animate-fade-in">
+            <h1 className="text-4xl md:text-5xl font-bold mb-6 leading-tight">
               How HomeGuardian Works
             </h1>
-            <p className="text-xl md:text-2xl mb-8 font-inter text-white/90 animate-slide-in">
+            <p className="text-xl md:text-2xl mb-8 text-white/90">
               Our simple process helps you protect your biggest investment with personalized maintenance plans and timely reminders.
             </p>
             
-            <div className="flex flex-col sm:flex-row gap-4 justify-center animate-scale-in">
-              <Link to="/register" className="bg-white text-[#A3BFFA] hover:bg-white/90 px-8 py-3 rounded-lg font-medium text-xl transition-all duration-300 flex items-center justify-center gap-2 shadow-md hover:shadow-lg">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link to="/register" className="bg-white text-[#A3BFFA] hover:bg-white/90 px-8 py-3 rounded-lg font-medium text-lg transition-all duration-300 flex items-center justify-center gap-2 shadow-md">
                 Get Started Now <ArrowRight className="w-5 h-5" />
               </Link>
-              <Link to="/pricing" className="bg-white/10 text-white hover:bg-white/20 px-8 py-3 rounded-lg font-medium text-xl transition-all duration-300 flex items-center justify-center gap-2">
+              <Link to="/pricing" className="bg-white/10 text-white hover:bg-white/20 px-8 py-3 rounded-lg font-medium text-lg transition-all duration-300 flex items-center justify-center gap-2">
                 View Pricing
               </Link>
             </div>
@@ -45,253 +46,248 @@ const HowItWorks: React.FC = () => {
         </div>
       </section>
       
-      {/* Process Overview */}
+      {/* Process Overview - Mercury Style */}
       <section className="py-20 bg-white">
         <div className="container mx-auto px-4 md:px-6">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-[#A3BFFA] to-[#D4C7A9] font-poppins">The HomeGuardian Process</h2>
-            <p className="text-neutral/80 max-w-2xl mx-auto text-lg font-inter">
+            <h2 className="text-3xl font-semibold mb-4 text-[#1A2526]">The HomeGuardian Process</h2>
+            <p className="text-[#4A4A4A] max-w-2xl mx-auto text-lg">
               From setup to maintenance, we've designed a seamless experience to keep your home in perfect condition
             </p>
           </div>
           
-          <div className="relative">
-            {/* Timeline connector */}
-            <div className="absolute left-1/2 top-0 bottom-0 w-1 bg-[#A3BFFA]/20 -translate-x-1/2 hidden md:block"></div>
+          <div className="max-w-4xl mx-auto">
+            {/* Step 1 */}
+            <div className="mb-16 border border-[#4A4A4A]/10 rounded-lg overflow-hidden bg-white shadow-sm">
+              <div className="p-8">
+                <div className="flex items-start gap-6">
+                  <div className="h-10 w-10 rounded-full bg-[#A3BFFA]/10 flex items-center justify-center flex-shrink-0">
+                    <span className="text-[#A3BFFA] font-semibold">01</span>
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-semibold mb-4 text-[#1A2526]">Create Your Home Profile</h3>
+                    <p className="text-[#4A4A4A] mb-6">
+                      Answer a few simple questions about your home's age, size, systems, and location. Our AI uses this information to understand your home's specific needs.
+                    </p>
+                    <ul className="space-y-3 mb-6">
+                      {[
+                        'Basic home information (age, square footage)',
+                        'Key systems (HVAC, plumbing, electrical)',
+                        'Location details for climate-specific maintenance',
+                        'Recent renovations or upgrades'
+                      ].map((item, i) => (
+                        <li key={i} className="flex items-start gap-3">
+                          <CheckCircle className="h-5 w-5 text-[#A3BFFA] mt-0.5 flex-shrink-0" />
+                          <span className="text-[#1A2526]">{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+              <div className="border-t border-[#4A4A4A]/10 bg-[#F5F5F5] p-6">
+                <div className="bg-white rounded-lg border border-[#4A4A4A]/10 p-4">
+                  <div className="flex items-center gap-3 mb-4">
+                    <Home className="h-5 w-5 text-[#A3BFFA]" />
+                    <h4 className="font-medium text-[#1A2526]">Home Profile Setup</h4>
+                  </div>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-sm font-medium text-[#4A4A4A] mb-1">Home Type</label>
+                      <div className="bg-[#F5F5F5] p-2 rounded text-[#1A2526] text-sm">Single Family Home</div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-[#4A4A4A] mb-1">Year Built</label>
+                      <div className="bg-[#F5F5F5] p-2 rounded text-[#1A2526] text-sm">2005</div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-[#4A4A4A] mb-1">Square Footage</label>
+                      <div className="bg-[#F5F5F5] p-2 rounded text-[#1A2526] text-sm">2,450 sq ft</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
             
-            <div className="space-y-16 md:space-y-24 relative">
-              {/* Step 1 */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-16 items-center">
-                <div className="order-2 md:order-1">
-                  <div className="bg-[#A3BFFA] text-white text-sm font-bold px-3 py-1 rounded-full inline-block mb-4">STEP 1</div>
-                  <h3 className="text-2xl font-bold mb-4 text-neutral font-poppins">Create Your Home Profile</h3>
-                  <p className="text-neutral/80 mb-6 font-inter">
-                    Answer a few simple questions about your home's age, size, systems, and location. Our AI uses this information to understand your home's specific needs.
-                  </p>
-                  <ul className="space-y-3">
-                    {[
-                      'Basic home information (age, square footage)',
-                      'Key systems (HVAC, plumbing, electrical)',
-                      'Location details for climate-specific maintenance',
-                      'Recent renovations or upgrades'
-                    ].map((item, i) => (
-                      <li key={i} className="flex items-start gap-3 font-inter">
-                        <CheckCircle className="h-5 w-5 text-[#A3BFFA] mt-1 flex-shrink-0" />
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                <div className="order-1 md:order-2 relative">
-                  <div className="bg-white rounded-2xl shadow-card hover:shadow-card-hover p-6 relative z-10 transition-all duration-300 transform hover:translate-y-[-5px]">
-                    <div className="bg-white rounded-xl overflow-hidden shadow-sm">
-                      <div className="bg-gradient-to-r from-[#A3BFFA] to-[#A3BFFA]/80 p-4 text-white">
-                        <h4 className="font-bold">Home Profile Setup</h4>
-                      </div>
-                      <div className="p-6 space-y-4">
-                        <div>
-                          <label className="block text-sm font-medium text-neutral/70 mb-1">Home Type</label>
-                          <div className="bg-softWhite p-3 rounded-lg text-neutral">Single Family Home</div>
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-neutral/70 mb-1">Year Built</label>
-                          <div className="bg-softWhite p-3 rounded-lg text-neutral">2005</div>
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-neutral/70 mb-1">Square Footage</label>
-                          <div className="bg-softWhite p-3 rounded-lg text-neutral">2,450 sq ft</div>
-                        </div>
-                      </div>
-                    </div>
+            {/* Step 2 */}
+            <div className="mb-16 border border-[#4A4A4A]/10 rounded-lg overflow-hidden bg-white shadow-sm">
+              <div className="p-8">
+                <div className="flex items-start gap-6">
+                  <div className="h-10 w-10 rounded-full bg-[#A3BFFA]/10 flex items-center justify-center flex-shrink-0">
+                    <span className="text-[#A3BFFA] font-semibold">02</span>
                   </div>
-                  
-                  {/* Timeline node */}
-                  <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-[#A3BFFA] text-white flex items-center justify-center font-bold text-xl z-20 hidden md:flex animate-pulse">1</div>
-                  
-                  {/* Decorative elements */}
-                  <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-[#D4C7A9]/30 rounded-2xl rotate-12 z-0"></div>
+                  <div>
+                    <h3 className="text-2xl font-semibold mb-4 text-[#1A2526]">Get Your Personalized Maintenance Plan</h3>
+                    <p className="text-[#4A4A4A] mb-6">
+                      Our AI analyzes your home data and creates a customized maintenance schedule based on industry best practices, manufacturer recommendations, and local climate factors.
+                    </p>
+                    <ul className="space-y-3 mb-6">
+                      {[
+                        'Seasonal maintenance tasks prioritized by importance',
+                        'Customized schedule based on your home\'s specific systems',
+                        'Recommendations for preventative maintenance',
+                        'Estimated time and cost for each task'
+                      ].map((item, i) => (
+                        <li key={i} className="flex items-start gap-3">
+                          <CheckCircle className="h-5 w-5 text-[#A3BFFA] mt-0.5 flex-shrink-0" />
+                          <span className="text-[#1A2526]">{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
               </div>
-              
-              {/* Step 2 */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-16 items-center">
-                <div className="order-2 relative">
-                  <div className="bg-white rounded-2xl shadow-card hover:shadow-card-hover p-6 relative z-10 transition-all duration-300 transform hover:translate-y-[-5px]">
-                    <div className="bg-white rounded-xl overflow-hidden shadow-sm">
-                      <div className="bg-gradient-to-r from-[#A3BFFA] to-[#A3BFFA]/80 p-4 text-white">
-                        <h4 className="font-bold">Your Maintenance Plan</h4>
+              <div className="border-t border-[#4A4A4A]/10 bg-[#F5F5F5] p-6">
+                <div className="bg-white rounded-lg border border-[#4A4A4A]/10 p-4">
+                  <div className="flex items-center gap-3 mb-4">
+                    <Calendar className="h-5 w-5 text-[#A3BFFA]" />
+                    <h4 className="font-medium text-[#1A2526]">Your Maintenance Plan</h4>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3 p-2 bg-[#F5F5F5] rounded">
+                      <Calendar className="h-4 w-4 text-[#A3BFFA]" />
+                      <div>
+                        <div className="font-medium text-sm text-[#1A2526]">HVAC Filter Replacement</div>
+                        <div className="text-xs text-[#4A4A4A]">Every 3 months</div>
                       </div>
-                      <div className="p-6 space-y-4">
-                        <div className="flex items-center gap-3 p-3 bg-softWhite rounded-lg">
-                          <Calendar className="h-5 w-5 text-[#A3BFFA]" />
-                          <div>
-                            <div className="font-medium">HVAC Filter Replacement</div>
-                            <div className="text-sm text-neutral/70">Every 3 months</div>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3 p-3 bg-softWhite rounded-lg">
-                          <Calendar className="h-5 w-5 text-[#A3BFFA]" />
-                          <div>
-                            <div className="font-medium">Gutter Cleaning</div>
-                            <div className="text-sm text-neutral/70">Spring & Fall</div>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3 p-3 bg-softWhite rounded-lg">
-                          <Calendar className="h-5 w-5 text-[#A3BFFA]" />
-                          <div>
-                            <div className="font-medium">Water Heater Flush</div>
-                            <div className="text-sm text-neutral/70">Annually</div>
-                          </div>
-                        </div>
+                    </div>
+                    <div className="flex items-center gap-3 p-2 bg-[#F5F5F5] rounded">
+                      <Calendar className="h-4 w-4 text-[#A3BFFA]" />
+                      <div>
+                        <div className="font-medium text-sm text-[#1A2526]">Gutter Cleaning</div>
+                        <div className="text-xs text-[#4A4A4A]">Spring & Fall</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 p-2 bg-[#F5F5F5] rounded">
+                      <Calendar className="h-4 w-4 text-[#A3BFFA]" />
+                      <div>
+                        <div className="font-medium text-sm text-[#1A2526]">Water Heater Flush</div>
+                        <div className="text-xs text-[#4A4A4A]">Annually</div>
                       </div>
                     </div>
                   </div>
-                  
-                  {/* Timeline node */}
-                  <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-[#A3BFFA] text-white flex items-center justify-center font-bold text-xl z-20 hidden md:flex animate-pulse">2</div>
-                  
-                  {/* Decorative elements */}
-                  <div className="absolute -top-4 -left-4 w-24 h-24 bg-[#D4C7A9]/30 rounded-2xl -rotate-12 z-0"></div>
-                </div>
-                <div className="order-1">
-                  <div className="bg-[#A3BFFA] text-white text-sm font-bold px-3 py-1 rounded-full inline-block mb-4">STEP 2</div>
-                  <h3 className="text-2xl font-bold mb-4 text-neutral font-poppins">Get Your Personalized Maintenance Plan</h3>
-                  <p className="text-neutral/80 mb-6 font-inter">
-                    Our AI analyzes your home data and creates a customized maintenance schedule based on industry best practices, manufacturer recommendations, and local climate factors.
-                  </p>
-                  <ul className="space-y-3">
-                    {[
-                      'Seasonal maintenance tasks prioritized by importance',
-                      'Customized schedule based on your home\'s specific systems',
-                      'Recommendations for preventative maintenance',
-                      'Estimated time and cost for each task'
-                    ].map((item, i) => (
-                      <li key={i} className="flex items-start gap-3 font-inter">
-                        <CheckCircle className="h-5 w-5 text-[#A3BFFA] mt-1 flex-shrink-0" />
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
                 </div>
               </div>
-              
-              {/* Step 3 */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-16 items-center">
-                <div className="order-2 md:order-1">
-                  <div className="bg-[#A3BFFA] text-white text-sm font-bold px-3 py-1 rounded-full inline-block mb-4">STEP 3</div>
-                  <h3 className="text-2xl font-bold mb-4 text-neutral font-poppins">Receive Timely Reminders</h3>
-                  <p className="text-neutral/80 mb-6 font-inter">
-                    Never forget important maintenance again. We'll send you notifications when it's time to perform tasks, with enough advance notice to plan accordingly.
-                  </p>
-                  <ul className="space-y-3">
-                    {[
-                      'Email and mobile notifications for upcoming tasks',
-                      'Seasonal maintenance checklists',
-                      'Weather-based alerts for urgent tasks',
-                      'Flexible scheduling options'
-                    ].map((item, i) => (
-                      <li key={i} className="flex items-start gap-3 font-inter">
-                        <CheckCircle className="h-5 w-5 text-[#A3BFFA] mt-1 flex-shrink-0" />
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                <div className="order-1 md:order-2 relative">
-                  <div className="bg-white rounded-2xl shadow-card hover:shadow-card-hover p-6 relative z-10 transition-all duration-300 transform hover:translate-y-[-5px]">
-                    <div className="bg-white rounded-xl overflow-hidden shadow-sm">
-                      <div className="bg-gradient-to-r from-[#A3BFFA] to-[#A3BFFA]/80 p-4 text-white">
-                        <h4 className="font-bold">Maintenance Reminders</h4>
-                      </div>
-                      <div className="p-6 space-y-4">
-                        <div className="flex items-center gap-3 p-3 bg-[#D4C7A9]/10 rounded-lg border border-[#D4C7A9]/20">
-                          <Bell className="h-5 w-5 text-[#D4C7A9]" />
-                          <div>
-                            <div className="font-medium">Upcoming: HVAC Service</div>
-                            <div className="text-sm text-neutral/70">Due in 5 days</div>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3 p-3 bg-[#D4C7A9]/5 rounded-lg">
-                          <Bell className="h-5 w-5 text-neutral/50" />
-                          <div>
-                            <div className="font-medium">Smoke Detector Test</div>
-                            <div className="text-sm text-neutral/70">Due in 2 weeks</div>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3 p-3 bg-[#D4C7A9]/5 rounded-lg">
-                          <Bell className="h-5 w-5 text-neutral/50" />
-                          <div>
-                            <div className="font-medium">Gutter Cleaning</div>
-                            <div className="text-sm text-neutral/70">Due in 3 weeks</div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+            </div>
+            
+            {/* Step 3 */}
+            <div className="mb-16 border border-[#4A4A4A]/10 rounded-lg overflow-hidden bg-white shadow-sm">
+              <div className="p-8">
+                <div className="flex items-start gap-6">
+                  <div className="h-10 w-10 rounded-full bg-[#A3BFFA]/10 flex items-center justify-center flex-shrink-0">
+                    <span className="text-[#A3BFFA] font-semibold">03</span>
                   </div>
-                  
-                  {/* Timeline node */}
-                  <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-[#A3BFFA] text-white flex items-center justify-center font-bold text-xl z-20 hidden md:flex animate-pulse">3</div>
-                  
-                  {/* Decorative elements */}
-                  <div className="absolute -bottom-4 -left-4 w-24 h-24 bg-[#D4C7A9]/30 rounded-2xl rotate-12 z-0"></div>
+                  <div>
+                    <h3 className="text-2xl font-semibold mb-4 text-[#1A2526]">Receive Timely Reminders</h3>
+                    <p className="text-[#4A4A4A] mb-6">
+                      Never forget important maintenance again. We'll send you notifications when it's time to perform tasks, with enough advance notice to plan accordingly.
+                    </p>
+                    <ul className="space-y-3 mb-6">
+                      {[
+                        'Email and mobile notifications for upcoming tasks',
+                        'Seasonal maintenance checklists',
+                        'Weather-based alerts for urgent tasks',
+                        'Flexible scheduling options'
+                      ].map((item, i) => (
+                        <li key={i} className="flex items-start gap-3">
+                          <CheckCircle className="h-5 w-5 text-[#A3BFFA] mt-0.5 flex-shrink-0" />
+                          <span className="text-[#1A2526]">{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
               </div>
-              
-              {/* Step 4 */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-16 items-center">
-                <div className="order-2 relative">
-                  <div className="bg-white rounded-2xl shadow-card hover:shadow-card-hover p-6 relative z-10 transition-all duration-300 transform hover:translate-y-[-5px]">
-                    <div className="bg-white rounded-xl overflow-hidden shadow-sm">
-                      <div className="bg-gradient-to-r from-[#A3BFFA] to-[#A3BFFA]/80 p-4 text-white">
-                        <h4 className="font-bold">Task Completion</h4>
+              <div className="border-t border-[#4A4A4A]/10 bg-[#F5F5F5] p-6">
+                <div className="bg-white rounded-lg border border-[#4A4A4A]/10 p-4">
+                  <div className="flex items-center gap-3 mb-4">
+                    <Bell className="h-5 w-5 text-[#A3BFFA]" />
+                    <h4 className="font-medium text-[#1A2526]">Maintenance Reminders</h4>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3 p-2 bg-[#A3BFFA]/10 rounded border border-[#A3BFFA]/20">
+                      <Bell className="h-4 w-4 text-[#A3BFFA]" />
+                      <div>
+                        <div className="font-medium text-sm text-[#1A2526]">Upcoming: HVAC Service</div>
+                        <div className="text-xs text-[#4A4A4A]">Due in 5 days</div>
                       </div>
-                      <div className="p-6 space-y-4">
-                        <div className="flex items-center gap-3 p-3 bg-[#2E7D32]/10 rounded-lg border border-[#2E7D32]/20">
-                          <CheckCircle className="h-5 w-5 text-[#2E7D32]" />
-                          <div>
-                            <div className="font-medium">HVAC Filter Replacement</div>
-                            <div className="text-sm text-neutral/70">Completed on May 15</div>
-                          </div>
-                        </div>
-                        <div className="p-3 bg-[#D4C7A9]/5 rounded-lg space-y-3">
-                          <div className="font-medium">Task Notes:</div>
-                          <div className="text-sm text-neutral/80">
-                            Replaced with MERV 11 filter. System running efficiently. Next replacement scheduled for August.
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <div className="w-16 h-16 bg-[#D4C7A9]/20 rounded-md"></div>
-                            <div className="w-16 h-16 bg-[#D4C7A9]/20 rounded-md"></div>
-                          </div>
-                        </div>
+                    </div>
+                    <div className="flex items-center gap-3 p-2 bg-[#F5F5F5] rounded">
+                      <Bell className="h-4 w-4 text-[#4A4A4A]" />
+                      <div>
+                        <div className="font-medium text-sm text-[#1A2526]">Smoke Detector Test</div>
+                        <div className="text-xs text-[#4A4A4A]">Due in 2 weeks</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 p-2 bg-[#F5F5F5] rounded">
+                      <Bell className="h-4 w-4 text-[#4A4A4A]" />
+                      <div>
+                        <div className="font-medium text-sm text-[#1A2526]">Gutter Cleaning</div>
+                        <div className="text-xs text-[#4A4A4A]">Due in 3 weeks</div>
                       </div>
                     </div>
                   </div>
-                  
-                  {/* Timeline node */}
-                  <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-[#A3BFFA] text-white flex items-center justify-center font-bold text-xl z-20 hidden md:flex animate-pulse">4</div>
-                  
-                  {/* Decorative elements */}
-                  <div className="absolute -top-4 -right-4 w-24 h-24 bg-[#D4C7A9]/30 rounded-2xl -rotate-12 z-0"></div>
                 </div>
-                <div className="order-1">
-                  <div className="bg-[#A3BFFA] text-white text-sm font-bold px-3 py-1 rounded-full inline-block mb-4">STEP 4</div>
-                  <h3 className="text-2xl font-bold mb-4 text-neutral font-poppins">Complete and Track Maintenance</h3>
-                  <p className="text-neutral/80 mb-6 font-inter">
-                    Follow our step-by-step guides to complete tasks yourself, or find trusted professionals through our network. Track your maintenance history and home's condition over time.
-                  </p>
-                  <ul className="space-y-3">
-                    {[
-                      'Detailed DIY instructions with photos and videos',
-                      'Option to hire pre-screened local professionals',
-                      'Maintenance history and documentation',
-                      'Track cost savings from preventative maintenance'
-                    ].map((item, i) => (
-                      <li key={i} className="flex items-start gap-3 font-inter">
-                        <CheckCircle className="h-5 w-5 text-[#A3BFFA] mt-1 flex-shrink-0" />
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
+              </div>
+            </div>
+            
+            {/* Step 4 */}
+            <div className="border border-[#4A4A4A]/10 rounded-lg overflow-hidden bg-white shadow-sm">
+              <div className="p-8">
+                <div className="flex items-start gap-6">
+                  <div className="h-10 w-10 rounded-full bg-[#A3BFFA]/10 flex items-center justify-center flex-shrink-0">
+                    <span className="text-[#A3BFFA] font-semibold">04</span>
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-semibold mb-4 text-[#1A2526]">Complete Tasks & Track Progress</h3>
+                    <p className="text-[#4A4A4A] mb-6">
+                      Mark tasks as complete, track your maintenance history, and build a comprehensive record of your home's care. DIY or hire a pro—it's your choice.
+                    </p>
+                    <ul className="space-y-3 mb-6">
+                      {[
+                        'Step-by-step DIY guides for common tasks',
+                        'Connections to trusted local professionals',
+                        'Maintenance history tracking',
+                        'Cost and savings tracking'
+                      ].map((item, i) => (
+                        <li key={i} className="flex items-start gap-3">
+                          <CheckCircle className="h-5 w-5 text-[#A3BFFA] mt-0.5 flex-shrink-0" />
+                          <span className="text-[#1A2526]">{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+              <div className="border-t border-[#4A4A4A]/10 bg-[#F5F5F5] p-6">
+                <div className="bg-white rounded-lg border border-[#4A4A4A]/10 p-4">
+                  <div className="flex items-center gap-3 mb-4">
+                    <Clipboard className="h-5 w-5 text-[#A3BFFA]" />
+                    <h4 className="font-medium text-[#1A2526]">Task Completion</h4>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3 p-2 bg-green-50 rounded border border-green-100">
+                      <CheckCircle className="h-4 w-4 text-green-600" />
+                      <div>
+                        <div className="font-medium text-sm text-[#1A2526]">HVAC Filter Replacement</div>
+                        <div className="text-xs text-[#4A4A4A]">Completed on June 1, 2024</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 p-2 bg-green-50 rounded border border-green-100">
+                      <CheckCircle className="h-4 w-4 text-green-600" />
+                      <div>
+                        <div className="font-medium text-sm text-[#1A2526]">Smoke Detector Test</div>
+                        <div className="text-xs text-[#4A4A4A]">Completed on May 15, 2024</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 p-2 bg-[#F5F5F5] rounded">
+                      <Clock className="h-4 w-4 text-[#4A4A4A]" />
+                      <div>
+                        <div className="font-medium text-sm text-[#1A2526]">Gutter Cleaning</div>
+                        <div className="text-xs text-[#4A4A4A]">Scheduled for July 10, 2024</div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -299,104 +295,67 @@ const HowItWorks: React.FC = () => {
         </div>
       </section>
       
-      {/* Benefits Section */}
-      <section className="py-20 bg-softWhite">
+      {/* Benefits Section - Mercury Style */}
+      <section className="py-20 bg-[#F5F5F5]">
         <div className="container mx-auto px-4 md:px-6">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-[#A3BFFA] to-[#D4C7A9] font-poppins">The HomeGuardian Advantage</h2>
-            <p className="text-neutral/80 max-w-2xl mx-auto text-lg font-inter">
-              Our comprehensive approach to home maintenance offers unique benefits
+            <h2 className="text-3xl font-semibold mb-4 text-[#1A2526]">Why Choose HomeGuardian?</h2>
+            <p className="text-[#4A4A4A] max-w-2xl mx-auto">
+              Our platform is designed to make home maintenance simple, effective, and stress-free
             </p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             {[
               {
-                icon: <Shield className="h-10 w-10 text-[#A3BFFA]" />,
-                title: 'Preventative Protection',
-                description: 'Identify and address small issues before they become expensive emergencies.'
+                icon: <Shield className="h-6 w-6 text-[#A3BFFA]" />,
+                title: "Protect Your Investment",
+                description: "Regular maintenance prevents costly repairs and preserves your home's value over time."
               },
               {
-                icon: <Smartphone className="h-10 w-10 text-[#A3BFFA]" />,
-                title: 'Smart Technology',
-                description: 'AI-powered recommendations and digital tracking keep maintenance simple.'
+                icon: <Clock className="h-6 w-6 text-[#A3BFFA]" />,
+                title: "Save Time and Effort",
+                description: "No more guesswork or forgotten maintenance. We handle the planning so you don't have to."
               },
               {
-                icon: <Home className="h-10 w-10 text-[#A3BFFA]" />,
-                title: 'Home Value Preservation',
-                description: 'Regular maintenance helps maintain and even increase your home\'s market value.'
-              },
-              {
-                icon: <Clock className="h-10 w-10 text-[#A3BFFA]" />,
-                title: 'Time Savings',
-                description: 'Our organized approach eliminates guesswork and helps you maintain your home efficiently.'
-              },
-              {
-                icon: <Calendar className="h-10 w-10 text-[#A3BFFA]" />,
-                title: 'Seasonal Optimization',
-                description: 'Tasks are scheduled at the optimal time of year based on your local climate.'
-              },
-              {
-                icon: <Clipboard className="h-10 w-10 text-[#A3BFFA]" />,
-                title: 'Maintenance Records',
-                description: 'Build a comprehensive maintenance history to share when selling your home.'
+                icon: <Smartphone className="h-6 w-6 text-[#A3BFFA]" />,
+                title: "Easy to Use",
+                description: "Simple interface, helpful reminders, and clear instructions make maintenance manageable."
               }
             ].map((benefit, i) => (
-              <div key={i} className="bg-white p-8 rounded-xl border border-gray-100 shadow-card hover:shadow-card-hover transition-all duration-300 hover:translate-y-[-5px]">
-                <div className="bg-[#A3BFFA]/10 p-4 rounded-full inline-block mb-6">
+              <div key={i} className="bg-white p-6 rounded-lg border border-[#4A4A4A]/10 shadow-sm">
+                <div className="bg-[#A3BFFA]/10 w-12 h-12 rounded-lg flex items-center justify-center mb-4">
                   {benefit.icon}
                 </div>
-                <h3 className="text-xl font-bold mb-3 text-neutral font-poppins">{benefit.title}</h3>
-                <p className="text-neutral/80 font-inter">{benefit.description}</p>
+                <h3 className="text-xl font-semibold mb-2 text-[#1A2526]">{benefit.title}</h3>
+                <p className="text-[#4A4A4A]">{benefit.description}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
       
-      {/* FAQ Section */}
-      <section className="py-20 bg-white">
-        <div className="container mx-auto px-4 md:px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-[#A3BFFA] to-[#D4C7A9] font-poppins">Common Questions</h2>
-            <p className="text-neutral/80 max-w-2xl mx-auto text-lg font-inter">
-              Find answers to frequently asked questions about our process
-            </p>
-          </div>
+      {/* CTA Section - Mercury Style */}
+      <section className="py-20 bg-[#A3BFFA]">
+        <div className="container mx-auto px-4 md:px-6 text-center">
+          <h2 className="text-3xl font-semibold text-white mb-6">Ready to simplify your home maintenance?</h2>
+          <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
+            Join thousands of homeowners who trust HomeGuardian to protect their biggest investment.
+          </p>
           
-          <div className="max-w-3xl mx-auto space-y-6">
-            {[
-              {
-                question: "How long does it take to set up my maintenance plan?",
-                answer: "The initial setup takes just 5-10 minutes to input your home details. Our AI then generates your personalized maintenance plan instantly. You can always add more details about your home later to further customize your plan."
-              },
-              {
-                question: "Can I customize which tasks are included in my plan?",
-                answer: "Absolutely! While we provide an AI-generated schedule based on best practices, you can easily adjust task frequencies, add custom tasks, or skip recommendations that don't apply to your situation."
-              },
-              {
-                question: "Do I need technical knowledge to complete the maintenance tasks?",
-                answer: "Not at all! We provide detailed step-by-step guides with photos and videos for DIY tasks, rated by difficulty level. For more complex tasks, we can connect you with pre-screened professionals in your area."
-              },
-              {
-                question: "How does HomeGuardian save me money?",
-                answer: "Regular maintenance prevents costly emergency repairs and extends the life of your home systems. For example, regular HVAC maintenance can prevent a $5,000+ replacement, and routine gutter cleaning can prevent water damage that could cost tens of thousands to repair."
-              },
-              {
-                question: "Can I add multiple homes to my account?",
-                answer: "Yes! Our Premium plan allows you to manage multiple properties under a single account, making it perfect for vacation homes, rental properties, or helping family members maintain their homes."
-              }
-            ].map((faq, i) => (
-              <div key={i} className="bg-white p-6 rounded-xl border border-gray-100 shadow-card hover:shadow-card-hover transition-all duration-300">
-                <button className="flex justify-between items-center w-full text-left">
-                  <h3 className="text-lg font-bold text-neutral font-poppins">{faq.question}</h3>
-                  <ChevronDown className="h-5 w-5 text-[#A3BFFA] flex-shrink-0" />
-                </button>
-                <div className="mt-4 text-neutral/80">
-                  <p>{faq.answer}</p>
-                </div>
-              </div>
-            ))}
+          <div className="flex flex-col sm:flex-row justify-center gap-4 max-w-md mx-auto">
+            <Link 
+              to="/register" 
+              className="bg-white text-[#A3BFFA] px-6 py-3 rounded-lg text-base font-medium hover:bg-white/90 transition-all duration-300"
+            >
+              Get Started Now
+            </Link>
+            <Link 
+              to="/pricing" 
+              className="border border-white text-white px-6 py-3 rounded-lg text-base font-medium hover:bg-white/10 transition-all duration-300"
+            >
+              View Pricing
+            </Link>
           </div>
         </div>
       </section>
