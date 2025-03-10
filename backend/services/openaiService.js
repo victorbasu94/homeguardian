@@ -8,13 +8,22 @@ const logger = require('../utils/logger');
  */
 async function generateMaintenancePlanWithAI(homeDetails) {
   try {
-    logger.info('Starting AI maintenance plan generation:', { homeDetails });
+    logger.info('Starting AI maintenance plan generation with details:', {
+      location: homeDetails.location,
+      year_built: homeDetails.year_built,
+      square_footage: homeDetails.square_footage
+    });
 
     // Validate environment variables
     if (!process.env.OPENAI_API_KEY) {
       logger.error('OpenAI API key not configured');
       throw new Error('OpenAI API key is not configured');
     }
+    
+    logger.info('Using OpenAI configuration:', {
+      model: process.env.OPENAI_MODEL || 'gpt-4',
+      apiKeyPrefix: process.env.OPENAI_API_KEY.substring(0, 7) + '...'
+    });
 
     const homeDetailsString = `
       Location: ${homeDetails.location}
@@ -62,7 +71,8 @@ Return a JSON object with this structure:
       max_tokens: 2000
     };
 
-    logger.info('Calling OpenAI API with request:', {
+    logger.info('Making OpenAI API request...', {
+      endpoint: 'https://api.openai.com/v1/chat/completions',
       model: requestBody.model,
       temperature: requestBody.temperature,
       max_tokens: requestBody.max_tokens
@@ -79,7 +89,10 @@ Return a JSON object with this structure:
       }
     );
 
-    logger.info('Received response from OpenAI API');
+    logger.info('Received response from OpenAI API', {
+      status: response.status,
+      statusText: response.statusText
+    });
 
     // Parse and validate the response
     const aiResponse = response.data.choices[0].message.content;
@@ -108,14 +121,19 @@ Return a JSON object with this structure:
     return result;
   } catch (error) {
     logger.error('Error in OpenAI service:', {
-      error: error.message,
-      response: error.response?.data,
-      status: error.response?.status
+      name: error.name,
+      message: error.message,
+      response: {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        headers: error.response?.headers
+      }
     });
     
     // Provide more specific error messages based on the error type
     if (error.response?.status === 401) {
-      throw new Error('Invalid OpenAI API key');
+      throw new Error('Invalid OpenAI API key or unauthorized access');
     } else if (error.response?.status === 429) {
       throw new Error('OpenAI API rate limit exceeded');
     } else if (error.response?.status === 500) {
