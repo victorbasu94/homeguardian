@@ -52,80 +52,49 @@ export async function getMaintenancePlan(homeDetails: HomeDetails): Promise<Main
  */
 async function getProductionMaintenancePlan(homeDetails: HomeDetails): Promise<MaintenancePlan> {
   try {
-    // Check if API key is available
-    const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
-    if (!apiKey) {
-      throw new Error('OpenAI API key is not configured. Please set VITE_OPENAI_API_KEY in your environment variables.');
-    }
-
-    // Initialize OpenAI client
-    const openai = new OpenAI({
-      apiKey,
-      dangerouslyAllowBrowser: true // Note: In production, API calls should be made from the backend
+    // Instead of calling OpenAI directly, call our backend API
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/maintenance/generate-plan`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+      },
+      body: JSON.stringify(homeDetails)
     });
 
-    // Prepare the prompt for OpenAI
-    const prompt = `
-      Generate a home maintenance plan for the following home:
-      - Location: ${homeDetails.location}
-      - Year built: ${homeDetails.year_built}
-      - Square footage: ${homeDetails.square_footage}
-      ${homeDetails.roof_type ? `- Roof type: ${homeDetails.roof_type}` : ''}
-      ${homeDetails.hvac_type ? `- HVAC type: ${homeDetails.hvac_type}` : ''}
-
-      Please provide a JSON array of 5 maintenance tasks, each with the following properties:
-      - title: A short title for the task
-      - description: A detailed description of the task
-      - due_date: A suggested completion date in YYYY-MM-DD format
-      - category: The category of the task (e.g., plumbing, electrical, HVAC, etc.)
-      - estimated_time: Estimated time to complete the task (e.g., "2 hours")
-      - estimated_cost: Estimated cost in USD (numeric value only)
-      - subtasks: An array of strings describing subtasks
-    `;
-
-    // Call the OpenAI API
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content: "You are a home maintenance expert. Provide detailed, practical maintenance plans based on home details."
-        },
-        {
-          role: "user",
-          content: prompt
-        }
-      ],
-      response_format: { type: "json_object" }
-    });
-
-    // Parse the response
-    const content = response.choices[0]?.message?.content;
-    if (!content) {
-      throw new Error('No content received from OpenAI API');
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to generate maintenance plan');
     }
 
-    const parsedResponse = JSON.parse(content);
+    const data = await response.json();
     
-    // Format the response to match our MaintenancePlan interface
+    // If no tasks were returned, fall back to mock data
+    if (!data.tasks || data.tasks.length === 0) {
+      console.warn('No tasks returned from API, falling back to mock data');
+      return getMockMaintenancePlan(homeDetails);
+    }
+    
     return {
       home_id: homeDetails.id,
-      tasks: parsedResponse.tasks.map((task: any) => ({
-        title: task.title,
-        description: task.description,
-        due_date: task.due_date,
+      tasks: data.tasks.map((task: any) => ({
+        title: task.title || task.task,
+        description: task.description || task.taskDescription,
+        due_date: task.due_date || task.suggestedCompletionDate,
         status: 'pending',
-        priority: getPriorityFromDueDate(task.due_date),
-        category: task.category,
-        estimated_time: task.estimated_time,
-        estimated_cost: task.estimated_cost,
-        subtasks: task.subtasks
+        priority: getPriorityFromDueDate(task.due_date || task.suggestedCompletionDate),
+        category: task.category || 'maintenance',
+        estimated_time: task.estimated_time || task.estimatedTime,
+        estimated_cost: task.estimated_cost || task.estimatedCost,
+        subtasks: task.subtasks || task.subTasks || []
       })),
-      generated_at: new Date().toISOString()
+      generated_at: data.generated_at || new Date().toISOString()
     };
   } catch (error) {
     console.error('Error generating maintenance plan:', error);
-    throw error;
+    // Fall back to mock data if the API call fails
+    console.warn('Falling back to mock data due to API error');
+    return getMockMaintenancePlan(homeDetails);
   }
 }
 

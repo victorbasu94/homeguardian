@@ -305,11 +305,16 @@ const Dashboard = () => {
       setLoadingTasks(true);
       setTasksError(null);
       
-      const response = await api.get(`/api/tasks/${homeId}`);
-      console.log("Tasks response:", response.data);
+      let regularTasks = [];
       
-      // Get regular tasks from API
-      const regularTasks = response.data?.data || [];
+      try {
+        const response = await api.get(`/api/tasks/${homeId}`);
+        console.log("Tasks response:", response.data);
+        regularTasks = response.data?.data || [];
+      } catch (apiError) {
+        console.error("Error fetching tasks from API:", apiError);
+        // Don't set error yet, we'll try to show AI tasks if available
+      }
       
       // Convert AI maintenance tasks to TaskData format
       const aiTasks = maintenanceTasks.map((aiTask, index) => ({
@@ -327,20 +332,28 @@ const Dashboard = () => {
         sub_tasks: aiTask.subTasks
       }));
       
-      // Combine regular tasks with AI tasks
-      const combinedTasks = [...regularTasks, ...aiTasks];
-      
-      // Sort tasks by due date
-      combinedTasks.sort((a, b) => {
-        const dateA = new Date(a.due_date);
-        const dateB = new Date(b.due_date);
-        return dateA.getTime() - dateB.getTime();
-      });
-      
-      setTasks(combinedTasks);
+      // If we have no regular tasks and no AI tasks, show an error
+      if (regularTasks.length === 0 && aiTasks.length === 0) {
+        setTasksError("No tasks available. Try adding tasks manually or generating AI maintenance tasks.");
+        setTasks([]);
+      } else {
+        // Combine regular tasks with AI tasks
+        const combinedTasks = [...regularTasks, ...aiTasks];
+        
+        // Sort tasks by due date
+        combinedTasks.sort((a, b) => {
+          const dateA = new Date(a.due_date);
+          const dateB = new Date(b.due_date);
+          return dateA.getTime() - dateB.getTime();
+        });
+        
+        setTasks(combinedTasks);
+      }
     } catch (error) {
-      console.error("Error fetching tasks:", error);
+      console.error("Error in fetchTasks:", error);
       setTasksError("Failed to load tasks. Please try again.");
+      // Set empty tasks array to avoid undefined errors
+      setTasks([]);
     } finally {
       setLoadingTasks(false);
     }
