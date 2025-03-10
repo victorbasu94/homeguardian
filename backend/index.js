@@ -91,7 +91,7 @@ app.use((req, res, next) => {
 swaggerDocs(app);
 
 // Routes
-app.use('/', routes);
+app.use('/api', routes);
 
 // 404 handler
 app.use((req, res) => {
