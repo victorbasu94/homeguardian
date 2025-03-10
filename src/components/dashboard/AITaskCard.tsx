@@ -19,81 +19,110 @@ const AITaskCard: React.FC<AITaskCardProps> = ({ task, onAddToTasks, onViewDetai
   
   // Determine if task is overdue
   const isOverdue = isPast(dueDate) && !isToday(dueDate);
+  const isDueToday = isToday(dueDate);
+  const isDueTomorrow = isTomorrow(dueDate);
+  const isDueSoon = !isOverdue && !isDueToday && !isDueTomorrow && dueDate <= addDays(new Date(), 7);
   
-  // Format estimated time
-  const estimatedTime = task.estimated_time;
-  
-  // Format cost to USD
-  const formattedCost = new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD'
-  }).format(task.estimated_cost);
+  const getStatusBadge = () => {
+    if (isOverdue) {
+      return (
+        <Badge variant="destructive" className="flex items-center gap-1">
+          <AlertTriangle className="w-3 h-3" /> Overdue
+        </Badge>
+      );
+    }
+    
+    if (isDueToday) {
+      return (
+        <Badge variant="outline" className="bg-amber-100 text-amber-800 flex items-center gap-1">
+          <Clock className="w-3 h-3" /> Due Today
+        </Badge>
+      );
+    }
+    
+    if (isDueTomorrow) {
+      return (
+        <Badge variant="outline" className="bg-blue-100 text-blue-800 flex items-center gap-1">
+          <Clock className="w-3 h-3" /> Due Tomorrow
+        </Badge>
+      );
+    }
+    
+    if (isDueSoon) {
+      return (
+        <Badge variant="outline" className="bg-green-100 text-green-800 flex items-center gap-1">
+          <Calendar className="w-3 h-3" /> Due Soon
+        </Badge>
+      );
+    }
+    
+    return (
+      <Badge variant="outline" className="flex items-center gap-1">
+        <Calendar className="w-3 h-3" /> Upcoming
+      </Badge>
+    );
+  };
   
   return (
-    <Card className="relative overflow-hidden">
-      <CardHeader>
+    <Card className="overflow-hidden hover:shadow-md transition-shadow">
+      <CardHeader className="bg-muted/50 pb-3">
         <div className="flex justify-between items-start">
           <div>
-            <CardTitle className="text-lg font-semibold">{task.title}</CardTitle>
-            <CardDescription className="mt-1">{task.description}</CardDescription>
+            <div className="flex items-center gap-2 mb-1">
+              <Sparkles className="h-4 w-4 text-primary" />
+              <Badge variant="secondary" className="text-xs">AI Generated</Badge>
+            </div>
+            <CardTitle className="text-lg">{task.title}</CardTitle>
+            <CardDescription>{task.description}</CardDescription>
           </div>
-          <Badge variant={isOverdue ? "destructive" : "secondary"}>
-            {task.priority || 'medium'}
+          <Badge variant="outline" className="ml-2">
+            ${task.estimated_cost}
           </Badge>
         </div>
       </CardHeader>
-      
-      <CardContent>
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Calendar className="h-4 w-4" />
-            <span>Due: {formattedDate}</span>
-            {isOverdue && (
-              <Badge variant="destructive" className="ml-2">Overdue</Badge>
-            )}
+      <CardContent className="pt-4">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            {getStatusBadge()}
+            <span className="text-muted-foreground text-sm">
+              {formattedDate}
+            </span>
           </div>
-          
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Clock className="h-4 w-4" />
-            <span>Estimated time: {estimatedTime}</span>
+          <div className="text-sm text-muted-foreground">
+            {task.estimated_time}
           </div>
-          
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span className="font-medium">Estimated cost: {formattedCost}</span>
-          </div>
-          
-          {task.subtasks && task.subtasks.length > 0 && (
-            <div className="mt-4">
-              <h4 className="text-sm font-medium mb-2">Subtasks:</h4>
-              <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
-                {task.subtasks.map((subtask, index) => (
-                  <li key={index}>{subtask}</li>
-                ))}
-              </ul>
-            </div>
-          )}
         </div>
+        
+        {task.subtasks && task.subtasks.length > 0 && (
+          <div className="mt-2">
+            <h4 className="text-sm font-medium mb-2">Subtasks:</h4>
+            <ul className="list-disc pl-5 text-sm text-muted-foreground space-y-1">
+              {task.subtasks.map((subtask, idx) => (
+                <li key={idx}>{subtask}</li>
+              ))}
+            </ul>
+          </div>
+        )}
       </CardContent>
-      
-      <CardFooter className="flex justify-between">
+      <CardFooter className="flex justify-between pt-2 pb-3">
         {onAddToTasks && (
           <Button 
             variant="default" 
-            className="w-full"
+            size="sm" 
             onClick={() => onAddToTasks(task)}
+            className="w-full"
           >
-            Add to Tasks
-            <ArrowRight className="ml-2 h-4 w-4" />
+            Add to My Tasks
           </Button>
         )}
-        
         {onViewDetails && (
           <Button 
-            variant="outline" 
-            className="w-full ml-2"
+            variant="ghost" 
+            size="sm"
             onClick={() => onViewDetails(task)}
+            className="w-full"
           >
-            View Details
+            View Details <ArrowRight className="w-4 h-4 ml-1" />
           </Button>
         )}
       </CardFooter>
