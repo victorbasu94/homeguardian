@@ -16,7 +16,8 @@ import {
   Info,
   User as UserIcon,
   DollarSign,
-  ListChecks
+  ListChecks,
+  ChevronRight
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
@@ -246,58 +247,54 @@ const mockVendors: Vendor[] = [
   },
 ];
 
-// Format date function
+// Format date to readable format
 const formatDate = (dateString: string) => {
-  const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
-  return new Date(dateString).toLocaleDateString(undefined, options);
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 };
 
-// Format date and time function
+// Format date and time
 const formatDateTime = (dateString: string) => {
-  const options: Intl.DateTimeFormatOptions = { 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric',
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-US', { 
+    month: 'short', 
+    day: 'numeric', 
+    year: 'numeric',
     hour: '2-digit',
     minute: '2-digit'
-  };
-  return new Date(dateString).toLocaleDateString(undefined, options);
+  });
 };
 
-// Format file size function
+// Format file size
 const formatFileSize = (bytes: number) => {
   if (bytes < 1024) return bytes + ' B';
   else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
   else return (bytes / 1048576).toFixed(1) + ' MB';
 };
 
-// Get status badge component
+// Get status badge based on status
 const getStatusBadge = (status: TaskStatus) => {
   switch (status) {
-    case 'pending':
-      return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">Pending</Badge>;
-    case 'in_progress':
-      return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">In Progress</Badge>;
     case 'completed':
-      return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Completed</Badge>;
+      return <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200 text-xs font-normal">Completed</Badge>;
+    case 'in_progress':
+      return <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200 text-xs font-normal">In Progress</Badge>;
     case 'overdue':
-      return <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">Overdue</Badge>;
+      return <Badge variant="outline" className="bg-red-100 text-red-800 border-red-200 text-xs font-normal">Overdue</Badge>;
     default:
-      return null;
+      return <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-200 text-xs font-normal">Pending</Badge>;
   }
 };
 
-// Get priority badge component
+// Get priority badge based on priority
 const getPriorityBadge = (priority: TaskPriority) => {
   switch (priority) {
-    case 'low':
-      return <Badge variant="outline" className="bg-neutral-50 text-neutral-700 border-neutral-200">Low Priority</Badge>;
-    case 'medium':
-      return <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">Medium Priority</Badge>;
     case 'high':
-      return <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">High Priority</Badge>;
+      return <Badge variant="outline" className="bg-red-100 text-red-800 border-red-200 text-xs font-normal">High Priority</Badge>;
+    case 'medium':
+      return <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-200 text-xs font-normal">Medium Priority</Badge>;
     default:
-      return null;
+      return <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200 text-xs font-normal">Low Priority</Badge>;
   }
 };
 
@@ -513,11 +510,11 @@ const TaskDetail: React.FC = () => {
   
   if (isLoading) {
     return (
-      <div className="min-h-screen flex flex-col bg-softWhite">
-        <div className="flex-grow container mx-auto py-12 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
+      <div className="min-h-screen flex flex-col bg-background">
+        <div className="flex-grow container mx-auto py-8 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-neutral/70">Loading task details...</p>
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading task details...</p>
           </div>
         </div>
       </div>
@@ -526,12 +523,14 @@ const TaskDetail: React.FC = () => {
   
   if (!task) {
     return (
-      <div className="min-h-screen flex flex-col bg-softWhite">
-        <div className="flex-grow container mx-auto py-12 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
+      <div className="min-h-screen flex flex-col bg-background">
+        <div className="flex-grow container mx-auto py-8 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
           <div className="text-center">
-            <AlertTriangle className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
-            <h1 className="text-2xl font-bold mb-2">Task Not Found</h1>
-            <p className="text-neutral/70 mb-6">The task you're looking for doesn't exist or has been removed.</p>
+            <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+              <AlertTriangle className="h-8 w-8 text-red-500" />
+            </div>
+            <h1 className="text-xl font-medium mb-2">Task Not Found</h1>
+            <p className="text-muted-foreground mb-6">The task you're looking for doesn't exist or has been removed.</p>
             <Button onClick={handleBack}>
               <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
             </Button>
@@ -543,32 +542,41 @@ const TaskDetail: React.FC = () => {
   
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <div className="flex-grow container mx-auto py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-5xl mx-auto">
-          {/* Back button and actions */}
+      <div className="flex-grow container mx-auto py-6 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-4xl mx-auto">
+          {/* Breadcrumb and actions */}
           <div className="flex items-center justify-between mb-6">
-            <Button variant="ghost" onClick={handleBack} className="flex items-center gap-2">
-              <ArrowLeft className="h-4 w-4" /> Back to Dashboard
-            </Button>
+            <div className="flex items-center text-sm text-muted-foreground">
+              <Button variant="ghost" size="sm" onClick={handleBack} className="p-0 h-auto hover:bg-transparent hover:text-primary">
+                Dashboard
+              </Button>
+              <ChevronRight className="h-4 w-4 mx-1" />
+              <Button variant="ghost" size="sm" onClick={() => navigate(`/homes/${task.homeId}`)} className="p-0 h-auto hover:bg-transparent hover:text-primary">
+                {task.homeName}
+              </Button>
+              <ChevronRight className="h-4 w-4 mx-1" />
+              <span className="text-foreground font-medium">Task Details</span>
+            </div>
             
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <Button 
                 variant="outline" 
-                className="flex items-center gap-2 w-[160px] justify-center"
-                onClick={() => setIsVendorDialogOpen(true)}
+                size="sm"
+                onClick={() => navigate(`/tasks/${task.id}/edit`)}
+                className="h-8"
               >
-                Connect to Vendors
+                <Edit className="h-3.5 w-3.5 mr-1" /> Edit
               </Button>
               
               <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
                 <AlertDialogTrigger asChild>
-                  <Button variant="destructive" className="flex items-center gap-2 w-[160px] justify-center">
-                    <Trash2 className="h-4 w-4" /> Delete
+                  <Button variant="outline" size="sm" className="h-8 text-red-600 border-red-200 hover:bg-red-50">
+                    <Trash2 className="h-3.5 w-3.5 mr-1" /> Delete
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                    <AlertDialogTitle>Delete Task</AlertDialogTitle>
                     <AlertDialogDescription>
                       This will permanently delete this task and all associated data.
                       This action cannot be undone.
@@ -589,131 +597,168 @@ const TaskDetail: React.FC = () => {
           </div>
           
           {/* Task header */}
-          <div className="bg-white rounded-2xl shadow-card p-8 mb-8">
-            <div className="flex flex-col md:flex-row gap-6">
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2">
-                  {getStatusBadge(task.status)}
-                  {getPriorityBadge(task.priority)}
+          <div className="bg-white rounded-md border border-border/40 shadow-sm p-6 mb-6">
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center gap-2 mb-1">
+                {getStatusBadge(task.status)}
+                {getPriorityBadge(task.priority)}
+              </div>
+              
+              <h1 className="text-xl font-semibold">{task.title}</h1>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Home className="h-4 w-4 flex-shrink-0 text-primary" />
+                  <span>{task.homeName}</span>
                 </div>
                 
-                <h1 className="text-3xl font-bold mb-4">{task.title}</h1>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                  <div className="flex items-center gap-2 text-neutral/70">
-                    <Home className="h-4 w-4 flex-shrink-0" />
-                    <span>{task.homeName}</span>
-                  </div>
-                  
-                  <div className="flex items-center gap-2 text-neutral/70">
-                    <Calendar className="h-4 w-4 flex-shrink-0" />
-                    <span>Due: {formatDate(task.dueDate)}</span>
-                  </div>
-                  
-                  <div className="flex items-center gap-2 text-neutral/70">
-                    <Tag className="h-4 w-4 flex-shrink-0" />
-                    <span>Category: {task.category}</span>
-                  </div>
-                  
-                  <div className="flex items-center gap-2 text-neutral/70">
-                    <Clock className="h-4 w-4 flex-shrink-0" />
-                    <span>Est. Time: {task.estimatedDuration} minutes</span>
-                  </div>
-                  
-                  {task.estimatedCost && (
-                    <div className="flex items-center gap-2 text-neutral/70">
-                      <DollarSign className="h-4 w-4 flex-shrink-0" />
-                      <span>Est. Cost: ${task.estimatedCost}</span>
-                    </div>
-                  )}
-                  
-                  {task.assignedTo && (
-                    <div className="flex items-center gap-2 text-neutral/70">
-                      <UserIcon className="h-4 w-4 flex-shrink-0" />
-                      <span>Assigned to: {task.assignedTo}</span>
-                    </div>
-                  )}
-                  
-                  {task.suggestedCompletionDate && (
-                    <div className="flex items-center gap-2 text-neutral/70">
-                      <Calendar className="h-4 w-4 flex-shrink-0" />
-                      <span>Suggested Completion: {formatDate(task.suggestedCompletionDate)}</span>
-                    </div>
-                  )}
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Calendar className="h-4 w-4 flex-shrink-0 text-primary" />
+                  <span>Due: {formatDate(task.dueDate)}</span>
                 </div>
                 
-                <div className="mb-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-medium">Progress</span>
-                    <span>{task.progress}%</span>
-                  </div>
-                  <Progress value={task.progress} className="h-2" />
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Tag className="h-4 w-4 flex-shrink-0 text-primary" />
+                  <span>Category: {task.category}</span>
                 </div>
                 
-                <div className="bg-neutral/5 rounded-lg p-4">
-                  <h3 className="font-medium mb-2">Description</h3>
-                  <p className="text-neutral/80 whitespace-pre-line">{task.description}</p>
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Clock className="h-4 w-4 flex-shrink-0 text-primary" />
+                  <span>Est. Time: {task.estimatedDuration} minutes</span>
                 </div>
                 
-                {/* Sub-tasks section (if available) */}
-                {task.subTasks && task.subTasks.length > 0 && (
-                  <div className="bg-neutral/5 rounded-lg p-4 mt-4">
-                    <h3 className="font-medium mb-2 flex items-center gap-2">
-                      <ListChecks className="h-4 w-4" /> Sub-Tasks
-                    </h3>
-                    <ul className="list-disc pl-5 space-y-1">
-                      {task.subTasks.map((subTask, index) => (
-                        <li key={index} className="text-neutral/80">{subTask}</li>
-                      ))}
-                    </ul>
+                {task.estimatedCost && (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <DollarSign className="h-4 w-4 flex-shrink-0 text-primary" />
+                    <span>Est. Cost: ${task.estimatedCost}</span>
                   </div>
+                )}
+                
+                {task.assignedTo && (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <UserIcon className="h-4 w-4 flex-shrink-0 text-primary" />
+                    <span>Assigned to: {task.assignedTo}</span>
+                  </div>
+                )}
+                
+                {task.suggestedCompletionDate && (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Calendar className="h-4 w-4 flex-shrink-0 text-primary" />
+                    <span>Suggested Completion: {formatDate(task.suggestedCompletionDate)}</span>
+                  </div>
+                )}
+              </div>
+              
+              <div className="mt-2">
+                <div className="flex items-center justify-between mb-1.5 text-sm">
+                  <span className="font-medium">Progress</span>
+                  <span>{task.progress}%</span>
+                </div>
+                <Progress value={task.progress} className="h-1.5" />
+              </div>
+              
+              <div className="bg-background rounded-md p-4 mt-2">
+                <h3 className="text-sm font-medium mb-2">Description</h3>
+                <p className="text-sm text-muted-foreground whitespace-pre-line">{task.description}</p>
+              </div>
+              
+              {/* Sub-tasks section (if available) */}
+              {task.subTasks && task.subTasks.length > 0 && (
+                <div className="bg-background rounded-md p-4 mt-1">
+                  <h3 className="text-sm font-medium mb-2 flex items-center gap-2">
+                    <ListChecks className="h-4 w-4 text-primary" /> Sub-Tasks
+                  </h3>
+                  <ul className="list-disc pl-5 space-y-1 text-sm text-muted-foreground">
+                    {task.subTasks.map((subTask, index) => (
+                      <li key={index}>{subTask}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              
+              <div className="flex justify-between mt-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setIsVendorDialogOpen(true)}
+                  className="text-xs"
+                >
+                  Find Service Providers
+                </Button>
+                
+                {task.status !== 'completed' && (
+                  <Button 
+                    size="sm"
+                    onClick={() => handleStepToggle('complete-task', true)}
+                    disabled={isUpdatingTask}
+                    className="text-xs"
+                  >
+                    Mark as Completed
+                  </Button>
                 )}
               </div>
             </div>
           </div>
           
           {/* Task content tabs */}
-          <Tabs defaultValue="steps" className="space-y-6">
-            <TabsList className="grid grid-cols-3 w-full max-w-md mx-auto">
-              <TabsTrigger value="steps">Steps</TabsTrigger>
-              <TabsTrigger value="comments">Comments</TabsTrigger>
-              <TabsTrigger value="attachments">Attachments</TabsTrigger>
+          <Tabs defaultValue="steps" className="space-y-4">
+            <TabsList className="w-full border-b border-border/40 bg-transparent p-0 h-auto">
+              <div className="container mx-auto flex space-x-6">
+                <TabsTrigger 
+                  value="steps" 
+                  className="border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-primary rounded-none py-2.5 px-1 font-medium text-sm"
+                >
+                  Steps
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="comments" 
+                  className="border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-primary rounded-none py-2.5 px-1 font-medium text-sm"
+                >
+                  Comments
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="attachments" 
+                  className="border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-primary rounded-none py-2.5 px-1 font-medium text-sm"
+                >
+                  Attachments
+                </TabsTrigger>
+              </div>
             </TabsList>
             
             {/* Steps Tab */}
             <TabsContent value="steps">
-              <div className="bg-white rounded-2xl shadow-card p-8">
-                <h2 className="text-xl font-semibold mb-6">Task Steps</h2>
+              <div className="bg-white rounded-md border border-border/40 shadow-sm p-6">
+                <h2 className="text-base font-medium mb-4">Task Steps</h2>
                 
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {task.steps.map((step) => (
                     <div 
                       key={step.id} 
-                      className={`flex items-start gap-4 p-4 rounded-lg border ${
-                        step.isCompleted ? 'bg-green-50 border-green-200' : 'bg-white border-neutral/10'
+                      className={`flex items-start gap-3 p-3 rounded-md border ${
+                        step.isCompleted ? 'bg-green-50 border-green-100' : 'bg-white border-border/40'
                       }`}
                     >
-                      <div className="flex-shrink-0 mt-1">
+                      <div className="flex-shrink-0 mt-0.5">
                         <button
                           type="button"
                           onClick={() => handleStepToggle(step.id, !step.isCompleted)}
                           disabled={isUpdatingTask}
-                          className={`h-6 w-6 rounded-full flex items-center justify-center border ${
+                          className={`h-5 w-5 rounded-md flex items-center justify-center border ${
                             step.isCompleted 
                               ? 'bg-green-500 border-green-500 text-white' 
-                              : 'border-neutral/30 text-transparent hover:border-neutral/50'
+                              : 'border-muted-foreground/30 text-transparent hover:border-muted-foreground/50'
                           }`}
                         >
-                          {step.isCompleted && <CheckCircle className="h-5 w-5" />}
+                          {step.isCompleted && <CheckCircle className="h-3.5 w-3.5" />}
                         </button>
                       </div>
                       
                       <div className="flex-1">
-                        <h3 className={`font-medium ${step.isCompleted ? 'line-through text-neutral/70' : ''}`}>
+                        <h3 className={`text-sm font-medium ${step.isCompleted ? 'line-through text-muted-foreground' : ''}`}>
                           {step.order}. {step.title}
                         </h3>
                         {step.description && (
-                          <p className={`text-sm mt-1 ${step.isCompleted ? 'text-neutral/50' : 'text-neutral/70'}`}>
+                          <p className={`text-xs mt-1 ${step.isCompleted ? 'text-muted-foreground/70' : 'text-muted-foreground'}`}>
                             {step.description}
                           </p>
                         )}
@@ -723,14 +768,14 @@ const TaskDetail: React.FC = () => {
                 </div>
                 
                 {task.status === 'completed' && (
-                  <div className="mt-8 bg-green-50 border border-green-200 rounded-lg p-4 flex items-center gap-4">
-                    <div className="bg-green-100 p-2 rounded-full">
-                      <CheckCircle className="h-6 w-6 text-green-600" />
+                  <div className="mt-6 bg-green-50 border border-green-100 rounded-md p-3 flex items-center gap-3">
+                    <div className="bg-green-100 p-1.5 rounded-md">
+                      <CheckCircle className="h-4 w-4 text-green-600" />
                     </div>
                     <div>
-                      <h3 className="font-medium text-green-800">Task Completed</h3>
+                      <h3 className="text-sm font-medium text-green-800">Task Completed</h3>
                       {task.completedAt && (
-                        <p className="text-sm text-green-700">
+                        <p className="text-xs text-green-700">
                           Completed on {formatDateTime(task.completedAt)}
                         </p>
                       )}
@@ -742,51 +787,52 @@ const TaskDetail: React.FC = () => {
             
             {/* Comments Tab */}
             <TabsContent value="comments">
-              <div className="bg-white rounded-2xl shadow-card p-8">
-                <h2 className="text-xl font-semibold mb-6">Comments</h2>
+              <div className="bg-white rounded-md border border-border/40 shadow-sm p-6">
+                <h2 className="text-base font-medium mb-4">Comments</h2>
                 
-                <div className="space-y-6 mb-8">
+                <div className="space-y-4 mb-6">
                   {task.comments.length === 0 ? (
-                    <div className="text-center py-8 text-neutral/70">
-                      <MessageCircle className="h-12 w-12 mx-auto mb-4 opacity-20" />
-                      <p>No comments yet. Be the first to add a comment.</p>
+                    <div className="text-center py-6 text-muted-foreground bg-background rounded-md">
+                      <MessageCircle className="h-10 w-10 mx-auto mb-3 opacity-20" />
+                      <p className="text-sm">No comments yet. Be the first to add a comment.</p>
                     </div>
                   ) : (
                     task.comments.map((comment) => (
-                      <div key={comment.id} className="flex gap-4">
-                        <Avatar className="h-10 w-10">
+                      <div key={comment.id} className="flex gap-3 p-3 border-b border-border/20 last:border-0">
+                        <Avatar className="h-8 w-8">
                           <AvatarImage src={comment.user.avatar} alt={comment.user.name} />
-                          <AvatarFallback className="bg-primary/10 text-primary">
+                          <AvatarFallback className="bg-primary/10 text-primary text-xs">
                             {comment.user.name.charAt(0)}
                           </AvatarFallback>
                         </Avatar>
                         
                         <div className="flex-1">
                           <div className="flex items-center justify-between">
-                            <h3 className="font-medium">{comment.user.name}</h3>
-                            <span className="text-sm text-neutral/70">
+                            <h3 className="text-sm font-medium">{comment.user.name}</h3>
+                            <span className="text-xs text-muted-foreground">
                               {formatDateTime(comment.createdAt)}
                             </span>
                           </div>
-                          <p className="mt-1 text-neutral/80">{comment.text}</p>
+                          <p className="mt-1 text-sm text-muted-foreground">{comment.text}</p>
                         </div>
                       </div>
                     ))
                   )}
                 </div>
                 
-                <Separator className="my-6" />
+                <Separator className="my-4" />
                 
                 <form onSubmit={handleCommentSubmit}>
-                  <h3 className="font-medium mb-3">Add a Comment</h3>
+                  <h3 className="text-sm font-medium mb-2">Add a Comment</h3>
                   <Textarea
                     value={newComment}
                     onChange={(e) => setNewComment(e.target.value)}
                     placeholder="Type your comment here..."
-                    className="min-h-[100px] mb-4"
+                    className="min-h-[80px] mb-3 text-sm"
                   />
                   <Button 
                     type="submit" 
+                    size="sm"
                     disabled={isSubmittingComment || !newComment.trim()}
                     className="flex items-center gap-2"
                   >
@@ -798,38 +844,38 @@ const TaskDetail: React.FC = () => {
             
             {/* Attachments Tab */}
             <TabsContent value="attachments">
-              <div className="bg-white rounded-2xl shadow-card p-8">
-                <h2 className="text-xl font-semibold mb-6">Attachments</h2>
+              <div className="bg-white rounded-md border border-border/40 shadow-sm p-6">
+                <h2 className="text-base font-medium mb-4">Attachments</h2>
                 
-                <div className="space-y-4 mb-8">
+                <div className="space-y-3 mb-6">
                   {task.attachments.length === 0 ? (
-                    <div className="text-center py-8 text-neutral/70">
-                      <Paperclip className="h-12 w-12 mx-auto mb-4 opacity-20" />
-                      <p>No attachments yet.</p>
+                    <div className="text-center py-6 text-muted-foreground bg-background rounded-md">
+                      <Paperclip className="h-10 w-10 mx-auto mb-3 opacity-20" />
+                      <p className="text-sm">No attachments yet.</p>
                     </div>
                   ) : (
                     task.attachments.map((attachment) => (
                       <div 
                         key={attachment.id} 
-                        className="flex items-center justify-between p-4 border rounded-lg"
+                        className="flex items-center justify-between p-3 border border-border/40 rounded-md"
                       >
                         <div className="flex items-center gap-3">
-                          <div className="bg-neutral/5 p-2 rounded-full">
-                            <Paperclip className="h-5 w-5 text-primary" />
+                          <div className="bg-background p-1.5 rounded-md">
+                            <Paperclip className="h-4 w-4 text-primary" />
                           </div>
                           <div>
-                            <h3 className="font-medium">{attachment.name}</h3>
-                            <div className="flex items-center gap-4 mt-1">
-                              <p className="text-sm text-neutral/70">
+                            <h3 className="text-sm font-medium">{attachment.name}</h3>
+                            <div className="flex items-center gap-3 mt-0.5">
+                              <p className="text-xs text-muted-foreground">
                                 {formatFileSize(attachment.size)}
                               </p>
-                              <p className="text-sm text-neutral/70">
+                              <p className="text-xs text-muted-foreground">
                                 Uploaded {formatDate(attachment.uploadedAt)}
                               </p>
                             </div>
                           </div>
                         </div>
-                        <Button variant="outline" size="sm" asChild>
+                        <Button variant="outline" size="sm" asChild className="h-8 text-xs">
                           <a href={attachment.url} download>Download</a>
                         </Button>
                       </div>
@@ -837,8 +883,8 @@ const TaskDetail: React.FC = () => {
                   )}
                 </div>
                 
-                <Button variant="outline" className="flex items-center gap-2">
-                  <Plus className="h-4 w-4" /> Add Attachment
+                <Button variant="outline" size="sm" className="flex items-center gap-2 text-xs">
+                  <Plus className="h-3.5 w-3.5" /> Add Attachment
                 </Button>
               </div>
             </TabsContent>
@@ -850,70 +896,68 @@ const TaskDetail: React.FC = () => {
       <Dialog open={isVendorDialogOpen} onOpenChange={setIsVendorDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Local Home Service Vendors</DialogTitle>
+            <DialogTitle>Local Service Providers</DialogTitle>
             <DialogDescription>
-              Connect with trusted home service providers in your area.
+              Find trusted home service providers in your area
             </DialogDescription>
           </DialogHeader>
           
           <div className="py-4">
             {isLoadingVendors ? (
-              <div className="flex justify-center items-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              <div className="flex justify-center items-center py-6">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
               </div>
             ) : vendorError ? (
-              <div className="text-center py-8 text-destructive">
-                <p>{vendorError}</p>
+              <div className="text-center py-6 text-red-600">
+                <p className="text-sm">{vendorError}</p>
                 <Button 
                   variant="outline" 
-                  className="mt-4" 
+                  size="sm"
+                  className="mt-3" 
                   onClick={fetchVendors}
                 >
                   Try Again
                 </Button>
               </div>
             ) : (
-              <ScrollArea className="h-[50vh] pr-4">
-                {vendors.map((vendor, index) => (
-                  <div key={index} className="mb-4">
-                    <Card>
-                      <CardContent className="p-4">
+              <ScrollArea className="h-[40vh] pr-4">
+                <div className="space-y-3">
+                  {vendors.map((vendor, index) => (
+                    <Card key={index} className="border border-border/40">
+                      <CardContent className="p-3">
                         <div className="flex justify-between items-start">
                           <div>
-                            <h3 className="font-semibold text-lg">{vendor.name}</h3>
-                            <p className="text-sm text-muted-foreground">{vendor.address}</p>
-                            <p className="text-sm mt-1">{vendor.distance} miles away</p>
+                            <h3 className="text-sm font-medium">{vendor.name}</h3>
+                            <p className="text-xs text-muted-foreground">{vendor.address}</p>
+                            <p className="text-xs mt-1">{vendor.distance} miles away</p>
+                            <p className="text-xs mt-1">
+                              <span className="font-medium">Phone:</span> {vendor.phone}
+                            </p>
                           </div>
-                          <Button size="sm" variant="secondary" className="flex-shrink-0">
-                            Call
+                          <Button size="sm" variant="outline" className="h-8 text-xs">
+                            Contact
                           </Button>
                         </div>
-                        <p className="text-sm mt-2">
-                          <span className="font-medium">Phone:</span> {vendor.phone}
-                        </p>
                       </CardContent>
                     </Card>
-                    {index < vendors.length - 1 && <Separator className="my-2" />}
-                  </div>
-                ))}
+                  ))}
+                </div>
               </ScrollArea>
             )}
           </div>
           
           <DialogFooter className="sm:justify-between">
             <DialogClose asChild>
-              <Button type="button" variant="secondary">
+              <Button type="button" variant="outline" size="sm">
                 Close
               </Button>
             </DialogClose>
-            <Button type="button" variant="default">
-              View All Vendors
+            <Button type="button" size="sm">
+              View All Providers
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      
-      <Footer />
     </div>
   );
 };
