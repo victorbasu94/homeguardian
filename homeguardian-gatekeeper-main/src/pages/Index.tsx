@@ -107,8 +107,7 @@ const Index = () => {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link 
               to="/register" 
-              className="bg-[#A3BFFA] text-white px-4 py-2 rounded-lg text-base font-medium hover:bg-[#B3C8FC] transition-all duration-300 flex items-center hover:scale-105 animate-pulse"
-              style={{ animationDuration: '3s' }}
+              className="bg-[#A3BFFA] text-white px-4 py-2 rounded-lg text-base font-medium hover:bg-[#B3C8FC] transition-all duration-300 flex items-center hover:scale-105"
             >
               Get Started <ArrowRight className="ml-2 h-4 w-4 stroke-[1.5px]" />
             </Link>
@@ -344,6 +343,146 @@ const Index = () => {
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Pricing Section - Mercury Style */}
+      <div className="py-20 bg-white border-y border-[#4A4A4A]/10">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-semibold mb-4 text-[#1A2526]">Simple, transparent pricing</h2>
+            <p className="text-[#4A4A4A] max-w-2xl mx-auto">
+              Choose the plan that's right for your home. No hidden fees, no surprises.
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            {/* Basic Plan */}
+            <div className="bg-white rounded-lg border border-[#4A4A4A]/10 shadow-sm overflow-hidden flex flex-col">
+              <div className="p-6 border-b border-[#4A4A4A]/10">
+                <h3 className="text-xl font-semibold mb-2 text-[#1A2526]">Basic</h3>
+                <div className="flex items-baseline mb-4">
+                  <span className="text-3xl font-bold text-[#1A2526]">$9</span>
+                  <span className="text-sm text-[#4A4A4A] ml-1">/month</span>
+                </div>
+                <p className="text-sm text-[#4A4A4A]">Perfect for new homeowners just getting started.</p>
+              </div>
+              
+              <div className="p-6 flex-grow">
+                <ul className="space-y-3">
+                  {[
+                    'Maintenance reminders',
+                    'Basic home inventory',
+                    'DIY maintenance guides',
+                    'Email support'
+                  ].map((feature, i) => (
+                    <li key={i} className="flex items-start gap-2">
+                      <CheckCircle className="h-5 w-5 text-[#A3BFFA] shrink-0 mt-0.5" />
+                      <span className="text-sm text-[#1A2526]">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              
+              <div className="p-6 pt-0 mt-auto">
+                <Link to="/register">
+                  <Button variant="outline" className="gap-2 border-[#A3BFFA] text-[#A3BFFA] hover:bg-[#A3BFFA]/10 w-full">
+                    Get Started
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </Link>
+              </div>
+            </div>
+            
+            {/* Pro Plan - Highlighted */}
+            <div className="bg-white rounded-lg border-2 border-[#A3BFFA] shadow-md overflow-hidden flex flex-col relative">
+              <div className="absolute top-0 right-0 bg-[#A3BFFA] text-white text-xs font-medium px-3 py-1 rounded-bl-lg">
+                Most Popular
+              </div>
+              
+              <div className="p-6 border-b border-[#4A4A4A]/10">
+                <h3 className="text-xl font-semibold mb-2 text-[#1A2526]">Pro</h3>
+                <div className="flex items-baseline mb-4">
+                  <span className="text-3xl font-bold text-[#1A2526]">$19</span>
+                  <span className="text-sm text-[#4A4A4A] ml-1">/month</span>
+                </div>
+                <p className="text-sm text-[#4A4A4A]">Ideal for most homeowners with active maintenance needs.</p>
+              </div>
+              
+              <div className="p-6 flex-grow">
+                <ul className="space-y-3">
+                  {[
+                    'Everything in Basic',
+                    'Seasonal maintenance plans',
+                    'Professional service finder',
+                    'Maintenance cost tracking',
+                    'Priority email & chat support'
+                  ].map((feature, i) => (
+                    <li key={i} className="flex items-start gap-2">
+                      <CheckCircle className="h-5 w-5 text-[#A3BFFA] shrink-0 mt-0.5" />
+                      <span className="text-sm text-[#1A2526]">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              
+              <div className="p-6 pt-0 mt-auto">
+                <Link to="/register">
+                  <Button className="gap-2 bg-[#A3BFFA] hover:bg-[#A3BFFA]/90 text-white w-full">
+                    Get Started
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </Link>
+              </div>
+            </div>
+            
+            {/* Premium Plan */}
+            <div className="bg-white rounded-lg border border-[#4A4A4A]/10 shadow-sm overflow-hidden flex flex-col">
+              <div className="p-6 border-b border-[#4A4A4A]/10">
+                <h3 className="text-xl font-semibold mb-2 text-[#1A2526]">Premium</h3>
+                <div className="flex items-baseline mb-4">
+                  <span className="text-3xl font-bold text-[#1A2526]">$39</span>
+                  <span className="text-sm text-[#4A4A4A] ml-1">/month</span>
+                </div>
+                <p className="text-sm text-[#4A4A4A]">For homeowners with complex or multiple properties.</p>
+              </div>
+              
+              <div className="p-6 flex-grow">
+                <ul className="space-y-3">
+                  {[
+                    'Everything in Pro',
+                    'Multiple property support',
+                    'Advanced maintenance analytics',
+                    'Dedicated account manager',
+                    'Priority phone support',
+                    'Custom maintenance workflows'
+                  ].map((feature, i) => (
+                    <li key={i} className="flex items-start gap-2">
+                      <CheckCircle className="h-5 w-5 text-[#A3BFFA] shrink-0 mt-0.5" />
+                      <span className="text-sm text-[#1A2526]">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              
+              <div className="p-6 pt-0 mt-auto">
+                <Link to="/register">
+                  <Button variant="outline" className="gap-2 border-[#A3BFFA] text-[#A3BFFA] hover:bg-[#A3BFFA]/10 w-full">
+                    Get Started
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </div>
+          
+          <div className="mt-12 text-center">
+            <p className="text-sm text-[#4A4A4A] mb-4">All plans include a 14-day free trial. No credit card required.</p>
+            <Link to="/pricing" className="text-[#A3BFFA] text-sm font-medium inline-flex items-center hover:underline">
+              Compare all features
+              <ArrowRight className="ml-1 h-3.5 w-3.5" />
+            </Link>
           </div>
         </div>
       </div>
