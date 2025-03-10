@@ -29,11 +29,6 @@ if (import.meta.env.PROD) {
   }
 }
 
-// Remove '/api' from the end if it exists, as we've updated the backend routes to not include it
-if (API_BASE_URL.endsWith('/api')) {
-  API_BASE_URL = API_BASE_URL.slice(0, -4);
-}
-
 console.log('Final API Base URL:', API_BASE_URL);
 
 // Create a base axios instance with common configuration

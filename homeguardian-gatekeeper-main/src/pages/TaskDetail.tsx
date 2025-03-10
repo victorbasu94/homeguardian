@@ -490,7 +490,7 @@ const TaskDetail: React.FC = () => {
         setVendors(mockVendors);
       } else {
         // In production, fetch from API
-        const response = await api.get('/vendors');
+        const response = await api.get('/api/vendors');
         setVendors(response.data);
       }
     } catch (err) {
