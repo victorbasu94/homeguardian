@@ -438,77 +438,73 @@ const Dashboard = () => {
   
   // Render homes section
   const renderHomes = () => {
-    if (loadingHomes) {
-      return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[1, 2, 3].map(i => (
-            <Skeleton key={i} className="h-64 w-full rounded-lg" />
-          ))}
-        </div>
-      );
-    }
-    
-    if (homesError) {
-      return (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-800">
-          <p className="flex items-center gap-2">
-            <AlertCircle className="h-5 w-5" />
-            {homesError}
-          </p>
-        </div>
-      );
-    }
-    
-    if (!Array.isArray(homes) || homes.length === 0) {
-      return (
-        <div className="bg-muted/30 border border-border rounded-lg p-6 text-center">
-          <HomeIcon className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-          <h3 className="text-lg font-medium mb-2">No homes added yet</h3>
-          <p className="text-muted-foreground mb-4">
-            Add your first home to start tracking maintenance tasks
-          </p>
-          <Button onClick={() => navigate("/homes/add")}>
-            <PlusCircle className="h-4 w-4 mr-2" />
-            Add Home
-          </Button>
-        </div>
-      );
-    }
-    
+    // Render home cards
     const renderHomeCards = () => {
       return homes.map((home) => (
-        <div key={home.id}>
-          <HomeCard
-            home={home}
-            isSelected={selectedHome?.id === home.id}
-            onClick={() => handleHomeSelect(home)}
-            onEdit={() => navigate(`/homes/${home.id}/edit`)}
-          />
-        </div>
+        <HomeCard
+          key={home.id}
+          home={home}
+          isSelected={selectedHome?.id === home.id}
+          onClick={() => handleHomeSelect(home)}
+          onEdit={() => navigate(`/homes/${home.id}/edit`)}
+        />
       ));
     };
     
     return (
       <div className="space-y-6">
         <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-bold text-[#1A2526]">Your Homes</h2>
-          <Button onClick={() => navigate('/homes/add')} className="flex items-center gap-2">
+          <div>
+            <h1 className="text-2xl font-semibold text-foreground">Your Homes</h1>
+            <p className="text-muted-foreground mt-1">
+              Manage your properties and their maintenance schedules
+            </p>
+          </div>
+          <Button 
+            onClick={() => navigate('/homes/add')}
+            className="flex items-center gap-2"
+          >
             <Plus className="h-4 w-4" /> Add Home
           </Button>
         </div>
         
         {loadingHomes ? (
-          <HomesLoading />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[1, 2, 3].map(i => (
+              <Skeleton key={i} className="h-64 w-full rounded-md" />
+            ))}
+          </div>
         ) : homesError ? (
-          <div className="text-center py-8">
-            <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
-            <h3 className="text-lg font-medium">Error Loading Homes</h3>
-            <p className="text-muted-foreground">{homesError}</p>
+          <div className="bg-red-50 border border-red-200 rounded-md p-4 text-red-800 flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
+            <div>
+              <h3 className="font-medium">Error Loading Homes</h3>
+              <p className="mt-1 text-sm">{homesError}</p>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="mt-3 text-red-800 border-red-300"
+                onClick={fetchHomes}
+              >
+                Try Again
+              </Button>
+            </div>
           </div>
         ) : homes.length === 0 ? (
-          <HomesEmptyState onAddHome={() => navigate('/homes/add')} />
+          <div className="bg-white border border-border/40 rounded-md p-8 text-center">
+            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <HomeIcon className="h-8 w-8 text-primary" />
+            </div>
+            <h2 className="text-lg font-medium mb-2">No homes added yet</h2>
+            <p className="text-muted-foreground max-w-md mx-auto mb-6">
+              Add your first home to start tracking maintenance tasks and get personalized recommendations.
+            </p>
+            <Button onClick={() => navigate('/homes/add')}>
+              Add Your First Home
+            </Button>
+          </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {renderHomeCards()}
           </div>
         )}
