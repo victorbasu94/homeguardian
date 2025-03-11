@@ -56,8 +56,35 @@ if (process.env.NODE_ENV === 'production') {
 
 // Add a middleware to log all requests
 app.use((req, res, next) => {
-  console.log(`${req.method} ${req.url} from ${req.ip}`);
-  console.log('Headers:', req.headers);
+  const startTime = Date.now();
+  
+  // Log request details
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url} from ${req.ip}`);
+  console.log('Request Headers:', JSON.stringify(req.headers, null, 2));
+  
+  if (req.method !== 'GET' && req.body) {
+    // Don't log passwords
+    const sanitizedBody = { ...req.body };
+    if (sanitizedBody.password) sanitizedBody.password = '[REDACTED]';
+    console.log('Request Body:', JSON.stringify(sanitizedBody, null, 2));
+  }
+  
+  // Capture the original end method
+  const originalEnd = res.end;
+  
+  // Override the end method
+  res.end = function(chunk, encoding) {
+    // Calculate request duration
+    const duration = Date.now() - startTime;
+    
+    // Log response details
+    console.log(`[${new Date().toISOString()}] Response ${res.statusCode} sent in ${duration}ms`);
+    console.log('Response Headers:', JSON.stringify(res.getHeaders(), null, 2));
+    
+    // Call the original end method
+    return originalEnd.call(this, chunk, encoding);
+  };
+  
   next();
 });
 
