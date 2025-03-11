@@ -62,7 +62,6 @@ exports.register = async (req, res) => {
     const user = new User({
       email,
       password,
-      email_verified: true,
       last_tasks_generated_at: null // Explicitly set to null to ensure tasks are generated on first login
     });
     
@@ -83,7 +82,7 @@ exports.register = async (req, res) => {
     // Return success response with access token
     res.status(201).json({
       status: 'success',
-      message: 'Registration successful. Please check your email to verify your account.',
+      message: 'Registration successful.',
       accessToken,
       user: {
         id: user._id,
@@ -96,49 +95,6 @@ exports.register = async (req, res) => {
     res.status(500).json({
       status: 'error',
       message: 'An error occurred during registration. Please try again.'
-    });
-  }
-};
-
-/**
- * Verify user email
- * @route GET /api/auth/verify/:token
- * @access Public
- */
-exports.verifyEmail = async (req, res) => {
-  try {
-    const { token } = req.params;
-    
-    // Find user with the verification token
-    const user = await User.findOne({
-      verification_token: token,
-      verification_token_expiry: { $gt: Date.now() }
-    });
-    
-    if (!user) {
-      return res.status(400).json({
-        status: 'error',
-        message: 'Invalid or expired verification token'
-      });
-    }
-    
-    // Update user
-    user.email_verified = true;
-    user.verification_token = undefined;
-    user.verification_token_expiry = undefined;
-    
-    await user.save();
-    
-    // Return success response
-    res.status(200).json({
-      status: 'success',
-      message: 'Email verified successfully. You can now log in.'
-    });
-  } catch (error) {
-    logger.error('Email verification error:', error);
-    res.status(500).json({
-      status: 'error',
-      message: 'An error occurred during email verification. Please try again.'
     });
   }
 };
@@ -187,11 +143,6 @@ exports.login = async (req, res) => {
     
     // Save refresh token to database
     user.refresh_token = refreshToken;
-
-    // Don't modify last_tasks_generated_at on login
-    // This ensures the 3-month rule is respected
-    // The last_tasks_generated_at field will only be updated when tasks are actually generated
-
     await user.save();
     
     // Set refresh token as HttpOnly cookie

@@ -15,16 +15,12 @@ const errorHandler = require('./middleware/errorHandler');
 const routes = require('./routes');
 const swaggerDocs = require('./config/swagger');
 const { initReminderService } = require('./services/reminderService');
-const { verifyAllEmails } = require('./controllers/authController');
 
 // Initialize Express app
 const app = express();
 
 // Connect to MongoDB
-connectDB().then(() => {
-  // Verify all emails after connecting to the database
-  verifyAllEmails();
-});
+connectDB();
 
 // Initialize reminder service
 initReminderService();

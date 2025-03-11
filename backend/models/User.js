@@ -22,12 +22,6 @@ const UserSchema = new mongoose.Schema({
     enum: ['active', 'inactive', 'canceled'],
     default: 'inactive'
   },
-  email_verified: {
-    type: Boolean,
-    default: true
-  },
-  verification_token: String,
-  verification_token_expiry: Date,
   reset_token: String,
   reset_token_expiry: Date,
   refresh_token: String,
@@ -71,11 +65,6 @@ UserSchema.methods.comparePassword = async function(candidatePassword) {
 // Method to check if password reset token is valid
 UserSchema.methods.isPasswordResetTokenValid = function() {
   return this.reset_token_expiry && this.reset_token_expiry > Date.now();
-};
-
-// Method to check if verification token is valid
-UserSchema.methods.isVerificationTokenValid = function() {
-  return this.verification_token_expiry && this.verification_token_expiry > Date.now();
 };
 
 const User = mongoose.model('User', UserSchema);

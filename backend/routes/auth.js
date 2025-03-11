@@ -38,7 +38,7 @@ const passwordResetLimiter = rateLimit({
  * /api/auth/register:
  *   post:
  *     summary: Register a new user
- *     description: Creates a new user account and sends a verification email
+ *     description: Creates a new user account
  *     tags: [Authentication]
  *     requestBody:
  *       required: true
@@ -80,39 +80,6 @@ router.post(
       .withMessage('Password must contain at least 1 uppercase letter and 1 number')
   ],
   authController.register
-);
-
-/**
- * @swagger
- * /api/auth/verify/{token}:
- *   get:
- *     summary: Verify user email
- *     description: Verifies a user's email address using the token sent via email
- *     tags: [Authentication]
- *     parameters:
- *       - in: path
- *         name: token
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Email verified successfully
- *       400:
- *         description: Invalid or expired token
- *       500:
- *         description: Server error
- */
-router.get(
-  '/verify/:token',
-  [
-    param('token')
-      .isString()
-      .withMessage('Token must be a string')
-      .isLength({ min: 40, max: 40 })
-      .withMessage('Invalid token format')
-  ],
-  authController.verifyEmail
 );
 
 /**
@@ -285,13 +252,13 @@ router.post(
  * /api/auth/me:
  *   get:
  *     summary: Get current user
- *     description: Returns the currently authenticated user's information
+ *     description: Returns the currently authenticated user's data
  *     tags: [Authentication]
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: User information retrieved successfully
+ *         description: User data retrieved successfully
  *       401:
  *         description: Not authenticated
  *       500:
@@ -302,99 +269,5 @@ router.get(
   authMiddleware.verifyToken,
   authController.getCurrentUser
 );
-
-/**
- * Test endpoint to verify connectivity
- */
-router.get('/test', (req, res) => {
-  console.log('Test endpoint hit from:', req.ip);
-  res.status(200).json({
-    status: 'success',
-    message: 'API is working correctly',
-    timestamp: new Date().toISOString(),
-    headers: req.headers,
-    ip: req.ip
-  });
-});
-
-/**
- * Direct login endpoint that bypasses all middleware
- * FOR DEBUGGING ONLY - REMOVE IN PRODUCTION
- */
-router.post('/direct-login', (req, res) => {
-  console.log('Direct login attempt:', {
-    body: req.body,
-    headers: req.headers,
-    ip: req.ip
-  });
-  
-  try {
-    const { email, password } = req.body;
-    
-    // Basic validation
-    if (!email || !password) {
-      return res.status(400).json({
-        status: 'error',
-        message: 'Email and password are required'
-      });
-    }
-    
-    // For testing purposes, accept any credentials
-    const accessToken = 'direct_test_token_' + Date.now();
-    
-    // Return success response
-    return res.status(200).json({
-      status: 'success',
-      message: 'Direct login successful',
-      accessToken,
-      user: {
-        id: 'direct_test_user',
-        email: email,
-        subscription_status: 'active'
-      }
-    });
-  } catch (error) {
-    console.error('Direct login error:', error);
-    return res.status(500).json({
-      status: 'error',
-      message: 'An error occurred during direct login'
-    });
-  }
-});
-
-/**
- * Check email verification status
- * @route GET /api/auth/check-verification/:email
- * @access Public
- */
-router.get('/check-verification/:email', async (req, res) => {
-  try {
-    const { email } = req.params;
-    
-    // Find user by email
-    const user = await User.findOne({ email });
-    
-    if (!user) {
-      return res.status(404).json({
-        status: 'error',
-        message: 'User not found'
-      });
-    }
-    
-    // Return email verification status
-    return res.status(200).json({
-      status: 'success',
-      email_verified: user.email_verified,
-      email: user.email
-    });
-  } catch (error) {
-    console.error('Error checking email verification:', error);
-    
-    return res.status(500).json({
-      status: 'error',
-      message: 'An error occurred while checking email verification'
-    });
-  }
-});
 
 module.exports = router; 

@@ -33,51 +33,6 @@ const createTransporter = async () => {
 exports.createTransporter = createTransporter;
 
 /**
- * Send verification email to user
- * @param {Object} user - User object
- * @param {string} verificationToken - Token for email verification
- * @returns {Promise<boolean>} - True if email sent successfully
- */
-exports.sendVerificationEmail = async (user, verificationToken) => {
-  try {
-    const transporter = await createTransporter();
-    
-    // Create verification URL
-    const verificationUrl = `${process.env.FRONTEND_URL}/verify-email/${verificationToken}`;
-    
-    // Email options
-    const mailOptions = {
-      from: `"HomeGuardian" <${process.env.EMAIL_FROM || 'noreply@homeguardian.com'}>`,
-      to: user.email,
-      subject: 'HomeGuardian - Verify Your Email Address',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #4a4a4a;">Welcome to HomeGuardian!</h2>
-          <p>Thank you for registering with HomeGuardian. To complete your registration, please verify your email address by clicking the button below:</p>
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${verificationUrl}" style="background-color: #4CAF50; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">Verify Email Address</a>
-          </div>
-          <p>If the button doesn't work, you can also copy and paste the following link into your browser:</p>
-          <p>${verificationUrl}</p>
-          <p>This link will expire in 24 hours.</p>
-          <p>If you did not create an account with HomeGuardian, please ignore this email.</p>
-          <hr style="border: 1px solid #f0f0f0; margin: 20px 0;">
-          <p style="color: #777; font-size: 12px;">HomeGuardian - Secure your home with confidence</p>
-        </div>
-      `
-    };
-    
-    // Send email
-    await transporter.sendMail(mailOptions);
-    logger.info(`Verification email sent to ${user.email}`);
-    return true;
-  } catch (error) {
-    logger.error('Error sending verification email:', error);
-    return false;
-  }
-};
-
-/**
  * Send password reset email to user
  * @param {Object} user - User object
  * @param {string} resetToken - Token for password reset

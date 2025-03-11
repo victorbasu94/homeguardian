@@ -54,7 +54,7 @@ export default function Login() {
       
       console.log('Attempting to log in user with:', { email: data.email });
       
-      const response = await api.post<LoginResponse>('/api/auth/direct-login', {
+      const response = await api.post<LoginResponse>('/api/auth/login', {
         email: data.email,
         password: data.password
       });
