@@ -50,6 +50,49 @@ router.post('/generate-plan', verifyToken, async (req, res) => {
       });
     }
 
+    // Verify that the home belongs to the authenticated user
+    try {
+      const Home = require('../models/Home');
+      const homeId = req.body.id;
+      
+      // Convert string ID to MongoDB ObjectId if needed
+      const mongoose = require('mongoose');
+      const homeObjectId = mongoose.Types.ObjectId.isValid(homeId) 
+        ? new mongoose.Types.ObjectId(homeId) 
+        : homeId;
+      
+      // Find the home
+      const home = await Home.findById(homeObjectId);
+      
+      if (!home) {
+        logger.warn(`Home not found: ${homeId}`);
+        return res.status(404).json({
+          message: 'Home not found',
+          error: 'NOT_FOUND'
+        });
+      }
+      
+      // Verify that the home belongs to the authenticated user
+      if (home.user_id.toString() !== req.user.id) {
+        logger.warn(`Access denied: Home ${homeId} does not belong to user ${req.user.id}`);
+        return res.status(403).json({
+          message: 'Access denied',
+          error: 'FORBIDDEN'
+        });
+      }
+      
+      logger.info(`Verified home ${homeId} belongs to user ${req.user.id}`);
+    } catch (verifyError) {
+      logger.error('Error verifying home ownership:', {
+        error: verifyError.message,
+        stack: verifyError.stack
+      });
+      return res.status(500).json({
+        message: 'Error verifying home ownership',
+        error: verifyError.message
+      });
+    }
+
     // Generate maintenance plan using OpenAI
     logger.info('Calling OpenAI service with home details');
     
@@ -65,6 +108,7 @@ router.post('/generate-plan', verifyToken, async (req, res) => {
         : homeId;
       
       // Delete all existing tasks for this home
+      // We've already verified that the home belongs to the authenticated user above
       const deleteResult = await Task.deleteMany({ home_id: homeObjectId });
       logger.info(`Deleted ${deleteResult.deletedCount} existing tasks for home ${homeId} before generating new plan`);
     } catch (deleteError) {
