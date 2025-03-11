@@ -95,88 +95,81 @@ const Dashboard: React.FC = () => {
       
       const data = await response.json() as TasksApiResponse;
       
-      // Check if we got a message about tasks not being generated due to 3-month rule
-      if (data.message && data.message.includes('less than 3 months')) {
-        toast({
-          title: "Using existing tasks",
-          description: "New tasks are only generated once every 3 months.",
-          duration: 5000,
-        });
-      }
-      
-      if (!data.data || data.data.length === 0) {
-        // If no tasks found, try to generate a maintenance plan
-        // But only if we don't have a message about the 3-month rule
-        if (selectedHome && (!data.message || !data.message.includes('less than 3 months'))) {
-          // Generate a new maintenance plan using OpenAI
-          await fetchMaintenancePlan(selectedHome);
-        } else {
-          setError('No maintenance tasks found for this home.');
-          setMaintenanceTasks([]);
-        }
-      } else {
+      // If we have tasks, use them regardless of the message
+      if (data.data && data.data.length > 0) {
         // Verify that the tasks belong to the current user's home
         const tasksForCurrentHome = data.data.filter((task: any) => 
           task.home_id === homeId || task.homeId === homeId
         );
         
-        if (tasksForCurrentHome.length === 0) {
-          // If no tasks for this home, generate a new maintenance plan
-          if (selectedHome) {
-            await fetchMaintenancePlan(selectedHome);
-          } else {
-            setError('No maintenance tasks found for this home.');
-            setMaintenanceTasks([]);
-          }
+        if (tasksForCurrentHome.length > 0) {
+          console.log('Found existing tasks for home:', tasksForCurrentHome.length);
+          // Map the tasks to the expected format
+          const formattedTasks = tasksForCurrentHome.map((task: any) => {
+            // Check if the task has steps or subtasks
+            const subtasks = task.subtasks || 
+                            (task.steps && Array.isArray(task.steps)) 
+                              ? task.steps.map((step: any) => typeof step === 'string' ? step : step.description)
+                              : [];
+            
+            // Create a task object with both naming conventions for compatibility
+            return {
+              id: task._id || task.id,
+              title: task.title || task.task_name || task.task,
+              description: task.description || task.taskDescription,
+              due_date: task.due_date || task.suggestedCompletionDate,
+              status: (task.completed || task.status === 'completed' ? 'completed' : 'pending') as 'completed' | 'pending',
+              priority: task.priority as 'low' | 'medium' | 'high',
+              category: task.category,
+              estimated_time: task.estimated_time || task.estimatedTime || '1 hour',
+              estimated_cost: task.estimated_cost || task.estimatedCost || 0,
+              subtasks: subtasks,
+              home_id: homeId,
+              homeId: homeId,
+              
+              // Add alternative property names for compatibility
+              task: task.title || task.task_name || task.task,
+              taskDescription: task.description || task.taskDescription,
+              suggestedCompletionDate: task.due_date || task.suggestedCompletionDate,
+              estimatedCost: task.estimated_cost || task.estimatedCost || 0,
+              estimatedTime: task.estimated_time || task.estimatedTime || '1 hour',
+              subTasks: subtasks
+            };
+          });
+          
+          console.log('Formatted existing tasks for frontend:', formattedTasks);
+          updateTasks(formattedTasks, homeId);
           return;
         }
-        
-        // Map the tasks to the expected format
-        console.log('Raw tasks data for current home:', tasksForCurrentHome);
-        const formattedTasks = tasksForCurrentHome.map((task: any) => {
-          // Check if the task has steps or subtasks
-          const subtasks = task.subtasks || 
-                          (task.steps && Array.isArray(task.steps)) 
-                            ? task.steps.map((step: any) => typeof step === 'string' ? step : step.description)
-                            : [];
-          
-          // Create a task object with both naming conventions for compatibility
-          return {
-            id: task._id || task.id,
-            title: task.title || task.task_name || task.task,
-            description: task.description || task.taskDescription,
-            due_date: task.due_date || task.suggestedCompletionDate,
-            status: (task.completed || task.status === 'completed' ? 'completed' : 'pending') as 'completed' | 'pending',
-            priority: task.priority as 'low' | 'medium' | 'high',
-            category: task.category,
-            estimated_time: task.estimated_time || task.estimatedTime || '1 hour',
-            estimated_cost: task.estimated_cost || task.estimatedCost || 0,
-            subtasks: subtasks,
-            home_id: homeId,
-            homeId: homeId,
-            
-            // Add alternative property names for compatibility
-            task: task.title || task.task_name || task.task,
-            taskDescription: task.description || task.taskDescription,
-            suggestedCompletionDate: task.due_date || task.suggestedCompletionDate,
-            estimatedCost: task.estimated_cost || task.estimatedCost || 0,
-            estimatedTime: task.estimated_time || task.estimatedTime || '1 hour',
-            subTasks: subtasks
-          };
+      }
+      
+      // If we reach here, we have no tasks. Check if we should generate new ones
+      if (data.message?.includes('less than 3 months')) {
+        // We shouldn't generate new tasks yet
+        toast({
+          title: "No tasks found",
+          description: "New tasks can only be generated once every 3 months. Please check back later.",
+          duration: 5000,
         });
-        
-        console.log('Formatted tasks for frontend:', formattedTasks);
-        
-        // Use the new updateTasks function
-        updateTasks(formattedTasks, homeId);
+        setMaintenanceTasks([]);
+        return;
+      }
+      
+      // If the home is new (no tasks and no 3-month message), generate initial plan
+      if (selectedHome && !localStorage.getItem(`tasks_generated_${homeId}`)) {
+        console.log('Generating initial maintenance plan for new home');
+        await fetchMaintenancePlan(selectedHome);
+        // Mark that we've generated tasks for this home
+        localStorage.setItem(`tasks_generated_${homeId}`, 'true');
+      } else {
+        setError('No maintenance tasks found for this home.');
+        setMaintenanceTasks([]);
       }
     } catch (error) {
       console.error("Error fetching tasks:", error);
-      
       const errorMessage = error instanceof Error 
         ? error.message 
         : "Unknown error occurred while fetching tasks";
-      
       setError(`Failed to load tasks: ${errorMessage}`);
     } finally {
       setIsLoading(false);

@@ -37,10 +37,13 @@ declare module '@/contexts/MaintenanceContext' {
   export interface MaintenanceContextType {
     maintenanceTasks: MaintenanceTask[];
     setMaintenanceTasks: React.Dispatch<React.SetStateAction<MaintenanceTask[]>>;
+    updateTasks: (tasks: MaintenanceTask[], homeId: string) => void;
     isLoading: boolean;
     setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;
     error: string | null;
     setError: React.Dispatch<React.SetStateAction<string | null>>;
+    currentHomeId: string | null;
+    setCurrentHomeId: (homeId: string | null) => void;
   }
 
   export function useMaintenance(): MaintenanceContextType;
