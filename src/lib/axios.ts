@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { AxiosResponse, AxiosError } from 'axios';
 import Cookies from 'js-cookie';
 import { toast } from 'sonner';
 
@@ -47,13 +47,10 @@ const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
-    // Add headers that might help bypass CORS
-    'Accept': 'application/json, text/plain, */*',
-    'X-Requested-With': 'XMLHttpRequest',
+    'Accept': 'application/json'
   },
-  // Disable withCredentials to avoid preflight requests
-  withCredentials: false,
-  timeout: 15000, // 15 seconds - increased timeout
+  withCredentials: true, // Enable credentials for CORS
+  timeout: 15000 // 15 seconds timeout
 });
 
 // In-memory token storage (more secure than localStorage)
@@ -201,136 +198,29 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor to handle token refresh and other errors
+// Response interceptor to handle errors
 api.interceptors.response.use(
-  (response) => {
-    // For the homes endpoint, ensure we're returning data in the expected format
-    if (response.config.url?.includes('/api/homes') && response.data && !response.data.data && !Array.isArray(response.data)) {
-      // If the response doesn't have a data property and isn't an array, wrap it in a data property
-      console.log('Normalizing homes response format:', response.data);
-      return {
-        ...response,
-        data: {
-          data: Array.isArray(response.data) ? response.data : (response.data.data || [])
-        }
-      };
-    }
-    return response;
-  },
-  async (error: any) => {
-    const originalRequest = error.config;
-    
-    // Check if this is a CORS error or network error
-    if (error.message && (error.message.includes('Network Error') || error.message.includes('CORS'))) {
-      console.error('Network/CORS error detected:', error.message);
-      
-      // If this is a login request, try using the direct fetch method
-      if (originalRequest.url && originalRequest.url.includes('/api/auth/login') && !originalRequest._retryWithDirectFetch) {
-        originalRequest._retryWithDirectFetch = true;
-        
-        try {
-          console.log('Retrying login with direct fetch...');
-          
-          // Extract the request body
-          const requestBody = JSON.parse(originalRequest.data);
-          
-          // Make a direct fetch request
-          const response = await directFetch('/api/auth/login', {
-            method: 'POST',
-            body: JSON.stringify(requestBody)
-          });
-          
-          // Return a response in the format axios expects
-          return {
-            data: response.data,
-            status: response.status,
-            statusText: 'OK',
-            headers: {},
-            config: originalRequest,
-            request: {}
-          };
-        } catch (directFetchError) {
-          console.error('Direct fetch also failed:', directFetchError);
-          return Promise.reject(directFetchError);
-        }
-      }
-    }
-    
-    // Handle different types of errors
+  (response: AxiosResponse) => response,
+  async (error: AxiosError) => {
     if (error.response) {
-      // Server responded with an error status
+      // Handle specific error cases
       switch (error.response.status) {
-        case 401: // Unauthorized
-          // If we haven't tried to refresh the token yet
-          if (!originalRequest._retry) {
-            originalRequest._retry = true;
-            
-            try {
-              // Attempt to refresh the token
-              const refreshToken = Cookies.get('refreshToken');
-              
-              if (!refreshToken) {
-                // No refresh token available, force logout
-                toast('Session expired. Please log in again.');
-                // Don't redirect immediately, let the component handle it
-                localStorage.removeItem('accessToken');
-                clearAccessToken();
-                return Promise.reject(error);
-              }
-              
-              // Call the refresh token endpoint
-              const response = await axios.post(`${API_BASE_URL}/api/auth/refresh`, {
-                refreshToken
-              });
-              
-              // Get the new access token
-              const newAccessToken = response.data.accessToken;
-              
-              // Update the access token
-              setAccessToken(newAccessToken);
-              localStorage.setItem('accessToken', newAccessToken);
-              
-              // Retry the original request with the new token
-              originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-              return api(originalRequest);
-            } catch (refreshError) {
-              // Token refresh failed, force logout
-              toast('Authentication failed. Please log in again.');
-              Cookies.remove('refreshToken');
-              clearAccessToken();
-              localStorage.removeItem('accessToken');
-              return Promise.reject(refreshError);
-            }
-          }
+        case 401:
+          // Handle unauthorized error
+          console.error('Unauthorized access:', error.response.data);
+          // Clear any stored tokens
+          localStorage.removeItem('accessToken');
           break;
-          
-        case 403: // Forbidden
-          toast('Access denied. You don\'t have permission to perform this action.');
+        case 403:
+          console.error('Forbidden access:', error.response.data);
           break;
-          
-        case 404: // Not Found
-          toast('Resource not found.');
-          break;
-          
-        case 500: // Server Error
-        case 502: // Bad Gateway
-        case 503: // Service Unavailable
-        case 504: // Gateway Timeout
-          toast('Server error. Please try again later.');
-          break;
-          
         default:
-          toast(error.response.data?.message || 'An unexpected error occurred.');
-          break;
+          console.error('API Error:', error.response.data);
       }
     } else if (error.request) {
-      // Request was made but no response received (network error)
-      toast('Network error. Please check your connection and try again.');
-    } else {
-      // Something else caused the error
-      toast('An unexpected error occurred.');
+      // Network error
+      console.error('Network Error:', error.message);
     }
-    
     return Promise.reject(error);
   }
 );

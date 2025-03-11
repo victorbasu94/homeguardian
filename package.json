@@ -23,5 +23,12 @@
     "@types/react-router-dom": "^5.3.3",
     "concurrently": "^8.2.2",
     "vite": "^6.2.1"
+  },
+  "dependencies": {
+    "@types/axios": "^0.9.36",
+    "@types/js-cookie": "^3.0.6",
+    "axios": "^1.8.2",
+    "js-cookie": "^3.0.5",
+    "sonner": "^2.0.1"
   }
 }
