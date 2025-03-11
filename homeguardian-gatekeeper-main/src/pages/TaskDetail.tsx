@@ -319,34 +319,149 @@ const TaskDetail: React.FC = () => {
       setIsLoading(true);
       
       try {
-        // Check if we're in production environment
-        if (import.meta.env.PROD) {
-          console.log(`Fetching task details for taskId: ${taskId}`);
-          // In production, always use the API
-          const response = await api.get(`/tasks/${taskId}`);
-          console.log('Task details fetched successfully:', response.data);
-          setTask(response.data);
-        } else {
-          // In development, use mock data for now
-          // This can be replaced with API call when backend is ready
-          console.log('Using mock data in development');
-          setTimeout(() => {
-            setTask(mockTask);
-          }, 1000);
+        console.log(`Fetching task details for taskId: ${taskId}`);
+        
+        // Get the API base URL from environment variables
+        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '';
+        console.log('API Base URL:', apiBaseUrl);
+        
+        // Try to fetch the task details
+        let response;
+        let data;
+        let fetchError;
+        
+        // First try the /api/tasks/{taskId} endpoint
+        try {
+          response = await fetch(`${apiBaseUrl}/api/tasks/${taskId}`);
+          if (response.ok) {
+            data = await response.json();
+            console.log('Task details API response from first endpoint:', data);
+          } else {
+            fetchError = `Failed to fetch task: ${response.status}`;
+          }
+        } catch (error) {
+          console.error('Error fetching from first endpoint:', error);
+          fetchError = error instanceof Error ? error.message : 'Unknown error';
         }
+        
+        // If the first endpoint failed, try the /api/tasks/detail/{taskId} endpoint
+        if (!data && !response?.ok) {
+          try {
+            console.log('Trying alternative endpoint for task details');
+            response = await fetch(`${apiBaseUrl}/api/tasks/detail/${taskId}`);
+            if (response.ok) {
+              data = await response.json();
+              console.log('Task details API response from second endpoint:', data);
+            } else {
+              fetchError = `Failed to fetch task: ${response.status}`;
+            }
+          } catch (error) {
+            console.error('Error fetching from second endpoint:', error);
+            fetchError = error instanceof Error ? error.message : 'Unknown error';
+          }
+        }
+        
+        // If both endpoints failed, try fetching all tasks and finding the one with matching ID
+        if (!data && !response?.ok) {
+          try {
+            console.log('Trying to fetch all tasks and find the matching task');
+            response = await fetch(`${apiBaseUrl}/api/tasks`);
+            if (response.ok) {
+              const allTasksData = await response.json();
+              console.log('All tasks API response:', allTasksData);
+              
+              if (allTasksData && Array.isArray(allTasksData.tasks)) {
+                const foundTask = allTasksData.tasks.find((t: any) => t.id === taskId);
+                if (foundTask) {
+                  data = foundTask;
+                  console.log('Task found in all tasks:', data);
+                }
+              }
+            }
+          } catch (error) {
+            console.error('Error fetching all tasks:', error);
+          }
+        }
+        
+        // If we still don't have data, throw an error
+        if (!data) {
+          throw new Error(fetchError || 'Failed to fetch task details');
+        }
+        
+        // Function to validate and format task data
+        const formatTaskData = (taskData: any): Task => {
+          // Ensure all required fields are present
+          const formattedTask: Task = {
+            id: taskData.id || '',
+            title: taskData.title || taskData.name || '',
+            description: taskData.description || '',
+            status: taskData.status || 'pending',
+            priority: taskData.priority || 'medium',
+            dueDate: taskData.dueDate || taskData.due_date || new Date().toISOString().split('T')[0],
+            createdAt: taskData.createdAt || taskData.created_at || new Date().toISOString(),
+            updatedAt: taskData.updatedAt || taskData.updated_at || new Date().toISOString(),
+            completedAt: taskData.completedAt || taskData.completed_at,
+            homeId: taskData.homeId || taskData.home_id || '',
+            homeName: taskData.homeName || taskData.home_name || 'Home',
+            category: taskData.category || '',
+            estimatedDuration: taskData.estimatedDuration || taskData.estimated_duration || 0,
+            estimatedCost: taskData.estimatedCost || taskData.estimated_cost,
+            assignedTo: taskData.assignedTo || taskData.assigned_to,
+            progress: taskData.progress || 0,
+            attachments: taskData.attachments || [],
+            comments: taskData.comments || [],
+            steps: taskData.steps || [],
+            location: taskData.location || '',
+            suggestedCompletionDate: taskData.suggestedCompletionDate || taskData.suggested_completion_date,
+            subTasks: taskData.subTasks || taskData.sub_tasks || [],
+          };
+          
+          return formattedTask;
+        };
+        
+        // Handle different possible response formats
+        let taskData: any = null;
+        
+        if (data && data.task) {
+          // If the API returns data in a nested 'task' property
+          console.log('Task details fetched successfully (nested task):', data.task);
+          taskData = data.task;
+        } else if (data && data.id) {
+          // If the API returns the task directly with an id
+          console.log('Task details fetched successfully (direct):', data);
+          taskData = data;
+        } else if (data && Array.isArray(data.tasks) && data.tasks.length > 0) {
+          // If the API returns an array of tasks, find the one with matching ID
+          const foundTask = data.tasks.find((t: any) => t.id === taskId);
+          if (foundTask) {
+            console.log('Task details found in tasks array:', foundTask);
+            taskData = foundTask;
+          } else {
+            throw new Error('Task not found in the returned tasks array');
+          }
+        } else {
+          throw new Error('Invalid response format from API');
+        }
+        
+        // Format and set the task data
+        const formattedTask = formatTaskData(taskData);
+        console.log('Formatted task data:', formattedTask);
+        setTask(formattedTask);
+        
         setIsLoading(false);
       } catch (error) {
         console.error('Error fetching task:', error);
         
-        // If API call fails in production, show error
+        // Show error toast
         toast({
           title: 'Error',
           description: 'Failed to load task details.',
           variant: 'destructive',
         });
         
-        // In production, don't set task if API fails
-        if (!import.meta.env.PROD) {
+        // In development, fall back to mock data
+        if (import.meta.env.DEV) {
+          console.log('Using mock data in development as fallback');
           setTask(mockTask);
         }
         
