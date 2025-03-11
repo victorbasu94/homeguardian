@@ -185,7 +185,13 @@ async function generateMaintenancePlan(home, useAI = false, forceGeneration = fa
       }
     }
     
-    // If AI-powered plan generation is requested
+    // Check if we're in development mode - if so, use mock data instead of calling OpenAI
+    if (process.env.NODE_ENV !== 'production') {
+      logger.info('Using mock data for maintenance plan in development mode');
+      return generateMockMaintenancePlan(home);
+    }
+    
+    // If AI-powered plan generation is requested and we're in production
     if (useAI && process.env.OPENAI_API_KEY) {
       try {
         const aiPlan = await generateMaintenancePlanWithAI(home);

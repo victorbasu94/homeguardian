@@ -109,20 +109,30 @@ const Dashboard: React.FC = () => {
         }
       } else {
         // Map the tasks to the expected format
-        const formattedTasks = data.data.map((task: any) => ({
-          id: task._id,
-          title: task.task_name,
-          description: task.description,
-          due_date: task.due_date,
-          status: (task.completed ? 'completed' : 'pending') as 'completed' | 'pending',
-          priority: task.priority as 'low' | 'medium' | 'high',
-          category: task.category,
-          estimated_time: task.estimated_time || '1 hour',
-          estimated_cost: task.estimated_cost || 0,
-          subtasks: task.steps?.map((step: any) => step.description) || [],
-          home_id: task.home_id
-        }));
+        console.log('Raw tasks data from API:', data.data);
+        const formattedTasks = data.data.map((task: any) => {
+          // Check if the task has steps or subtasks
+          const subtasks = task.subtasks || 
+                          (task.steps && Array.isArray(task.steps)) 
+                            ? task.steps.map((step: any) => typeof step === 'string' ? step : step.description)
+                            : [];
+          
+          return {
+            id: task._id || task.id,
+            title: task.title || task.task_name,
+            description: task.description,
+            due_date: task.due_date,
+            status: (task.completed || task.status === 'completed' ? 'completed' : 'pending') as 'completed' | 'pending',
+            priority: task.priority as 'low' | 'medium' | 'high',
+            category: task.category,
+            estimated_time: task.estimated_time || '1 hour',
+            estimated_cost: task.estimated_cost || 0,
+            subtasks: subtasks,
+            home_id: task.home_id
+          };
+        });
         
+        console.log('Formatted tasks for frontend:', formattedTasks);
         setMaintenanceTasks(formattedTasks);
       }
     } catch (error) {
@@ -193,8 +203,31 @@ const Dashboard: React.FC = () => {
           });
         }
         
-        // The tasks are already in the correct format from the API
-        setMaintenanceTasks(maintenancePlan.tasks);
+        // Format the tasks to ensure they match the expected format
+        const formattedTasks = maintenancePlan.tasks.map((task: any) => {
+          // Check if the task has steps or subtasks
+          const subtasks = task.subtasks || 
+                          (task.steps && Array.isArray(task.steps)) 
+                            ? task.steps.map((step: any) => typeof step === 'string' ? step : step.description)
+                            : [];
+          
+          return {
+            id: task._id || task.id,
+            title: task.title || task.task_name,
+            description: task.description,
+            due_date: task.due_date,
+            status: (task.completed || task.status === 'completed' ? 'completed' : 'pending') as 'completed' | 'pending',
+            priority: task.priority as 'low' | 'medium' | 'high',
+            category: task.category,
+            estimated_time: task.estimated_time || '1 hour',
+            estimated_cost: task.estimated_cost || 0,
+            subtasks: subtasks,
+            home_id: task.home_id || home.id
+          };
+        });
+        
+        console.log('Formatted maintenance tasks for frontend:', formattedTasks);
+        setMaintenanceTasks(formattedTasks);
       } else {
         // This shouldn't happen as the API should throw an error if no tasks are returned
         console.error("No tasks in maintenance plan");

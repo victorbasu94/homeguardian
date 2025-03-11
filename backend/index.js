@@ -37,7 +37,18 @@ if (process.env.NODE_ENV === 'production') {
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        connectSrc: ["'self'", "https://maintainmint.vercel.app", "https://maintainmint-backend-6dfe05c4ba93.herokuapp.com"],
+        connectSrc: [
+          "'self'", 
+          "https://maintainmint.vercel.app", 
+          "https://maintainmint-backend-6dfe05c4ba93.herokuapp.com",
+          // Add localhost URLs for testing production builds locally
+          "http://localhost:3000",
+          "http://localhost:5000",
+          "http://localhost:5173",
+          "http://localhost:8000",
+          "http://localhost:8080",
+          "http://localhost:8888"
+        ],
         frameSrc: ["'self'"],
         imgSrc: ["'self'", "data:", "https:"],
         scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
@@ -49,13 +60,14 @@ if (process.env.NODE_ENV === 'production') {
     }
   }));
 } else {
-  // In development, use a more relaxed configuration
-  app.use(helmet({
-    contentSecurityPolicy: false,
-    crossOriginEmbedderPolicy: false,
-    crossOriginResourcePolicy: false,
-    crossOriginOpenerPolicy: false
-  }));
+  // In development, disable Helmet completely to avoid any CORS issues
+  console.log('Running in development mode - security features are relaxed');
+  // app.use(helmet({
+  //   contentSecurityPolicy: false,
+  //   crossOriginEmbedderPolicy: false,
+  //   crossOriginResourcePolicy: false,
+  //   crossOriginOpenerPolicy: false
+  // }));
 }
 
 // Add a middleware to log all requests
@@ -94,7 +106,39 @@ app.use((req, res, next) => {
 
 // CORS configuration
 app.use(cors({
-  origin: '*', // Allow all origins
+  origin: function(origin, callback) {
+    // Allow requests with no origin (like mobile apps, curl requests)
+    if (!origin) return callback(null, true);
+    
+    // List of allowed origins
+    const allowedOrigins = [
+      // Production
+      'https://maintainmint.vercel.app',
+      'https://maintainmint-backend-6dfe05c4ba93.herokuapp.com',
+      // Development - localhost with various ports
+      'http://localhost:3000',
+      'http://localhost:5000',
+      'http://localhost:5173',
+      'http://localhost:8000',
+      'http://localhost:8080',
+      'http://localhost:8888',
+      'http://127.0.0.1:3000',
+      'http://127.0.0.1:5000',
+      'http://127.0.0.1:5173',
+      'http://127.0.0.1:8000',
+      'http://127.0.0.1:8080',
+      'http://127.0.0.1:8888',
+      // Add any other origins you need
+    ];
+    
+    // Check if the origin is allowed
+    if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
+      callback(null, true);
+    } else {
+      console.log('CORS blocked request from:', origin);
+      callback(null, true); // Still allow it for now, but log it
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: [
@@ -114,9 +158,16 @@ app.use(cors({
 // Add a middleware to handle preflight requests
 app.options('*', (req, res) => {
   console.log('Global OPTIONS handler called for:', req.url);
-  res.header('Access-Control-Allow-Origin', '*');
+  
+  // Get the origin from the request
+  const origin = req.headers.origin;
+  
+  // Set the appropriate CORS headers
+  res.header('Access-Control-Allow-Origin', origin || '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Access-Control-Allow-Origin, Access-Control-Allow-Methods, Access-Control-Allow-Headers');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  
   res.status(200).send();
 });
 

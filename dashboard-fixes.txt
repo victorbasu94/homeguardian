@@ -1,0 +1,72 @@
+Here are the fixes that need to be made to the Dashboard.tsx file:
+
+1. In the fetchTasks function (around line 110-130), update the mapping logic:
+
+```typescript
+// Map the tasks to the expected format
+console.log('Raw tasks data from API:', data.data);
+const formattedTasks = data.data.map((task: any) => {
+  // Check if the task has steps or subtasks
+  const subtasks = task.subtasks || 
+                  (task.steps && Array.isArray(task.steps)) 
+                    ? task.steps.map((step: any) => typeof step === 'string' ? step : step.description)
+                    : [];
+  
+  return {
+    id: task._id || task.id,
+    title: task.title || task.task_name,
+    description: task.description,
+    due_date: task.due_date,
+    status: (task.completed || task.status === 'completed' ? 'completed' : 'pending') as 'completed' | 'pending',
+    priority: task.priority as 'low' | 'medium' | 'high',
+    category: task.category,
+    estimated_time: task.estimated_time || '1 hour',
+    estimated_cost: task.estimated_cost || 0,
+    subtasks: subtasks,
+    home_id: task.home_id
+  };
+});
+
+console.log('Formatted tasks for frontend:', formattedTasks);
+setMaintenanceTasks(formattedTasks);
+```
+
+2. In the fetchMaintenancePlan function (around line 180-200), update the task handling:
+
+```typescript
+// Format the tasks to ensure they match the expected format
+const formattedTasks = maintenancePlan.tasks.map((task: any) => {
+  // Check if the task has steps or subtasks
+  const subtasks = task.subtasks || 
+                  (task.steps && Array.isArray(task.steps)) 
+                    ? task.steps.map((step: any) => typeof step === 'string' ? step : step.description)
+                    : [];
+  
+  return {
+    id: task._id || task.id,
+    title: task.title || task.task_name,
+    description: task.description,
+    due_date: task.due_date,
+    status: (task.completed || task.status === 'completed' ? 'completed' : 'pending') as 'completed' | 'pending',
+    priority: task.priority as 'low' | 'medium' | 'high',
+    category: task.category,
+    estimated_time: task.estimated_time || '1 hour',
+    estimated_cost: task.estimated_cost || 0,
+    subtasks: subtasks,
+    home_id: task.home_id || home.id
+  };
+});
+
+console.log('Formatted maintenance tasks for frontend:', formattedTasks);
+setMaintenanceTasks(formattedTasks);
+```
+
+These changes ensure that the tasks are properly formatted regardless of whether they come from the API directly or from the OpenAI-generated maintenance plan. The key improvements are:
+
+1. Handling both `task.steps` and `task.subtasks` formats
+2. Supporting both `task._id` and `task.id` for the ID field
+3. Supporting both `task.title` and `task.task_name` for the title field
+4. Properly handling the status field based on either `task.completed` or `task.status`
+5. Adding console logs to help with debugging
+
+After making these changes, the tasks from the OpenAI query should display correctly on the dashboard. 
