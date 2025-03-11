@@ -319,25 +319,35 @@ const TaskDetail: React.FC = () => {
       setIsLoading(true);
       
       try {
-        console.log(`Fetching task details for taskId: ${taskId}`);
-        // Replace mock data with real API call
-        const response = await api.get(`/tasks/${taskId}`);
-        console.log('Task details fetched successfully:', response.data);
-        setTask(response.data);
+        // Check if we're in production environment
+        if (import.meta.env.PROD) {
+          console.log(`Fetching task details for taskId: ${taskId}`);
+          // In production, always use the API
+          const response = await api.get(`/tasks/${taskId}`);
+          console.log('Task details fetched successfully:', response.data);
+          setTask(response.data);
+        } else {
+          // In development, use mock data for now
+          // This can be replaced with API call when backend is ready
+          console.log('Using mock data in development');
+          setTimeout(() => {
+            setTask(mockTask);
+          }, 1000);
+        }
         setIsLoading(false);
       } catch (error) {
         console.error('Error fetching task:', error);
         
-        // In development mode, fall back to mock data if API call fails
-        if (import.meta.env.DEV) {
-          console.log('Using mock data in development as fallback');
+        // If API call fails in production, show error
+        toast({
+          title: 'Error',
+          description: 'Failed to load task details.',
+          variant: 'destructive',
+        });
+        
+        // In production, don't set task if API fails
+        if (!import.meta.env.PROD) {
           setTask(mockTask);
-        } else {
-          toast({
-            title: 'Error',
-            description: 'Failed to load task details.',
-            variant: 'destructive',
-          });
         }
         
         setIsLoading(false);
