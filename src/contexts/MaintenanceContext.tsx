@@ -13,6 +13,14 @@ export interface MaintenanceTask {
   estimated_cost: number;
   subtasks: string[];
   home_id?: string;
+  
+  // Alternative property names for compatibility with the gatekeeper project
+  task?: string;
+  taskDescription?: string;
+  suggestedCompletionDate?: string;
+  estimatedCost?: number;
+  estimatedTime?: string | number;
+  subTasks?: string[];
 }
 
 // Define the context type
@@ -35,8 +43,8 @@ export const MaintenanceProvider: React.FC<{ children: ReactNode }> = ({ childre
   const [maintenanceTasks, setMaintenanceTasks] = useState<MaintenanceTask[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // Default to using mock data in development, but not in production
-  const [useMockData, setUseMockData] = useState(!import.meta.env.PROD);
+  // Default to using real data, not mock data
+  const [useMockData, setUseMockData] = useState(false);
 
   return (
     <MaintenanceContext.Provider

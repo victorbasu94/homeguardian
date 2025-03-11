@@ -117,18 +117,27 @@ const Dashboard: React.FC = () => {
                             ? task.steps.map((step: any) => typeof step === 'string' ? step : step.description)
                             : [];
           
+          // Create a task object with both naming conventions for compatibility
           return {
             id: task._id || task.id,
-            title: task.title || task.task_name,
-            description: task.description,
-            due_date: task.due_date,
+            title: task.title || task.task_name || task.task,
+            description: task.description || task.taskDescription,
+            due_date: task.due_date || task.suggestedCompletionDate,
             status: (task.completed || task.status === 'completed' ? 'completed' : 'pending') as 'completed' | 'pending',
             priority: task.priority as 'low' | 'medium' | 'high',
             category: task.category,
-            estimated_time: task.estimated_time || '1 hour',
-            estimated_cost: task.estimated_cost || 0,
+            estimated_time: task.estimated_time || task.estimatedTime || '1 hour',
+            estimated_cost: task.estimated_cost || task.estimatedCost || 0,
             subtasks: subtasks,
-            home_id: task.home_id
+            home_id: task.home_id,
+            
+            // Add alternative property names for compatibility
+            task: task.title || task.task_name || task.task,
+            taskDescription: task.description || task.taskDescription,
+            suggestedCompletionDate: task.due_date || task.suggestedCompletionDate,
+            estimatedCost: task.estimated_cost || task.estimatedCost || 0,
+            estimatedTime: task.estimated_time || task.estimatedTime || '1 hour',
+            subTasks: subtasks
           };
         });
         
@@ -144,14 +153,8 @@ const Dashboard: React.FC = () => {
       
       setError(`Failed to load tasks: ${errorMessage}`);
       
-      // In development mode, use mock data if real data fails to load
-      if (import.meta.env.DEV) {
-        console.log('Using mock data in development mode');
-        setMaintenanceTasks(MOCK_MAINTENANCE_TASKS.map(task => ({
-          ...task,
-          home_id: homeId
-        })));
-      }
+      // Don't automatically use mock data, let the user decide
+      // if they want to use mock data through the UI button
     } finally {
       setIsLoading(false);
     }
@@ -211,18 +214,27 @@ const Dashboard: React.FC = () => {
                             ? task.steps.map((step: any) => typeof step === 'string' ? step : step.description)
                             : [];
           
+          // Create a task object with both naming conventions for compatibility
           return {
             id: task._id || task.id,
-            title: task.title || task.task_name,
-            description: task.description,
-            due_date: task.due_date,
+            title: task.title || task.task_name || task.task,
+            description: task.description || task.taskDescription,
+            due_date: task.due_date || task.suggestedCompletionDate,
             status: (task.completed || task.status === 'completed' ? 'completed' : 'pending') as 'completed' | 'pending',
             priority: task.priority as 'low' | 'medium' | 'high',
             category: task.category,
-            estimated_time: task.estimated_time || '1 hour',
-            estimated_cost: task.estimated_cost || 0,
+            estimated_time: task.estimated_time || task.estimatedTime || '1 hour',
+            estimated_cost: task.estimated_cost || task.estimatedCost || 0,
             subtasks: subtasks,
-            home_id: task.home_id || home.id
+            home_id: task.home_id || home.id,
+            
+            // Add alternative property names for compatibility
+            task: task.title || task.task_name || task.task,
+            taskDescription: task.description || task.taskDescription,
+            suggestedCompletionDate: task.due_date || task.suggestedCompletionDate,
+            estimatedCost: task.estimated_cost || task.estimatedCost || 0,
+            estimatedTime: task.estimated_time || task.estimatedTime || '1 hour',
+            subTasks: subtasks
           };
         });
         

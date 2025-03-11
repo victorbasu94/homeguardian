@@ -13,8 +13,15 @@ interface AITaskCardProps {
 }
 
 const AITaskCard: React.FC<AITaskCardProps> = ({ task, onAddToTasks, onViewDetails }) => {
+  // Handle both property naming conventions (from API and from mock data)
+  const title = task.title || task.task;
+  const description = task.description || task.taskDescription;
+  const dueDate = new Date(task.due_date || task.suggestedCompletionDate);
+  const estimatedCost = task.estimated_cost || task.estimatedCost;
+  const estimatedTime = task.estimated_time || task.estimatedTime;
+  const subtasks = task.subtasks || task.subTasks || [];
+  
   // Format the due date
-  const dueDate = new Date(task.due_date);
   const formattedDate = format(dueDate, 'MMM d, yyyy');
   
   // Determine if task is overdue
@@ -72,11 +79,11 @@ const AITaskCard: React.FC<AITaskCardProps> = ({ task, onAddToTasks, onViewDetai
               <Sparkles className="h-4 w-4 text-primary" />
               <Badge variant="secondary" className="text-xs">AI Generated</Badge>
             </div>
-            <CardTitle className="text-lg">{task.title}</CardTitle>
-            <CardDescription>{task.description}</CardDescription>
+            <CardTitle className="text-lg">{title}</CardTitle>
+            <CardDescription>{description}</CardDescription>
           </div>
           <Badge variant="outline" className="ml-2">
-            ${task.estimated_cost}
+            ${estimatedCost}
           </Badge>
         </div>
       </CardHeader>
@@ -89,15 +96,15 @@ const AITaskCard: React.FC<AITaskCardProps> = ({ task, onAddToTasks, onViewDetai
             </span>
           </div>
           <div className="text-sm text-muted-foreground">
-            {task.estimated_time}
+            {estimatedTime}
           </div>
         </div>
         
-        {task.subtasks && task.subtasks.length > 0 && (
+        {subtasks && subtasks.length > 0 && (
           <div className="mt-2">
             <h4 className="text-sm font-medium mb-2">Subtasks:</h4>
             <ul className="list-disc pl-5 text-sm text-muted-foreground space-y-1">
-              {task.subtasks.map((subtask, idx) => (
+              {subtasks.map((subtask, idx) => (
                 <li key={idx}>{subtask}</li>
               ))}
             </ul>

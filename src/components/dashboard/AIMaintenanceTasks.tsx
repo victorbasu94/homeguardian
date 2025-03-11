@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Sparkles, AlertCircle, Loader2 } from 'lucide-react';
 import { useMaintenance, MaintenanceTask } from '@/contexts/MaintenanceContext';
 import { MOCK_MAINTENANCE_TASKS } from '@/lib/mockData';
+import { setUseMockApi } from '@/lib/mockApiIntegration';
 import AITaskCard from './AITaskCard';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -81,11 +82,19 @@ const AIMaintenanceTasks: React.FC<AIMaintenanceTasksProps> = ({ homeId }) => {
     ? MOCK_MAINTENANCE_TASKS.map(task => ({ ...task, home_id: homeId || task.home_id }))
     : maintenanceTasks;
   
+  // Update the mock API integration when useMockData changes
+  useEffect(() => {
+    if (import.meta.env.DEV) {
+      setUseMockApi(useMockData);
+    }
+  }, [useMockData]);
+  
   // Log the tasks to help with debugging
   useEffect(() => {
     console.log('Current maintenance tasks in AIMaintenanceTasks:', tasks);
     console.log('Using mock data:', useMockData);
-  }, [tasks, useMockData]);
+    console.log('Real maintenance tasks from context:', maintenanceTasks);
+  }, [tasks, useMockData, maintenanceTasks]);
   
   // Filter out completed tasks unless they're explicitly requested
   const incompleteTasks = tasks.filter(task => task.status !== 'completed');

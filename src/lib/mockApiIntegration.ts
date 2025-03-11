@@ -12,12 +12,22 @@ const originalApiGet = api.get;
 const originalApiPost = api.post;
 const originalApiPatch = api.patch; // Store the original patch method
 
+// Flag to control whether to use mock API integration
+// Default to false - don't use mock API unless explicitly enabled
+let useMockApi = false;
+
+// Function to enable/disable mock API integration
+export const setUseMockApi = (enabled: boolean) => {
+  useMockApi = enabled;
+  console.log(`Mock API integration ${enabled ? 'enabled' : 'disabled'}`);
+};
+
 // Monkey patch the API to intercept certain calls
 if (import.meta.env.DEV) {
   // Override the get method to intercept task-related API calls
   api.get = async function(url: string, config?: any) {
-    // If this is a request for tasks for a specific home
-    if (url.match(/\/api\/tasks\/[a-zA-Z0-9-]+$/)) {
+    // Only intercept if mock API is enabled
+    if (useMockApi && url.match(/\/api\/tasks\/[a-zA-Z0-9-]+$/)) {
       const homeId = url.split('/').pop();
       
       try {
@@ -70,8 +80,8 @@ if (import.meta.env.DEV) {
   
   // Override the post method to intercept task creation
   api.post = async function(url: string, data?: any, config?: any) {
-    // If this is a request to create a task
-    if (url === '/api/tasks') {
+    // Only intercept if mock API is enabled
+    if (useMockApi && url === '/api/tasks') {
       // Generate a mock response for task creation
       return {
         data: {
@@ -92,8 +102,8 @@ if (import.meta.env.DEV) {
   
   // Override the patch method to intercept task updates
   api.patch = async function(url: string, data?: any, config?: any) {
-    // If this is a request to update a task (mark as complete)
-    if (url.match(/\/api\/tasks\/[a-zA-Z0-9-]+$/)) {
+    // Only intercept if mock API is enabled
+    if (useMockApi && url.match(/\/api\/tasks\/[a-zA-Z0-9-]+$/)) {
       // Generate a mock response for task update
       return {
         data: {
