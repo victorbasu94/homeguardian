@@ -201,13 +201,13 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => {
     // For the homes endpoint, ensure we're returning data in the expected format
-    if (response.config.url?.includes('/api/homes') && response.data && !response.data.data && !Array.isArray(response.data)) {
+    if (response.config.url?.includes('/api/homes') && (response.data as any) && !(response.data as any).data && !Array.isArray((response.data as any))) {
       // If the response doesn't have a data property and isn't an array, wrap it in a data property
       console.log('Normalizing homes response format:', response.data);
       return {
         ...response,
         data: {
-          data: Array.isArray(response.data) ? response.data : (response.data.data || [])
+          data: Array.isArray((response.data as any)) ? (response.data as any) : ((response.data as any).data || [])
         }
       };
     }
@@ -266,7 +266,7 @@ api.interceptors.response.use(
               });
               
               // Get the new access token
-              const newAccessToken = response.data.accessToken;
+              const newAccessToken = (response.data as any).accessToken;
               
               // Update the access token
               setAccessToken(newAccessToken);
@@ -319,66 +319,128 @@ api.interceptors.response.use(
 
 // Function to diagnose CORS issues
 export const diagnoseCorsIssues = async () => {
-  console.log('Diagnosing potential CORS issues...');
+  console.log('Running CORS diagnosis...');
   
   try {
-    // Try a simple OPTIONS request to check CORS configuration
-    const response = await axios({
-      method: 'OPTIONS',
-      url: `${API_BASE_URL}/api/auth/login`,
-      headers: {
-        'Access-Control-Request-Method': 'POST',
-        'Access-Control-Request-Headers': 'content-type,authorization',
-        'Origin': window.location.origin
+    // Try a simple OPTIONS request to the API
+    const testUrl = `${API_BASE_URL}/api/auth/login`;
+    console.log('Testing CORS with URL:', testUrl);
+    
+    // First try without proxy
+    try {
+      console.log('Attempting direct request without proxy...');
+      const response = await fetch(testUrl, {
+        method: 'OPTIONS',
+        headers: {
+          'Content-Type': 'application/json',
+          'Origin': window.location.origin
+        }
+      });
+      
+      console.log('OPTIONS response status:', response.status);
+      console.log('OPTIONS response headers:', {
+        'access-control-allow-origin': response.headers.get('access-control-allow-origin'),
+        'access-control-allow-methods': response.headers.get('access-control-allow-methods'),
+        'access-control-allow-headers': response.headers.get('access-control-allow-headers')
+      });
+      
+      if (response.ok) {
+        console.log('CORS preflight successful without proxy!');
+        return true;
+      } else {
+        console.log('CORS preflight failed without proxy.');
       }
-    });
-    
-    console.log('CORS preflight response:', {
-      status: response.status,
-      headers: response.headers,
-    });
-    
-    // Check for necessary CORS headers
-    const corsHeaders = {
-      'access-control-allow-origin': response.headers['access-control-allow-origin'],
-      'access-control-allow-methods': response.headers['access-control-allow-methods'],
-      'access-control-allow-headers': response.headers['access-control-allow-headers'],
-      'access-control-allow-credentials': response.headers['access-control-allow-credentials']
-    };
-    
-    console.log('CORS headers present:', corsHeaders);
-    
-    // Check if credentials are allowed
-    if (corsHeaders['access-control-allow-credentials'] !== 'true') {
-      console.warn('CORS issue: credentials not allowed by the server');
+    } catch (error) {
+      console.error('Direct request failed:', error);
     }
     
-    // Check if origin is allowed
-    if (corsHeaders['access-control-allow-origin'] !== window.location.origin && 
-        corsHeaders['access-control-allow-origin'] !== '*') {
-      console.warn('CORS issue: origin not allowed by the server');
+    // Try with each proxy
+    for (let i = 0; i < CORS_PROXIES.length; i++) {
+      const proxy = CORS_PROXIES[i];
+      const proxiedUrl = `${proxy}${encodeURIComponent(testUrl)}`;
+      
+      try {
+        console.log(`Attempting request with proxy ${i + 1}/${CORS_PROXIES.length}: ${proxy}`);
+        const response = await fetch(proxiedUrl, {
+          method: 'OPTIONS',
+          headers: {
+            'Content-Type': 'application/json',
+            'Origin': window.location.origin
+          }
+        });
+        
+        console.log(`Proxy ${i + 1} response status:`, response.status);
+        
+        if (response.ok) {
+          console.log(`CORS preflight successful with proxy ${i + 1}!`);
+          currentProxyIndex = i;
+          return true;
+        } else {
+          console.log(`CORS preflight failed with proxy ${i + 1}.`);
+        }
+      } catch (error) {
+        console.error(`Request with proxy ${i + 1} failed:`, error);
+      }
     }
     
-    return {
-      success: true,
-      corsHeaders
-    };
+    console.log('All CORS tests failed. Please check server configuration.');
+    return false;
   } catch (error) {
-    console.error('CORS diagnosis failed:', error);
-    return {
-      success: false,
-      error
-    };
+    console.error('CORS diagnosis error:', error);
+    return false;
   }
 };
 
-// Run CORS diagnosis on startup
-if (typeof window !== 'undefined') {
-  setTimeout(() => {
-    diagnoseCorsIssues().then(result => {
-      console.log('CORS diagnosis complete:', result.success ? 'No issues detected' : 'Issues detected');
-    });
-  }, 1000); // Delay by 1 second to not block initial rendering
+// Run CORS diagnosis on startup in development
+if (import.meta.env.DEV) {
+  diagnoseCorsIssues().then(success => {
+    console.log('CORS diagnosis complete. Success:', success);
+  });
 }
+
+// Direct fetch function to bypass axios for critical operations like login
+export const directFetch = async (endpoint: string, options: RequestInit = {}) => {
+  const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`;
+  
+  // Set default headers
+  const headers = {
+    'Content-Type': 'application/json',
+    ...options.headers
+  };
+  
+  // Add authorization header if token exists
+  if (accessToken) {
+    (headers as any)['Authorization'] = `Bearer ${accessToken}`;
+  }
+  
+  // Merge options
+  const fetchOptions: RequestInit = {
+    ...options,
+    headers,
+    credentials: 'include'
+  };
+  
+  console.log(`Direct fetch to ${url}`, fetchOptions);
+  
+  try {
+    const response = await fetch(url, fetchOptions);
+    
+    // Parse JSON response
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw {
+        status: response.status,
+        statusText: response.statusText,
+        data
+      };
+    }
+    
+    return { data, status: response.status };
+  } catch (error) {
+    console.error('Direct fetch error:', error);
+    throw error;
+  }
+};
 
 export default api;

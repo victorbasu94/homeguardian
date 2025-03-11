@@ -12,7 +12,7 @@ import { Shield, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import api from '@/lib/axios';
+import api, { directFetch } from '@/lib/axios';
 
 // Define validation schema
 const loginSchema = z.object({
@@ -55,16 +55,49 @@ export default function Login() {
       
       console.log('Attempting to log in user with:', { email: data.email });
       
-      // Call the API to authenticate
-      const response = await api.post<LoginResponse>('/api/auth/login', {
-        email: data.email,
-        password: data.password
-      });
+      // Try to diagnose CORS issues before making the request
+      try {
+        const { diagnoseCorsIssues } = await import('@/lib/axios');
+        await diagnoseCorsIssues();
+      } catch (corsError) {
+        console.error('CORS diagnosis failed:', corsError);
+      }
       
-      console.log('Login response:', response.data);
+      let response;
+      let responseData;
+      
+      try {
+        // First try with axios
+        console.log('Attempting login with axios...');
+        response = await api.post<LoginResponse>('/api/auth/login', {
+          email: data.email,
+          password: data.password
+        });
+        responseData = response.data;
+      } catch (axiosError) {
+        console.error('Axios login attempt failed:', axiosError);
+        
+        // If axios fails, try with direct fetch
+        console.log('Falling back to direct fetch...');
+        try {
+          const fetchResponse = await directFetch('/api/auth/login', {
+            method: 'POST',
+            body: JSON.stringify({
+              email: data.email,
+              password: data.password
+            })
+          });
+          responseData = fetchResponse.data;
+        } catch (fetchError) {
+          console.error('Direct fetch login attempt also failed:', fetchError);
+          throw fetchError;
+        }
+      }
+      
+      console.log('Login response:', responseData);
       
       // Extract token and user data
-      const { accessToken, user } = response.data;
+      const { accessToken, user } = responseData;
       
       if (!accessToken || !user) {
         throw new Error('Invalid response from server');
@@ -98,14 +131,25 @@ export default function Login() {
         statusCode,
         errorMessage,
         requestUrl,
-        baseURL: error.config?.baseURL
+        baseURL: error.config?.baseURL,
+        headers: error.config?.headers,
+        corsError: error.message?.includes('CORS') || error.message?.includes('Network Error')
       });
       
-      toast({
-        title: `Login failed ${statusCode ? `(${statusCode})` : ''}`,
-        description: errorMessage,
-        variant: 'destructive'
-      });
+      // Special handling for CORS errors
+      if (error.message?.includes('CORS') || error.message?.includes('Network Error')) {
+        toast({
+          title: 'Connection Error',
+          description: 'Unable to connect to the server due to CORS or network issues. Please try again later.',
+          variant: 'destructive'
+        });
+      } else {
+        toast({
+          title: `Login failed ${statusCode ? `(${statusCode})` : ''}`,
+          description: errorMessage,
+          variant: 'destructive'
+        });
+      }
     } finally {
       setIsLoading(false);
     }
