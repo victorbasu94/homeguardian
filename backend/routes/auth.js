@@ -4,6 +4,7 @@ const router = express.Router();
 const authController = require('../controllers/authController');
 const authMiddleware = require('../middleware/auth');
 const rateLimit = require('express-rate-limit');
+const User = require('../models/User');
 
 // Rate limiting for login attempts
 const loginLimiter = rateLimit({
@@ -376,6 +377,41 @@ router.post('/direct-login', (req, res) => {
     return res.status(500).json({
       status: 'error',
       message: 'An error occurred during direct login'
+    });
+  }
+});
+
+/**
+ * Check email verification status
+ * @route GET /api/auth/check-verification/:email
+ * @access Public
+ */
+router.get('/check-verification/:email', async (req, res) => {
+  try {
+    const { email } = req.params;
+    
+    // Find user by email
+    const user = await User.findOne({ email });
+    
+    if (!user) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'User not found'
+      });
+    }
+    
+    // Return email verification status
+    return res.status(200).json({
+      status: 'success',
+      email_verified: user.email_verified,
+      email: user.email
+    });
+  } catch (error) {
+    console.error('Error checking email verification:', error);
+    
+    return res.status(500).json({
+      status: 'error',
+      message: 'An error occurred while checking email verification'
     });
   }
 });

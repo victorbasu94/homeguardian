@@ -184,11 +184,12 @@ exports.login = async (req, res) => {
       });
     }
     
-    // If email is not verified, verify it automatically
+    // Always set email_verified to true
     if (!user.email_verified) {
-      console.log(`Auto-verifying email for user: ${email}`);
+      console.log(`Setting email_verified to true for user: ${email}`);
       user.email_verified = true;
-      await user.save();
+      // No need to await this save, we can do it in the background
+      user.save().catch(err => console.error('Error saving user:', err));
     }
     
     // Generate tokens
