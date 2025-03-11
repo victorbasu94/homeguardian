@@ -374,6 +374,135 @@ function determinePriority(dueDate) {
   }
 }
 
+/**
+ * Generate mock maintenance tasks for development mode
+ * @param {Object} home - The home object
+ * @returns {Object} - Mock maintenance plan
+ */
+function generateMockMaintenancePlan(home) {
+  const now = new Date();
+  const oneMonthLater = new Date(now);
+  oneMonthLater.setMonth(now.getMonth() + 1);
+  
+  const twoMonthsLater = new Date(now);
+  twoMonthsLater.setMonth(now.getMonth() + 2);
+  
+  const threeMonthsLater = new Date(now);
+  threeMonthsLater.setMonth(now.getMonth() + 3);
+  
+  const mockTasks = [
+    {
+      home_id: home._id,
+      task_name: "Inspect roof",
+      description: "Check for damaged shingles, leaks, and clean gutters",
+      frequency: "yearly",
+      due_date: oneMonthLater.toISOString().split('T')[0],
+      why: "Regular roof maintenance prevents water damage and extends roof life",
+      estimated_time: 120, // 2 hours
+      estimated_cost: 150,
+      category: "exterior",
+      priority: "medium",
+      steps: [
+        { step_number: 1, description: "Check shingles for damage" },
+        { step_number: 2, description: "Look for signs of water damage" },
+        { step_number: 3, description: "Clean gutters and downspouts" }
+      ],
+      completed: false,
+      ai_generated: true
+    },
+    {
+      home_id: home._id,
+      task_name: "HVAC maintenance",
+      description: "Service heating and cooling systems before seasonal use",
+      frequency: "biannual",
+      due_date: twoMonthsLater.toISOString().split('T')[0],
+      why: "Regular HVAC maintenance improves efficiency and extends system life",
+      estimated_time: 180, // 3 hours
+      estimated_cost: 200,
+      category: "hvac",
+      priority: "high",
+      steps: [
+        { step_number: 1, description: "Replace air filters" },
+        { step_number: 2, description: "Clean condenser coils" },
+        { step_number: 3, description: "Check refrigerant levels" },
+        { step_number: 4, description: "Test system operation" }
+      ],
+      completed: false,
+      ai_generated: true
+    },
+    {
+      home_id: home._id,
+      task_name: "Check plumbing",
+      description: "Inspect for leaks and water damage throughout the home",
+      frequency: "quarterly",
+      due_date: oneMonthLater.toISOString().split('T')[0],
+      why: "Regular plumbing checks prevent water damage and mold growth",
+      estimated_time: 60, // 1 hour
+      estimated_cost: 100,
+      category: "plumbing",
+      priority: "medium",
+      steps: [
+        { step_number: 1, description: "Check under sinks for leaks" },
+        { step_number: 2, description: "Inspect water heater" },
+        { step_number: 3, description: "Test water pressure" },
+        { step_number: 4, description: "Look for signs of water damage" }
+      ],
+      completed: false,
+      ai_generated: true
+    },
+    {
+      home_id: home._id,
+      task_name: "Clean dryer vent",
+      description: "Remove lint buildup to prevent fire hazards",
+      frequency: "yearly",
+      due_date: threeMonthsLater.toISOString().split('T')[0],
+      why: "Lint buildup in dryer vents is a fire hazard",
+      estimated_time: 60, // 1 hour
+      estimated_cost: 80,
+      category: "appliances",
+      priority: "low",
+      steps: [
+        { step_number: 1, description: "Disconnect dryer from power" },
+        { step_number: 2, description: "Disconnect vent from dryer" },
+        { step_number: 3, description: "Clean vent pipe with brush" },
+        { step_number: 4, description: "Check exterior vent opening" }
+      ],
+      completed: false,
+      ai_generated: true
+    },
+    {
+      home_id: home._id,
+      task_name: "Test smoke detectors",
+      description: "Ensure all smoke and carbon monoxide detectors are working",
+      frequency: "monthly",
+      due_date: oneMonthLater.toISOString().split('T')[0],
+      why: "Functional smoke detectors are essential for home safety",
+      estimated_time: 30, // 30 minutes
+      estimated_cost: 30,
+      category: "safety",
+      priority: "high",
+      steps: [
+        { step_number: 1, description: "Test all detector units" },
+        { step_number: 2, description: "Replace batteries if needed" },
+        { step_number: 3, description: "Replace any faulty detectors" }
+      ],
+      completed: false,
+      ai_generated: true
+    }
+  ];
+  
+  // Save mock tasks to the database
+  Task.insertMany(mockTasks).catch(err => {
+    logger.error('Error saving mock tasks to database:', err);
+  });
+  
+  return {
+    tasks: mockTasks,
+    message: 'Mock maintenance plan generated for development',
+    generated_at: new Date().toISOString()
+  };
+}
+
 module.exports = {
   generateMaintenancePlan,
   regenerateTasksForHome,

@@ -38,6 +38,9 @@ router.post('/generate-plan', verifyToken, async (req, res) => {
       user: req.user?.id
     });
 
+    // Log environment mode
+    logger.info(`Running in ${process.env.NODE_ENV || 'development'} mode`);
+    
     // Validate required fields
     const requiredFields = ['id', 'location', 'year_built', 'square_footage'];
     const missingFields = requiredFields.filter(field => !req.body[field]);
