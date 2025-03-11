@@ -12,7 +12,7 @@ import { Shield, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import api, { directFetch } from '@/lib/axios';
+import api, { directFetch, loginUser } from '@/lib/axios';
 
 // Define validation schema
 const loginSchema = z.object({
@@ -63,44 +63,16 @@ export default function Login() {
         console.error('CORS diagnosis failed:', corsError);
       }
       
-      let response;
-      let responseData;
+      // Use the special loginUser function that tries multiple methods
+      const responseData = await loginUser(data.email, data.password);
       
-      try {
-        // First try with axios
-        console.log('Attempting login with axios...');
-        response = await api.post<LoginResponse>('/api/auth/login', {
-          email: data.email,
-          password: data.password
-        });
-        responseData = response.data;
-      } catch (axiosError) {
-        console.error('Axios login attempt failed:', axiosError);
-        
-        // If axios fails, try with direct fetch
-        console.log('Falling back to direct fetch...');
-        try {
-          const fetchResponse = await directFetch('/api/auth/login', {
-            method: 'POST',
-            body: JSON.stringify({
-              email: data.email,
-              password: data.password
-            })
-          });
-          responseData = fetchResponse.data;
-        } catch (fetchError) {
-          console.error('Direct fetch login attempt also failed:', fetchError);
-          throw fetchError;
-        }
-      }
-      
-      console.log('Login response:', responseData);
+      console.log('Login response data:', responseData);
       
       // Extract token and user data
       const { accessToken, user } = responseData;
       
       if (!accessToken || !user) {
-        throw new Error('Invalid response from server');
+        throw new Error('Invalid response from server: missing token or user data');
       }
       
       // Save remember me preference
@@ -123,24 +95,26 @@ export default function Login() {
       console.error('Login error:', error);
       
       // Get detailed error information
-      const statusCode = error.response?.status;
-      const errorMessage = error.response?.data?.message || 'Failed to log in. Please check your credentials and try again.';
-      const requestUrl = error.config?.url;
+      const statusCode = error.response?.status || error.status;
+      const errorMessage = error.response?.data?.message || error.data?.message || error.message || 'Failed to log in. Please check your credentials and try again.';
       
       console.error('Login error details:', {
         statusCode,
         errorMessage,
-        requestUrl,
-        baseURL: error.config?.baseURL,
-        headers: error.config?.headers,
-        corsError: error.message?.includes('CORS') || error.message?.includes('Network Error')
+        error
       });
       
-      // Special handling for CORS errors
+      // Special handling for different error types
       if (error.message?.includes('CORS') || error.message?.includes('Network Error')) {
         toast({
           title: 'Connection Error',
           description: 'Unable to connect to the server due to CORS or network issues. Please try again later.',
+          variant: 'destructive'
+        });
+      } else if (statusCode === 403) {
+        toast({
+          title: 'Access Denied (403)',
+          description: 'The server rejected your login request. Please check your credentials and try again.',
           variant: 'destructive'
         });
       } else {

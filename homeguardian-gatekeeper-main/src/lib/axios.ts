@@ -417,23 +417,60 @@ export const directFetch = async (endpoint: string, options: RequestInit = {}) =
   const fetchOptions: RequestInit = {
     ...options,
     headers,
-    credentials: 'include'
+    credentials: 'include',
+    mode: 'cors'
   };
   
-  console.log(`Direct fetch to ${url}`, fetchOptions);
+  console.log(`Direct fetch to ${url}`, {
+    method: fetchOptions.method,
+    headers: fetchOptions.headers,
+    hasBody: !!fetchOptions.body
+  });
   
   try {
     const response = await fetch(url, fetchOptions);
     
-    // Parse JSON response
-    const data = await response.json();
+    // Log response headers for debugging
+    const responseHeaders: Record<string, string> = {};
+    response.headers.forEach((value, key) => {
+      responseHeaders[key] = value;
+    });
+    
+    console.log(`Direct fetch response: ${response.status} ${response.statusText}`, {
+      headers: responseHeaders
+    });
+    
+    // Try to parse JSON response
+    let data;
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      try {
+        data = await response.json();
+      } catch (parseError) {
+        console.error('Error parsing JSON response:', parseError);
+        data = { error: 'Invalid JSON response' };
+      }
+    } else {
+      try {
+        data = await response.text();
+      } catch (textError) {
+        console.error('Error reading response text:', textError);
+        data = { error: 'Could not read response' };
+      }
+    }
     
     if (!response.ok) {
-      throw {
+      const error = {
         status: response.status,
         statusText: response.statusText,
-        data
+        data,
+        url,
+        method: fetchOptions.method
       };
+      
+      console.error('Direct fetch error response:', error);
+      
+      throw error;
     }
     
     return { data, status: response.status };
@@ -441,6 +478,101 @@ export const directFetch = async (endpoint: string, options: RequestInit = {}) =
     console.error('Direct fetch error:', error);
     throw error;
   }
+};
+
+// Special login function that tries multiple methods
+export const loginUser = async (email: string, password: string) => {
+  console.log('Attempting login with multiple methods...');
+  
+  const loginData = { email, password };
+  const loginUrl = `${API_BASE_URL}/api/auth/login`;
+  
+  // Try different approaches in sequence
+  const attempts = [
+    // 1. Direct axios without proxy
+    async () => {
+      console.log('Attempt 1: Direct axios without proxy');
+      return await axios.post(loginUrl, loginData, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+    },
+    
+    // 2. Direct fetch without proxy
+    async () => {
+      console.log('Attempt 2: Direct fetch without proxy');
+      const response = await fetch(loginUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(loginData),
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      return { data };
+    },
+    
+    // 3. Axios with proxy
+    async () => {
+      console.log('Attempt 3: Axios with proxy');
+      // Enable proxy temporarily
+      const proxyUrl = getCurrentProxyUrl();
+      const proxiedUrl = `${proxyUrl}${encodeURIComponent(loginUrl)}`;
+      
+      return await axios.post(proxiedUrl, loginData, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+    },
+    
+    // 4. Fetch with proxy
+    async () => {
+      console.log('Attempt 4: Fetch with proxy');
+      const proxyUrl = getCurrentProxyUrl();
+      const proxiedUrl = `${proxyUrl}${encodeURIComponent(loginUrl)}`;
+      
+      const response = await fetch(proxiedUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(loginData)
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      return { data };
+    }
+  ];
+  
+  // Try each method in sequence
+  let lastError = null;
+  
+  for (let i = 0; i < attempts.length; i++) {
+    try {
+      const response = await attempts[i]();
+      console.log(`Login successful with attempt ${i + 1}:`, response.data);
+      return response.data;
+    } catch (error) {
+      console.error(`Attempt ${i + 1} failed:`, error);
+      lastError = error;
+    }
+  }
+  
+  // If we get here, all attempts failed
+  console.error('All login attempts failed');
+  throw lastError;
 };
 
 export default api;

@@ -25,24 +25,41 @@ connectDB();
 // Initialize reminder service
 initReminderService();
 
-// Security middleware
-app.use(helmet({
-  crossOriginResourcePolicy: { policy: 'cross-origin' },
-  crossOriginOpenerPolicy: { policy: 'unsafe-none' },
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      connectSrc: ["'self'", "https://maintainmint.vercel.app", "https://maintainmint-backend-6dfe05c4ba93.herokuapp.com"],
-      frameSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "https:"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      fontSrc: ["'self'", "data:"],
-      objectSrc: ["'none'"],
-      upgradeInsecureRequests: []
+// Security middleware with relaxed settings for development
+if (process.env.NODE_ENV === 'production') {
+  app.use(helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+    crossOriginOpenerPolicy: { policy: 'unsafe-none' },
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        connectSrc: ["'self'", "https://maintainmint.vercel.app", "https://maintainmint-backend-6dfe05c4ba93.herokuapp.com"],
+        frameSrc: ["'self'"],
+        imgSrc: ["'self'", "data:", "https:"],
+        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        fontSrc: ["'self'", "data:"],
+        objectSrc: ["'none'"],
+        upgradeInsecureRequests: []
+      }
     }
-  }
-}));
+  }));
+} else {
+  // In development, use a more relaxed configuration
+  app.use(helmet({
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: false,
+    crossOriginOpenerPolicy: false
+  }));
+}
+
+// Add a middleware to log all requests
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.url} from ${req.ip}`);
+  console.log('Headers:', req.headers);
+  next();
+});
 
 // CORS configuration
 app.use(cors({
@@ -82,6 +99,9 @@ app.use(cors({
   ],
   exposedHeaders: ['Content-Length', 'Content-Type']
 }));
+
+// Add a middleware to handle preflight requests
+app.options('*', cors());
 
 // Request logging
 app.use(morgan('combined', { stream: logger.stream }));

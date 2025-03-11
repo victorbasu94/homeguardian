@@ -8,10 +8,17 @@ const rateLimit = require('express-rate-limit');
 // Rate limiting for login attempts
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // limit each IP to 5 requests per windowMs
+  max: process.env.NODE_ENV === 'production' ? 5 : 20, // More lenient in development
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  skipSuccessfulRequests: true, // Only count failed requests
   message: { 
     status: 'error',
     message: 'Too many login attempts. Please try again after 15 minutes.' 
+  },
+  handler: (req, res, next, options) => {
+    console.log('Rate limit exceeded for IP:', req.ip);
+    res.status(429).json(options.message);
   }
 });
 
@@ -106,6 +113,17 @@ router.get(
   ],
   authController.verifyEmail
 );
+
+/**
+ * Handle OPTIONS requests for login route (CORS preflight)
+ */
+router.options('/login', (req, res) => {
+  console.log('Handling OPTIONS request for /login');
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.status(200).send();
+});
 
 /**
  * @swagger

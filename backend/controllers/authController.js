@@ -161,21 +161,38 @@ exports.verifyEmail = async (req, res) => {
  */
 exports.login = async (req, res) => {
   try {
+    console.log('Login attempt:', { 
+      email: req.body.email,
+      ip: req.ip,
+      userAgent: req.headers['user-agent']
+    });
+    
     // Check for validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.log('Validation errors:', errors.array());
       return res.status(400).json({
         status: 'error',
         errors: errors.array()
       });
     }
     
+    // Check if email and password are provided
     const { email, password } = req.body;
+    
+    if (!email || !password) {
+      console.log('Missing credentials:', { email: !!email, password: !!password });
+      return res.status(400).json({
+        status: 'error',
+        message: 'Email and password are required'
+      });
+    }
     
     // Find user by email
     const user = await User.findOne({ email }).select('+password');
     
     if (!user) {
+      console.log('User not found:', email);
       return res.status(401).json({
         status: 'error',
         message: 'Invalid email or password'
@@ -186,6 +203,7 @@ exports.login = async (req, res) => {
     const isPasswordCorrect = await user.comparePassword(password);
     
     if (!isPasswordCorrect) {
+      console.log('Incorrect password for user:', email);
       return res.status(401).json({
         status: 'error',
         message: 'Invalid email or password'
@@ -205,6 +223,8 @@ exports.login = async (req, res) => {
     // Set refresh token as HttpOnly cookie
     setRefreshTokenCookie(res, refreshToken);
     
+    console.log('Login successful for user:', email);
+    
     // Return success response with access token
     res.status(200).json({
       status: 'success',
@@ -217,6 +237,10 @@ exports.login = async (req, res) => {
     });
   } catch (error) {
     logger.error('Login error:', error);
+    console.error('Login error details:', {
+      message: error.message,
+      stack: error.stack
+    });
     res.status(500).json({
       status: 'error',
       message: 'An error occurred during login. Please try again.'
