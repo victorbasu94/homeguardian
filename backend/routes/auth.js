@@ -116,17 +116,6 @@ router.get(
 );
 
 /**
- * Handle OPTIONS requests for login route (CORS preflight)
- */
-router.options('/login', (req, res) => {
-  console.log('Handling OPTIONS request for /login');
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.status(200).send();
-});
-
-/**
  * @swagger
  * /api/auth/login:
  *   post:
@@ -156,15 +145,7 @@ router.options('/login', (req, res) => {
  *       500:
  *         description: Server error
  */
-router.post('/login', (req, res, next) => {
-  console.log('Login request received:', {
-    body: req.body,
-    method: req.method,
-    url: req.originalUrl,
-    ip: req.ip
-  });
-  next();
-}, authController.login);
+router.post('/login', loginLimiter, authController.login);
 
 /**
  * @swagger

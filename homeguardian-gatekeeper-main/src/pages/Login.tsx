@@ -12,7 +12,7 @@ import { Shield, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import api, { directFetch, loginUser } from '@/lib/axios';
+import api from '@/lib/axios';
 
 // Define validation schema
 const loginSchema = z.object({
@@ -24,7 +24,6 @@ const loginSchema = z.object({
 type LoginFormValues = z.infer<typeof loginSchema>;
 
 interface LoginResponse {
-  status: string;
   accessToken: string;
   user: {
     id: string;
@@ -55,42 +54,12 @@ export default function Login() {
       
       console.log('Attempting to log in user with:', { email: data.email });
       
-      // Direct API call without any proxies or complex logic
-      const apiUrl = `${import.meta.env.VITE_API_BASE_URL}/api/auth/login`;
-      console.log('Login URL:', apiUrl);
-      
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          email: data.email,
-          password: data.password
-        })
+      const response = await api.post<LoginResponse>('/api/auth/login', {
+        email: data.email,
+        password: data.password
       });
       
-      console.log('Login response status:', response.status);
-      
-      let responseData;
-      try {
-        responseData = await response.json();
-        console.log('Login response data:', responseData);
-      } catch (parseError) {
-        console.error('Error parsing response:', parseError);
-        const text = await response.text();
-        console.log('Response text:', text);
-        throw new Error('Invalid response format from server');
-      }
-      
-      if (!response.ok) {
-        throw new Error(responseData.message || `Login failed: ${response.status} ${response.statusText}`);
-      }
-      
-      // Extract token and user data
-      const { accessToken, user } = responseData;
-      
-      if (!accessToken || !user) {
+      if (!response.data || !response.data.accessToken || !response.data.user) {
         throw new Error('Invalid response from server: missing token or user data');
       }
       
@@ -102,7 +71,7 @@ export default function Login() {
       }
       
       // Call the login function from useAuth
-      login(accessToken, user);
+      login(response.data.accessToken, response.data.user);
       
       toast({
         title: 'Success',
@@ -115,7 +84,7 @@ export default function Login() {
       
       toast({
         title: 'Login Failed',
-        description: error.message || 'An error occurred during login. Please try again.',
+        description: error.response?.data?.message || error.message || 'An error occurred during login. Please try again.',
         variant: 'destructive'
       });
     } finally {
