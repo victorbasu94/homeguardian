@@ -24,7 +24,7 @@ const UserSchema = new mongoose.Schema({
   },
   email_verified: {
     type: Boolean,
-    default: false
+    default: true
   },
   verification_token: String,
   verification_token_expiry: Date,

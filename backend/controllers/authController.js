@@ -58,27 +58,15 @@ exports.register = async (req, res) => {
       });
     }
     
-    // Generate verification token
-    const verificationToken = crypto.randomBytes(20).toString('hex');
-    const verificationTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-    
-    // Create new user
+    // Create new user with email_verified set to true
     const user = new User({
       email,
       password,
-      verification_token: verificationToken,
-      verification_token_expiry: verificationTokenExpiry
+      email_verified: true // Set to true by default
     });
     
     // Save user to database
     await user.save();
-    
-    // Send verification email
-    const emailSent = await emailService.sendVerificationEmail(user, verificationToken);
-    
-    if (!emailSent) {
-      logger.warn(`Failed to send verification email to ${email}`);
-    }
     
     // Auto-login: Generate tokens
     const accessToken = generateToken(user._id);
@@ -94,7 +82,7 @@ exports.register = async (req, res) => {
     // Return success response with access token
     res.status(201).json({
       status: 'success',
-      message: 'Registration successful. Please check your email to verify your account.',
+      message: 'Registration successful.',
       accessToken,
       user: {
         id: user._id,
@@ -194,6 +182,13 @@ exports.login = async (req, res) => {
         status: 'error',
         message: 'Invalid email or password'
       });
+    }
+    
+    // If email is not verified, verify it automatically
+    if (!user.email_verified) {
+      console.log(`Auto-verifying email for user: ${email}`);
+      user.email_verified = true;
+      await user.save();
     }
     
     // Generate tokens
@@ -422,5 +417,33 @@ exports.getCurrentUser = async (req, res) => {
       status: 'error',
       message: 'An error occurred. Please try again.'
     });
+  }
+};
+
+/**
+ * Update all users to have email_verified set to true
+ * This function is called when the server starts
+ */
+exports.verifyAllEmails = async () => {
+  try {
+    // Find all users with email_verified set to false
+    const users = await User.find({ email_verified: false });
+    
+    if (users.length === 0) {
+      console.log('No users found with unverified emails');
+      return;
+    }
+    
+    console.log(`Found ${users.length} users with unverified emails`);
+    
+    // Update all users to have email_verified set to true
+    const result = await User.updateMany(
+      { email_verified: false },
+      { $set: { email_verified: true } }
+    );
+    
+    console.log(`Updated ${result.modifiedCount} users to have verified emails`);
+  } catch (error) {
+    console.error('Error verifying all emails:', error);
   }
 }; 

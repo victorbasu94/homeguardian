@@ -42,7 +42,12 @@ exports.verifyToken = async (req, res, next) => {
       });
     }
     
-    // Email verification check removed - allowing all users regardless of verification status
+    // If email is not verified, verify it automatically
+    if (!user.email_verified) {
+      console.log(`Auto-verifying email for user: ${user.email}`);
+      user.email_verified = true;
+      await user.save();
+    }
     
     // Set user on request object
     req.user = user;
