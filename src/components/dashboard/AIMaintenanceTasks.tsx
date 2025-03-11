@@ -72,35 +72,35 @@ interface AIMaintenanceTasksProps {
 }
 
 const AIMaintenanceTasks: React.FC<AIMaintenanceTasksProps> = ({ homeId }) => {
-  const { maintenanceTasks, setMaintenanceTasks, isLoading, error, useMockData, setUseMockData } = useMaintenance();
+  const { maintenanceTasks, setMaintenanceTasks, isLoading, error } = useMaintenance();
   const [showAll, setShowAll] = useState(false);
   const [selectedTask, setSelectedTask] = useState<MaintenanceTask | null>(null);
   const { toast } = useToast();
   
-  // Use the real tasks from the context, or mock data if enabled
-  const tasks = useMockData && maintenanceTasks.length === 0 && import.meta.env.DEV
-    ? MOCK_MAINTENANCE_TASKS.map(task => ({ ...task, home_id: homeId || task.home_id }))
-    : maintenanceTasks;
-  
-  // Update the mock API integration when useMockData changes
-  useEffect(() => {
-    if (import.meta.env.DEV) {
-      setUseMockApi(useMockData);
-    }
-  }, [useMockData]);
+  // In production, always use real data
+  const tasks = maintenanceTasks;
   
   // Log the tasks to help with debugging
   useEffect(() => {
     console.log('Current maintenance tasks in AIMaintenanceTasks:', tasks);
-    console.log('Using mock data:', useMockData);
     console.log('Real maintenance tasks from context:', maintenanceTasks);
     
     // Verify that tasks belong to the current home
     if (homeId && tasks.length > 0) {
-      const tasksForCurrentHome = tasks.filter(task => 
-        task.home_id === homeId || 
-        (task as any).homeId === homeId
-      );
+      console.log('Checking tasks for home ID:', homeId);
+      
+      // Log each task's home_id for debugging
+      tasks.forEach((task, index) => {
+        console.log(`Task ${index} - Title: ${task.title}, Home ID: ${task.home_id}`);
+      });
+      
+      // More lenient filtering - check if any property contains the homeId
+      const tasksForCurrentHome = tasks.filter(task => {
+        const taskHomeId = task.home_id || (task as any).homeId;
+        const result = taskHomeId === homeId;
+        console.log(`Task "${task.title}" - Home ID match: ${result} (${taskHomeId} vs ${homeId})`);
+        return result;
+      });
       
       if (tasksForCurrentHome.length === 0) {
         console.warn('No tasks found for the current home ID:', homeId);
@@ -108,10 +108,18 @@ const AIMaintenanceTasks: React.FC<AIMaintenanceTasksProps> = ({ homeId }) => {
         console.log(`Found ${tasksForCurrentHome.length} tasks for home ID ${homeId}`);
       }
     }
-  }, [tasks, useMockData, maintenanceTasks, homeId]);
+  }, [tasks, maintenanceTasks, homeId]);
+  
+  // Filter tasks for the current home
+  const tasksForCurrentHome = homeId 
+    ? tasks.filter(task => {
+        const taskHomeId = task.home_id || (task as any).homeId;
+        return taskHomeId === homeId;
+      })
+    : tasks;
   
   // Filter out completed tasks unless they're explicitly requested
-  const incompleteTasks = tasks.filter(task => task.status !== 'completed');
+  const incompleteTasks = tasksForCurrentHome.filter(task => task.status !== 'completed');
   
   // Show only 3 tasks initially, unless showAll is true
   const displayedTasks = showAll ? incompleteTasks : incompleteTasks.slice(0, 3);
@@ -126,29 +134,19 @@ const AIMaintenanceTasks: React.FC<AIMaintenanceTasksProps> = ({ homeId }) => {
     );
   }
   
-  if (error && tasks.length === 0) {
+  if (error && tasksForCurrentHome.length === 0) {
     return (
       <Alert variant="destructive">
         <AlertCircle className="h-4 w-4" />
         <AlertTitle>Error</AlertTitle>
         <AlertDescription>
           {error}
-          {import.meta.env.DEV && (
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="mt-2"
-              onClick={() => setUseMockData(true)}
-            >
-              Use Mock Data
-            </Button>
-          )}
         </AlertDescription>
       </Alert>
     );
   }
   
-  if (tasks.length === 0) {
+  if (tasksForCurrentHome.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 border border-dashed border-muted-foreground/20 rounded-lg bg-muted/50">
         <Sparkles className="h-10 w-10 text-primary/50 mb-4" />
@@ -156,15 +154,10 @@ const AIMaintenanceTasks: React.FC<AIMaintenanceTasksProps> = ({ homeId }) => {
         <p className="text-muted-foreground text-center max-w-md mt-2 mb-6">
           We'll generate a personalized maintenance plan for your home. This helps you keep track of important tasks and maintain your property's value.
         </p>
-        {import.meta.env.DEV && (
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => setUseMockData(true)}
-          >
-            Use Mock Data
-          </Button>
-        )}
+        <div className="text-xs text-muted-foreground">
+          <p>Debug info: Home ID: {homeId}</p>
+          <p>Total tasks in context: {maintenanceTasks.length}</p>
+        </div>
       </div>
     );
   }
@@ -227,15 +220,9 @@ const AIMaintenanceTasks: React.FC<AIMaintenanceTasksProps> = ({ homeId }) => {
           <Sparkles className="h-5 w-5 text-primary" />
           <h2 className="text-xl font-semibold">AI-Generated Maintenance Plan</h2>
         </div>
-        {import.meta.env.DEV && (
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => setUseMockData(!useMockData)}
-          >
-            {useMockData ? 'Using Mock Data' : 'Using Real Data'}
-          </Button>
-        )}
+        <div className="text-xs text-muted-foreground">
+          Home ID: {homeId} | Tasks: {displayedTasks.length}/{incompleteTasks.length}
+        </div>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

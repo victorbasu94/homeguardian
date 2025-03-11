@@ -215,9 +215,11 @@ const Dashboard: React.FC = () => {
       // Call the API to get maintenance plan
       const maintenancePlan = await getMaintenancePlan(homeDetails) as MaintenancePlanResponse;
       
+      console.log('Raw maintenance plan from API:', JSON.stringify(maintenancePlan));
+      
       // If we got tasks back, update the context
       if (maintenancePlan && maintenancePlan.tasks && maintenancePlan.tasks.length > 0) {
-        console.log("Maintenance plan generated successfully:", maintenancePlan);
+        console.log("Maintenance plan generated successfully with", maintenancePlan.tasks.length, "tasks");
         
         // Check if the response includes a message about using existing tasks
         if (maintenancePlan.message && maintenancePlan.message.includes('existing maintenance plan')) {
@@ -256,7 +258,7 @@ const Dashboard: React.FC = () => {
             estimated_time: task.estimated_time || task.estimatedTime || '1 hour',
             estimated_cost: task.estimated_cost || task.estimatedCost || 0,
             subtasks: subtasks,
-            home_id: task.home_id || home.id,
+            home_id: home.id, // Always use the current home's ID
             
             // Add alternative property names for compatibility
             task: task.title || task.task_name || task.task,
@@ -264,17 +266,29 @@ const Dashboard: React.FC = () => {
             suggestedCompletionDate: task.due_date || task.suggestedCompletionDate,
             estimatedCost: task.estimated_cost || task.estimatedCost || 0,
             estimatedTime: task.estimated_time || task.estimatedTime || '1 hour',
-            subTasks: subtasks
+            subTasks: subtasks,
+            homeId: home.id // Add homeId property for compatibility
           };
         });
         
-        console.log('Formatted maintenance tasks for frontend:', formattedTasks);
+        console.log('Formatted maintenance tasks for frontend:', JSON.stringify(formattedTasks));
         
         // Save the generated tasks to the backend
         await saveTasksToBackend(formattedTasks, home.id);
         
-        // Update the UI with the new tasks
+        // Update the UI with the new tasks - use a function to ensure we're not using stale state
+        console.log('Setting maintenance tasks in context. Count:', formattedTasks.length);
         setMaintenanceTasks(formattedTasks);
+        
+        // Force a re-render to ensure the tasks are displayed
+        setTimeout(() => {
+          console.log('Current tasks in context after setting:', maintenanceTasks.length);
+          // If tasks aren't showing up, try setting them again
+          if (maintenanceTasks.length === 0 && formattedTasks.length > 0) {
+            console.log('Tasks not showing up, setting them again...');
+            setMaintenanceTasks([...formattedTasks]);
+          }
+        }, 500);
       } else {
         // This shouldn't happen as the API should throw an error if no tasks are returned
         console.error("No tasks in maintenance plan");
@@ -298,7 +312,8 @@ const Dashboard: React.FC = () => {
         // Ensure the task is associated with the current home
         const taskToSave = {
           ...task,
-          home_id: homeId // Explicitly set the home_id to the current home
+          home_id: homeId, // Explicitly set the home_id to the current home
+          homeId: homeId   // Also set homeId for compatibility
         };
         
         console.log(`Saving task "${taskToSave.title}" for home ID: ${homeId}`);
@@ -347,6 +362,29 @@ const Dashboard: React.FC = () => {
       <div className="space-y-8">
         {selectedHome ? (
           <>
+            <div>
+              <h2 className="text-xl font-semibold mb-4">Home: {selectedHome.name}</h2>
+              <p className="text-sm text-muted-foreground mb-2">Location: {selectedHome.location}</p>
+              <p className="text-sm text-muted-foreground mb-4">Year Built: {selectedHome.year_built}</p>
+              
+              {/* Debug info - can be removed in production */}
+              <div className="text-xs text-muted-foreground mb-4">
+                <p>Tasks in context: {maintenanceTasks.length}</p>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => {
+                    console.log('Current tasks in context:', maintenanceTasks);
+                    if (selectedHome) {
+                      fetchMaintenancePlan(selectedHome);
+                    }
+                  }}
+                  className="mt-2"
+                >
+                  Refresh Tasks
+                </Button>
+              </div>
+            </div>
             <AIMaintenanceTasks homeId={selectedHome.id} />
           </>
         ) : (
