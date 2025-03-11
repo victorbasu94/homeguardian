@@ -52,6 +52,29 @@ router.post('/generate-plan', verifyToken, async (req, res) => {
 
     // Generate maintenance plan using OpenAI
     logger.info('Calling OpenAI service with home details');
+    
+    // First, delete any existing tasks for this home to avoid duplicates or old data
+    try {
+      const Task = require('../models/Task');
+      const homeId = req.body.id;
+      
+      // Convert string ID to MongoDB ObjectId if needed
+      const mongoose = require('mongoose');
+      const homeObjectId = mongoose.Types.ObjectId.isValid(homeId) 
+        ? new mongoose.Types.ObjectId(homeId) 
+        : homeId;
+      
+      // Delete all existing tasks for this home
+      const deleteResult = await Task.deleteMany({ home_id: homeObjectId });
+      logger.info(`Deleted ${deleteResult.deletedCount} existing tasks for home ${homeId} before generating new plan`);
+    } catch (deleteError) {
+      logger.warn('Error deleting existing tasks:', {
+        error: deleteError.message,
+        stack: deleteError.stack
+      });
+      // Continue with plan generation even if deletion fails
+    }
+    
     const maintenancePlan = await generateMaintenancePlanWithAI(req.body);
     
     logger.info('Successfully generated maintenance plan');

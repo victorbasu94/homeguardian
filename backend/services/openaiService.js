@@ -45,7 +45,7 @@ async function generateMaintenancePlanWithAI(homeDetails) {
       messages: [
         {
           role: 'system',
-          content: 'You are a home maintenance expert. Provide detailed, practical maintenance plans based on home details.'
+          content: 'You are a home maintenance expert. Provide detailed, practical maintenance plans based on home details. IMPORTANT: All maintenance tasks MUST have due dates in the future, starting from the current date provided. Never generate tasks with past dates.'
         },
         {
           role: 'user',
@@ -84,7 +84,7 @@ Important guidelines:
 8. Provide at least 10 maintenance tasks
 9. Set appropriate priorities based on task urgency and due dates
 10. Use relevant categories from the list provided
-11. IMPORTANT: All due_date values MUST be in the future (after today's date)
+11. CRITICAL: All due_date values MUST be in the future (after ${currentDate}). Do not generate any tasks with dates in the past.
 
 Return ONLY the JSON object with no additional text or explanation.`
         }
@@ -134,19 +134,43 @@ Return ONLY the JSON object with no additional text or explanation.`
     const today = new Date();
     today.setHours(0, 0, 0, 0); // Set to beginning of day for accurate comparison
     
+    let hasFixedDates = false;
+    
     parsedResponse.tasks = parsedResponse.tasks.map(task => {
       const dueDate = new Date(task.due_date);
       
-      // If due date is in the past, set it to 30 days from now
-      if (dueDate <= today) {
-        logger.warn(`Task "${task.title}" had a past due date (${task.due_date}), adjusting to future date`);
+      // If due date is in the past or invalid, set it to a future date
+      if (isNaN(dueDate.getTime()) || dueDate <= today) {
+        hasFixedDates = true;
         const futureDate = new Date();
-        futureDate.setDate(futureDate.getDate() + 30); // 30 days in the future
+        
+        // Distribute tasks over the next 90 days to avoid clustering
+        const randomDays = Math.floor(Math.random() * 90) + 30; // 30-120 days in the future
+        futureDate.setDate(futureDate.getDate() + randomDays);
+        
+        const oldDateStr = task.due_date;
         task.due_date = futureDate.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+        
+        logger.warn(`Task "${task.title}" had an invalid or past due date (${oldDateStr}), adjusted to ${task.due_date}`);
       }
       
       return task;
     });
+    
+    if (hasFixedDates) {
+      logger.info('Some task dates were adjusted to ensure they are in the future');
+    }
+
+    // Double-check all dates are in the future
+    const allDatesValid = parsedResponse.tasks.every(task => {
+      const dueDate = new Date(task.due_date);
+      return !isNaN(dueDate.getTime()) && dueDate > today;
+    });
+    
+    if (!allDatesValid) {
+      logger.error('Some tasks still have invalid dates after correction');
+      throw new Error('Failed to ensure all task dates are in the future');
+    }
 
     // Return the response in the format expected by the frontend
     return {
