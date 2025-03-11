@@ -1,24 +1,91 @@
 import React, { useState, useEffect } from 'react';
 import { Sparkles, AlertCircle, Loader2 } from 'lucide-react';
 import { useMaintenance, MaintenanceTask } from '@/contexts/MaintenanceContext';
+import { MOCK_MAINTENANCE_TASKS } from '@/lib/mockData';
 import AITaskCard from './AITaskCard';
-import TaskModal from './TaskModal'; // Assuming TaskModal is in the same directory
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+
+// Simple TaskModal component
+interface TaskModalProps {
+  isOpen: boolean;
+  task: MaintenanceTask;
+  onClose: () => void;
+  onComplete: () => void;
+}
+
+const TaskModal: React.FC<TaskModalProps> = ({ isOpen, task, onClose, onComplete }) => {
+  return (
+    <Dialog open={isOpen} onOpenChange={(open: boolean) => !open && onClose()}>
+      <DialogContent className="sm:max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle>{task.title}</DialogTitle>
+          <DialogDescription>{task.description}</DialogDescription>
+        </DialogHeader>
+        <div className="py-4">
+          <div className="space-y-4">
+            <div>
+              <h4 className="text-sm font-medium">Due Date</h4>
+              <p className="text-sm text-muted-foreground">{new Date(task.due_date).toLocaleDateString()}</p>
+            </div>
+            <div>
+              <h4 className="text-sm font-medium">Estimated Cost</h4>
+              <p className="text-sm text-muted-foreground">${task.estimated_cost}</p>
+            </div>
+            <div>
+              <h4 className="text-sm font-medium">Estimated Time</h4>
+              <p className="text-sm text-muted-foreground">{task.estimated_time}</p>
+            </div>
+            {task.subtasks && task.subtasks.length > 0 && (
+              <div>
+                <h4 className="text-sm font-medium">Subtasks</h4>
+                <ul className="list-disc pl-5 text-sm text-muted-foreground space-y-1 mt-2">
+                  {task.subtasks.map((subtask, idx) => (
+                    <li key={idx}>{subtask}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button onClick={onComplete}>Complete Task</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
 
 interface AIMaintenanceTasksProps {
   homeId?: string;
 }
 
 const AIMaintenanceTasks: React.FC<AIMaintenanceTasksProps> = ({ homeId }) => {
-  const { maintenanceTasks, setMaintenanceTasks, isLoading, error } = useMaintenance();
+  const { maintenanceTasks, setMaintenanceTasks, isLoading, error, useMockData, setUseMockData } = useMaintenance();
   const [showAll, setShowAll] = useState(false);
   const [selectedTask, setSelectedTask] = useState<MaintenanceTask | null>(null);
   const { toast } = useToast();
   
-  // By default, only use mock data in development environment if no tasks are available
-  const tasks = maintenanceTasks;
+  // Use the real tasks from the context, or mock data if enabled
+  const tasks = useMockData && maintenanceTasks.length === 0 && import.meta.env.DEV
+    ? MOCK_MAINTENANCE_TASKS.map(task => ({ ...task, home_id: homeId || task.home_id }))
+    : maintenanceTasks;
+  
+  // Log the tasks to help with debugging
+  useEffect(() => {
+    console.log('Current maintenance tasks in AIMaintenanceTasks:', tasks);
+    console.log('Using mock data:', useMockData);
+  }, [tasks, useMockData]);
   
   // Filter out completed tasks unless they're explicitly requested
   const incompleteTasks = tasks.filter(task => task.status !== 'completed');
@@ -36,12 +103,24 @@ const AIMaintenanceTasks: React.FC<AIMaintenanceTasksProps> = ({ homeId }) => {
     );
   }
   
-  if (error) {
+  if (error && tasks.length === 0) {
     return (
       <Alert variant="destructive">
         <AlertCircle className="h-4 w-4" />
         <AlertTitle>Error</AlertTitle>
-        <AlertDescription>{error}</AlertDescription>
+        <AlertDescription>
+          {error}
+          {import.meta.env.DEV && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="mt-2"
+              onClick={() => setUseMockData(true)}
+            >
+              Use Mock Data
+            </Button>
+          )}
+        </AlertDescription>
       </Alert>
     );
   }
@@ -53,6 +132,16 @@ const AIMaintenanceTasks: React.FC<AIMaintenanceTasksProps> = ({ homeId }) => {
         <AlertTitle>No AI-generated tasks</AlertTitle>
         <AlertDescription>
           No AI-generated maintenance tasks are available. Try adding a new home to generate a maintenance plan.
+          {import.meta.env.DEV && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="mt-2"
+              onClick={() => setUseMockData(true)}
+            >
+              Use Mock Data
+            </Button>
+          )}
         </AlertDescription>
       </Alert>
     );
@@ -111,9 +200,20 @@ const AIMaintenanceTasks: React.FC<AIMaintenanceTasksProps> = ({ homeId }) => {
   
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-2">
-        <Sparkles className="h-5 w-5 text-primary" />
-        <h2 className="text-xl font-semibold">AI-Generated Maintenance Plan</h2>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-5 w-5 text-primary" />
+          <h2 className="text-xl font-semibold">AI-Generated Maintenance Plan</h2>
+        </div>
+        {import.meta.env.DEV && (
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setUseMockData(!useMockData)}
+          >
+            {useMockData ? 'Using Mock Data' : 'Using Real Data'}
+          </Button>
+        )}
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

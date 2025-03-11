@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getMaintenancePlan } from '@/lib/maintenanceApi';
 import { useMaintenance, MaintenanceTask } from '@/contexts/MaintenanceContext';
+import { MOCK_MAINTENANCE_TASKS } from '@/lib/mockData';
 import AIMaintenanceTasks from '@/components/dashboard/AIMaintenanceTasks';
 
 // Use MaintenanceTask interface instead of redefining Task
@@ -110,7 +111,19 @@ const Dashboard: React.FC = () => {
         : "Unknown error occurred while fetching maintenance plan";
       
       setError(`Failed to load maintenance plan: ${errorMessage}`);
-      setMaintenanceTasks([]);
+      
+      // In development mode, use mock data if real data fails to load
+      if (import.meta.env.DEV) {
+        console.log("Using mock data in development mode");
+        // Add the home_id to the mock tasks
+        const mockedTasks = MOCK_MAINTENANCE_TASKS.map((task: MaintenanceTask) => ({
+          ...task,
+          home_id: homeId
+        }));
+        setMaintenanceTasks(mockedTasks);
+      } else {
+        setMaintenanceTasks([]);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -152,17 +165,12 @@ const Dashboard: React.FC = () => {
       if (maintenancePlan && maintenancePlan.tasks && maintenancePlan.tasks.length > 0) {
         console.log("Maintenance plan fetched successfully:", maintenancePlan);
         
-        // The tasks are already in the correct format, just add home_id
-        const formattedTasks = maintenancePlan.tasks.map(task => ({
-          ...task,
-          home_id: home.id
-        }));
-        
-        console.log("Formatted tasks:", formattedTasks);
-        setMaintenanceTasks(formattedTasks);
+        // The tasks are already in the correct format from the API
+        // Just ensure we're not using any mock data
+        setMaintenanceTasks(maintenancePlan.tasks);
         
         // Save the tasks to the backend so they persist
-        await saveTasksToBackend(formattedTasks, home.id);
+        await saveTasksToBackend(maintenancePlan.tasks, home.id);
       } else {
         // This shouldn't happen as the API should throw an error if no tasks are returned
         console.error("No tasks in maintenance plan");
