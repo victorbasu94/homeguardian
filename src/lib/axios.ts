@@ -1,4 +1,5 @@
-import axios, { AxiosResponse, AxiosError } from 'axios';
+import axios from 'axios';
+import type { InternalAxiosRequestConfig, AxiosResponse } from 'axios';
 import Cookies from 'js-cookie';
 import { toast } from 'sonner';
 
@@ -24,20 +25,8 @@ if (!API_BASE_URL.startsWith('http://') && !API_BASE_URL.startsWith('https://'))
 
 // For production, ensure we're using the correct backend URL
 if (import.meta.env.PROD) {
-  // Check if we're using the maintainmint backend
-  if (API_BASE_URL.includes('maintainmint-backend')) {
-    // Fix any typos in the URL (like _om instead of .com)
-    if (API_BASE_URL.includes('maintainmint-backend_om')) {
-      API_BASE_URL = API_BASE_URL.replace('maintainmint-backend_om', 'maintainmint-backend.com');
-      console.log('Fixed typo in backend URL (_om -> .com):', API_BASE_URL);
-    }
-    
-    // Ensure it has the correct format for Heroku
-    if (!API_BASE_URL.includes('herokuapp.com')) {
-      API_BASE_URL = `https://maintainmint-backend-6dfe05c4ba93.herokuapp.com`;
-      console.log('Corrected API Base URL for production:', API_BASE_URL);
-    }
-  }
+  API_BASE_URL = 'https://maintainmint-backend-6dfe05c4ba93.herokuapp.com';
+  console.log('Using production API URL:', API_BASE_URL);
 }
 
 console.log('Final API Base URL:', API_BASE_URL);
@@ -49,177 +38,58 @@ const api = axios.create({
     'Content-Type': 'application/json',
     'Accept': 'application/json'
   },
-  withCredentials: true, // Enable credentials for CORS
-  timeout: 15000 // 15 seconds timeout
+  withCredentials: true,
+  timeout: 15000
 });
 
-// In-memory token storage (more secure than localStorage)
+// In-memory token storage
 let accessToken: string | null = null;
 
 // Initialize token from localStorage if available
 if (typeof window !== 'undefined') {
-  try {
-    const storedToken = localStorage.getItem('accessToken');
-    if (storedToken) {
-      accessToken = storedToken;
-      console.log('Token loaded from localStorage on initialization:', storedToken.substring(0, 10) + '...');
-    } else {
-      console.log('No token found in localStorage on initialization');
-    }
-  } catch (error) {
-    console.error('Error accessing localStorage:', error);
+  const storedToken = localStorage.getItem('accessToken');
+  if (storedToken) {
+    accessToken = storedToken;
+    api.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
   }
 }
 
 // Function to set the access token
 export const setAccessToken = (token: string) => {
-  if (!token) {
-    console.warn('Attempted to set empty access token');
-    return;
-  }
-  
-  try {
-    accessToken = token;
-    // Also set it directly in the headers for immediate use
-    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-    console.log('Access token set successfully:', token.substring(0, 10) + '...');
-    
-    // Also store in localStorage for persistence
-    localStorage.setItem('accessToken', token);
-    console.log('Token saved to localStorage');
-  } catch (error) {
-    console.error('Error setting access token:', error);
-  }
+  if (!token) return;
+  accessToken = token;
+  api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+  localStorage.setItem('accessToken', token);
 };
 
-// Function to get the current access token
-export const getAccessToken = () => {
-  return accessToken;
-};
-
-// Function to clear the access token (logout)
+// Function to clear the access token
 export const clearAccessToken = () => {
   accessToken = null;
   delete api.defaults.headers.common['Authorization'];
-  try {
-    localStorage.removeItem('accessToken');
-  } catch (error) {
-    console.error('Error removing token from localStorage:', error);
-  }
+  localStorage.removeItem('accessToken');
 };
 
-// Make getAccessToken accessible from window for auth checks
-if (typeof window !== 'undefined') {
-  (window as any).getAccessToken = getAccessToken;
-}
-
-// Create a direct fetch function that bypasses axios for critical endpoints
-export const directFetch = async (endpoint: string, options: RequestInit = {}) => {
-  const url = `${API_BASE_URL}${endpoint}`;
-  console.log(`Making direct fetch request to: ${url}`);
-  
-  // Set default headers
-  const headers = new Headers(options.headers || {});
-  headers.set('Content-Type', 'application/json');
-  
-  // Add authorization if we have a token
-  if (accessToken) {
-    headers.set('Authorization', `Bearer ${accessToken}`);
-  }
-  
-  // Create the request options
-  const requestOptions: RequestInit = {
-    ...options,
-    headers,
-    mode: 'cors',
-    credentials: 'omit', // Don't send cookies
-  };
-  
-  try {
-    const response = await fetch(url, requestOptions);
-    
-    // Check if the response is ok
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    
-    // Parse the JSON response
-    const data = await response.json();
-    return { data, status: response.status };
-  } catch (error) {
-    console.error('Direct fetch error:', error);
-    throw error;
-  }
-};
-
-// Add request interceptor
+// Request interceptor
 api.interceptors.request.use(
-  (config: any) => {
-    // Add authorization header if we have a token
-    if (accessToken) {
-      console.log('Request with token:', accessToken.substring(0, 10) + '...');
+  (config: InternalAxiosRequestConfig) => {
+    if (accessToken && config.headers) {
       config.headers.Authorization = `Bearer ${accessToken}`;
-      
-      // Debug: Check if the header was actually set
-      console.log('Authorization header set:', config.headers.Authorization.substring(0, 16) + '...');
-    } else {
-      console.log('Request without token');
-      
-      // Debug: Check if there's a token in localStorage that wasn't set in memory
-      try {
-        const storedToken = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
-        if (storedToken) {
-          console.log('Found token in localStorage but not in memory:', storedToken.substring(0, 10) + '...');
-          // Set the token in memory and in the request
-          accessToken = storedToken;
-          config.headers.Authorization = `Bearer ${storedToken}`;
-          console.log('Authorization header set from localStorage:', config.headers.Authorization.substring(0, 16) + '...');
-        } else {
-          console.log('No token found in localStorage either');
-        }
-      } catch (error) {
-        console.error('Error checking localStorage for token:', error);
-      }
     }
-    
-    // Log the full request details for debugging
-    console.log('Request details:', {
-      url: config.url,
-      method: config.method,
-      baseURL: config.baseURL,
-      hasAuthHeader: !!config.headers.Authorization,
-    });
-    
     return config;
   },
-  (error: any) => {
-    console.error('Request interceptor error:', error);
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-// Response interceptor to handle errors
+// Response interceptor
 api.interceptors.response.use(
   (response: AxiosResponse) => response,
-  async (error: AxiosError) => {
+  async (error) => {
     if (error.response) {
-      // Handle specific error cases
       switch (error.response.status) {
         case 401:
-          // Handle unauthorized error
-          console.error('Unauthorized access:', error.response.data);
-          // Clear any stored tokens
-          localStorage.removeItem('accessToken');
+          clearAccessToken();
           break;
-        case 403:
-          console.error('Forbidden access:', error.response.data);
-          break;
-        default:
-          console.error('API Error:', error.response.data);
       }
-    } else if (error.request) {
-      // Network error
-      console.error('Network Error:', error.message);
     }
     return Promise.reject(error);
   }

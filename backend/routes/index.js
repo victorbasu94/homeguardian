@@ -6,6 +6,7 @@ const tasksRoutes = require('./tasks');
 const subscriptionsRoutes = require('./subscriptions');
 const vendorsRoutes = require('./vendors');
 const maintenanceRoutes = require('./maintenance');
+const userRoutes = require('./user');
 
 /**
  * @swagger
@@ -35,6 +36,11 @@ router.get('/', (req, res) => {
   });
 });
 
+// Health check endpoint
+router.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
+
 // Mount authentication routes
 router.use('/auth', authRoutes);
 
@@ -52,5 +58,8 @@ router.use('/vendors', vendorsRoutes);
 
 // Mount maintenance routes
 router.use('/maintenance', maintenanceRoutes);
+
+// Mount user routes
+router.use('/users', userRoutes);
 
 module.exports = router; 
