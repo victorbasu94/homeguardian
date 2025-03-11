@@ -35,6 +35,9 @@ async function generateMaintenancePlanWithAI(homeDetails) {
 
     logger.info('Prepared home details string for OpenAI');
 
+    // Get current date for context
+    const currentDate = new Date().toISOString().split('T')[0]; // Format as YYYY-MM-DD
+
     // Prepare the OpenAI API request
     const requestBody = {
       model: process.env.OPENAI_MODEL || 'gpt-4',
@@ -49,6 +52,8 @@ async function generateMaintenancePlanWithAI(homeDetails) {
           content: `Generate a detailed maintenance plan for the following home:
 
 ${homeDetailsString}
+
+Today's date is: ${currentDate}
 
 Return a JSON object with this structure:
 {
@@ -79,6 +84,7 @@ Important guidelines:
 8. Provide at least 10 maintenance tasks
 9. Set appropriate priorities based on task urgency and due dates
 10. Use relevant categories from the list provided
+11. IMPORTANT: All due_date values MUST be in the future (after today's date)
 
 Return ONLY the JSON object with no additional text or explanation.`
         }
@@ -123,6 +129,24 @@ Return ONLY the JSON object with no additional text or explanation.`
     }
 
     logger.info('Successfully parsed OpenAI response');
+
+    // Validate that all due dates are in the future
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Set to beginning of day for accurate comparison
+    
+    parsedResponse.tasks = parsedResponse.tasks.map(task => {
+      const dueDate = new Date(task.due_date);
+      
+      // If due date is in the past, set it to 30 days from now
+      if (dueDate <= today) {
+        logger.warn(`Task "${task.title}" had a past due date (${task.due_date}), adjusting to future date`);
+        const futureDate = new Date();
+        futureDate.setDate(futureDate.getDate() + 30); // 30 days in the future
+        task.due_date = futureDate.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+      }
+      
+      return task;
+    });
 
     // Return the response in the format expected by the frontend
     return {
