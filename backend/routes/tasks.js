@@ -58,15 +58,30 @@ router.get('/:homeId',
       }
       
       if (home.user_id.toString() !== req.user.id) {
+        logger.warn(`Unauthorized access attempt: User ${req.user.id} tried to access tasks for home ${homeId} belonging to user ${home.user_id}`);
         return res.status(403).json({ error: "Access denied" });
       }
       
-      // Fetch tasks for the home
-      const tasks = await Task.find({ home_id: homeId }).sort({ due_date: 1 });
+      // Fetch tasks for the home, ensuring they belong to the authenticated user
+      const tasks = await Task.find({ 
+        home_id: homeId,
+        $or: [
+          { user_id: req.user.id },
+          { user_id: { $exists: false } } // For backward compatibility with existing tasks
+        ]
+      }).sort({ due_date: 1 });
       
       // Return tasks
-      res.status(200).json({ data: tasks });
+      res.status(200).json({ 
+        data: tasks,
+        message: tasks.length === 0 ? 'No tasks found. Complete home setup to generate your maintenance plan.' : undefined
+      });
     } catch (error) {
+      logger.error('Error fetching tasks:', {
+        error: error.message,
+        userId: req.user.id,
+        homeId: req.params.homeId
+      });
       next(error);
     }
   }

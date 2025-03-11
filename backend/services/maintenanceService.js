@@ -4,19 +4,37 @@ const User = require('../models/User');
 const taskRules = require('../config/tasks.json');
 const logger = require('winston');
 const { generateMaintenancePlanWithAI } = require('./openaiService');
+const Home = require('../models/Home');
 
 /**
  * Checks if tasks should be generated for a user based on the 3-month rule
  * @param {String} userId - The user ID
+ * @param {String} homeId - The home ID
  * @returns {Boolean} - Whether tasks should be generated
  */
-async function shouldGenerateTasks(userId) {
+async function shouldGenerateTasks(userId, homeId) {
   try {
+    // First verify that the home belongs to the user
+    const home = await Home.findById(homeId);
+    
+    if (!home || home.user_id.toString() !== userId) {
+      logger.error(`Home ${homeId} not found or does not belong to user ${userId}`);
+      return false;
+    }
+    
     const user = await User.findById(userId);
     
     if (!user) {
       logger.error(`User not found: ${userId}`);
       return false;
+    }
+    
+    // Check if there are any existing tasks for this home
+    const existingTasks = await Task.find({ home_id: homeId });
+    
+    if (existingTasks.length === 0) {
+      // If no tasks exist for this home, we should generate them
+      return true;
     }
     
     // If tasks have never been generated, generate them
@@ -168,7 +186,7 @@ async function generateMaintenancePlan(home, useAI = false, forceGeneration = fa
   try {
     // Check if tasks should be generated based on the 3-month rule
     if (!forceGeneration) {
-      const shouldGenerate = await shouldGenerateTasks(home.user_id);
+      const shouldGenerate = await shouldGenerateTasks(home.user_id, home._id);
       
       if (!shouldGenerate) {
         logger.info(`Skipping task generation for user ${home.user_id} - less than 3 months since last generation`);

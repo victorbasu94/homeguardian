@@ -140,11 +140,11 @@ const Dashboard: React.FC = () => {
           console.log('Formatted existing tasks for frontend:', formattedTasks);
           updateTasks(formattedTasks, homeId);
         } else {
-          setError('No maintenance tasks found for this home.');
+          setError('No maintenance tasks found for this home. Please complete home setup to generate your maintenance plan.');
           setMaintenanceTasks([]);
         }
       } else {
-        setError('No maintenance tasks found for this home.');
+        setError('No maintenance tasks found for this home. Please complete home setup to generate your maintenance plan.');
         setMaintenanceTasks([]);
       }
     } catch (error) {
