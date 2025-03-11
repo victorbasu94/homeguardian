@@ -25,24 +25,82 @@ const Dashboard: React.FC = () => {
   const location = useLocation();
   const [selectedHome, setSelectedHome] = useState<HomeData | null>(null);
   const { maintenanceTasks, setMaintenanceTasks, setIsLoading, setError } = useMaintenance();
+  const { toast } = useToast();
+  
+  // Effect to load the user's homes when the component mounts
+  useEffect(() => {
+    const loadUserHomes = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/homes`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to load homes');
+        }
+        
+        const data = await response.json();
+        if (data.homes && data.homes.length > 0) {
+          // Select the first home by default
+          handleHomeSelect(data.homes[0]);
+        }
+      } catch (error) {
+        console.error('Error loading homes:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load your homes. Please try again.',
+          variant: 'destructive'
+        });
+      }
+    };
+    
+    loadUserHomes();
+  }, []);
   
   const fetchTasks = async (homeId: string) => {
     setIsLoading(true);
     setError(null);
     
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/tasks/${homeId}`);
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/tasks/${homeId}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+        }
+      });
+      
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
         throw new Error(errorData.message || `Failed to fetch tasks: ${response.status}`);
       }
       
       const data = await response.json();
-      if (!data.tasks || data.tasks.length === 0) {
-        setError('No maintenance tasks found for this home.');
-        setMaintenanceTasks([]);
+      if (!data.data || data.data.length === 0) {
+        // If no tasks found, try to generate a maintenance plan
+        if (selectedHome) {
+          await fetchMaintenancePlan(selectedHome);
+        } else {
+          setError('No maintenance tasks found for this home.');
+          setMaintenanceTasks([]);
+        }
       } else {
-        setMaintenanceTasks(data.tasks);
+        // Map the tasks to the expected format
+        const formattedTasks = data.data.map((task: any) => ({
+          id: task._id,
+          title: task.task_name,
+          description: task.description,
+          due_date: task.due_date,
+          status: task.completed ? 'completed' : 'pending',
+          priority: task.priority,
+          category: task.category,
+          estimated_time: task.estimated_time || '1 hour',
+          estimated_cost: task.estimated_cost || 0,
+          subtasks: task.steps?.map((step: any) => step.description) || [],
+          home_id: task.home_id
+        }));
+        
+        setMaintenanceTasks(formattedTasks);
       }
     } catch (error) {
       console.error("Error fetching maintenance plan:", error);
@@ -102,6 +160,9 @@ const Dashboard: React.FC = () => {
         
         console.log("Formatted tasks:", formattedTasks);
         setMaintenanceTasks(formattedTasks);
+        
+        // Save the tasks to the backend so they persist
+        await saveTasksToBackend(formattedTasks, home.id);
       } else {
         // This shouldn't happen as the API should throw an error if no tasks are returned
         console.error("No tasks in maintenance plan");
@@ -114,6 +175,49 @@ const Dashboard: React.FC = () => {
       setMaintenanceTasks([]);
     } finally {
       setIsLoading(false);
+    }
+  };
+  
+  // Save tasks to backend
+  const saveTasksToBackend = async (tasks: MaintenanceTask[], homeId: string) => {
+    try {
+      // Save each task to the backend
+      for (const task of tasks) {
+        await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/tasks`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+          },
+          body: JSON.stringify({
+            home_id: homeId,
+            task_name: task.title,
+            description: task.description,
+            due_date: task.due_date,
+            priority: task.priority,
+            category: task.category,
+            estimated_time: task.estimated_time,
+            estimated_cost: task.estimated_cost,
+            steps: task.subtasks.map((subtask, index) => ({
+              step_number: index + 1,
+              description: subtask
+            }))
+          })
+        });
+      }
+      
+      toast({
+        title: 'Success',
+        description: 'Maintenance tasks have been saved to your account.',
+        duration: 3000
+      });
+    } catch (error) {
+      console.error('Error saving tasks to backend:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to save maintenance tasks. Please try again.',
+        variant: 'destructive'
+      });
     }
   };
 

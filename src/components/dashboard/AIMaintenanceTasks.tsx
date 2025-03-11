@@ -1,24 +1,30 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sparkles, AlertCircle, Loader2 } from 'lucide-react';
 import { useMaintenance, MaintenanceTask } from '@/contexts/MaintenanceContext';
-import { AITaskCard, TaskModal } from '@/components/dashboard';
+import AITaskCard from './AITaskCard';
+import TaskModal from './TaskModal'; // Assuming TaskModal is in the same directory
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/components/ui/use-toast';
 
 interface AIMaintenanceTasksProps {
   homeId?: string;
 }
 
 const AIMaintenanceTasks: React.FC<AIMaintenanceTasksProps> = ({ homeId }) => {
-  const { maintenanceTasks, isLoading, error } = useMaintenance();
+  const { maintenanceTasks, setMaintenanceTasks, isLoading, error } = useMaintenance();
   const [showAll, setShowAll] = useState(false);
   const [selectedTask, setSelectedTask] = useState<MaintenanceTask | null>(null);
+  const { toast } = useToast();
   
   // By default, only use mock data in development environment if no tasks are available
   const tasks = maintenanceTasks;
   
+  // Filter out completed tasks unless they're explicitly requested
+  const incompleteTasks = tasks.filter(task => task.status !== 'completed');
+  
   // Show only 3 tasks initially, unless showAll is true
-  const displayedTasks = showAll ? tasks : tasks.slice(0, 3);
+  const displayedTasks = showAll ? incompleteTasks : incompleteTasks.slice(0, 3);
   
   if (isLoading) {
     return (
@@ -62,6 +68,47 @@ const AIMaintenanceTasks: React.FC<AIMaintenanceTasksProps> = ({ homeId }) => {
     setSelectedTask(task);
   };
   
+  const handleCompleteTask = async (task: MaintenanceTask) => {
+    try {
+      // Update the task in the backend
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/tasks/${task.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+        },
+        body: JSON.stringify({
+          completed: true
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update task');
+      }
+      
+      // Update the task in the local state with proper typing
+      const updatedTasks = maintenanceTasks.map(t => 
+        t.id === task.id ? { ...t, status: 'completed' as const } : t
+      );
+      
+      setMaintenanceTasks(updatedTasks);
+      setSelectedTask(null);
+      
+      toast({
+        title: 'Task completed',
+        description: `"${task.title}" has been marked as complete.`,
+        duration: 3000
+      });
+    } catch (error) {
+      console.error('Error completing task:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to mark task as complete. Please try again.',
+        variant: 'destructive'
+      });
+    }
+  };
+  
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2">
@@ -72,7 +119,7 @@ const AIMaintenanceTasks: React.FC<AIMaintenanceTasksProps> = ({ homeId }) => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {displayedTasks.map((task, index) => (
           <AITaskCard 
-            key={index} 
+            key={task.id || index} 
             task={task} 
             onAddToTasks={handleAddToTasks}
             onViewDetails={handleViewDetails}
@@ -80,13 +127,13 @@ const AIMaintenanceTasks: React.FC<AIMaintenanceTasksProps> = ({ homeId }) => {
         ))}
       </div>
       
-      {tasks.length > 3 && (
+      {incompleteTasks.length > 3 && (
         <div className="flex justify-center mt-4">
           <Button 
             variant="outline" 
             onClick={() => setShowAll(!showAll)}
           >
-            {showAll ? 'Show Less' : `Show All (${tasks.length})`}
+            {showAll ? 'Show Less' : `Show All (${incompleteTasks.length})`}
           </Button>
         </div>
       )}
@@ -96,10 +143,7 @@ const AIMaintenanceTasks: React.FC<AIMaintenanceTasksProps> = ({ homeId }) => {
           isOpen={!!selectedTask}
           task={selectedTask}
           onClose={() => setSelectedTask(null)}
-          onComplete={() => {
-            // Handle task completion if needed
-            setSelectedTask(null);
-          }}
+          onComplete={() => handleCompleteTask(selectedTask)}
         />
       )}
     </div>
