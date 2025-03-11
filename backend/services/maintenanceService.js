@@ -15,11 +15,18 @@ const mongoose = require('mongoose');
  */
 async function shouldGenerateTasks(userId, homeId) {
   try {
+    logger.info(`Checking if tasks should be generated for user ${userId}, home ${homeId}`);
+    
     // First verify that the home belongs to the user
     const home = await Home.findById(homeId);
     
-    if (!home || home.user_id.toString() !== userId) {
-      logger.error(`Home ${homeId} not found or does not belong to user ${userId}`);
+    if (!home) {
+      logger.error(`Home ${homeId} not found`);
+      return false;
+    }
+    
+    if (home.user_id.toString() !== userId) {
+      logger.error(`Home ${homeId} does not belong to user ${userId}`);
       return false;
     }
     
@@ -33,7 +40,7 @@ async function shouldGenerateTasks(userId, homeId) {
     // If user has just completed onboarding (no last_tasks_generated_at),
     // we should always generate tasks
     if (!user.last_tasks_generated_at) {
-      logger.info(`Generating initial tasks for new user ${userId}`);
+      logger.info(`User ${userId} has no last_tasks_generated_at - generating initial tasks`);
       return true;
     }
     
@@ -41,8 +48,7 @@ async function shouldGenerateTasks(userId, homeId) {
     const existingTasks = await Task.find({ home_id: homeId });
     
     if (existingTasks.length === 0) {
-      // If no tasks exist for this home, we should generate them
-      logger.info(`No existing tasks found for home ${homeId}, will generate new tasks`);
+      logger.info(`No existing tasks found for home ${homeId} - will generate new tasks`);
       return true;
     }
     
@@ -51,7 +57,11 @@ async function shouldGenerateTasks(userId, homeId) {
     const threeMonthsAgo = DateTime.now().minus({ months: 3 });
     
     const shouldGenerate = lastGenerated < threeMonthsAgo;
-    logger.info(`Task generation decision for user ${userId}: ${shouldGenerate ? 'will generate' : 'will use existing'} (last generated: ${lastGenerated.toISO()})`);
+    logger.info(`Task generation decision for user ${userId}:
+      - Last generated: ${lastGenerated.toISO()}
+      - Three months ago: ${threeMonthsAgo.toISO()}
+      - Should generate: ${shouldGenerate}
+      - Existing tasks count: ${existingTasks.length}`);
     
     return shouldGenerate;
   } catch (error) {
