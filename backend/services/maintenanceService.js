@@ -37,10 +37,10 @@ async function shouldGenerateTasks(userId, homeId) {
       return false;
     }
 
-    // If user has just completed onboarding (no last_tasks_generated_at),
+    // If user has just completed onboarding (no last_tasks_generated_at or it's null),
     // we should always generate tasks
-    if (!user.last_tasks_generated_at) {
-      logger.info(`User ${userId} has no last_tasks_generated_at - generating initial tasks`);
+    if (!user.last_tasks_generated_at || user.last_tasks_generated_at === null) {
+      logger.info(`User ${userId} has no last_tasks_generated_at or it's null - generating initial tasks`);
       return true;
     }
     

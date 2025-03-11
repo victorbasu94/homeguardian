@@ -114,56 +114,11 @@ router.post('/generate-plan', verifyToken, extendedTimeout, async (req, res) => 
     
     logger.info(`Generation decision - shouldGenerate: ${shouldGenerate}, forceGeneration: ${forceGeneration}`);
     
-    // Generate maintenance plan using OpenAI if we should generate or force is true
-    if (forceGeneration) {
-      logger.info('Generating new maintenance plan');
-      
-      // Generate maintenance plan using OpenAI
-      logger.info('Calling OpenAI service with home details');
-      
-      // First, delete any existing tasks for this home to avoid duplicates or old data
-      try {
-        const Task = require('../models/Task');
-        const homeId = req.body.id;
-        
-        // Convert string ID to MongoDB ObjectId if needed
-        const mongoose = require('mongoose');
-        const homeObjectId = mongoose.Types.ObjectId.isValid(homeId) 
-          ? new mongoose.Types.ObjectId(homeId) 
-          : homeId;
-        
-        // Delete all existing tasks for this home
-        const deleteResult = await Task.deleteMany({ home_id: homeObjectId });
-        logger.info(`Deleted ${deleteResult.deletedCount} existing tasks for home ${homeId} before generating new plan`);
-      } catch (deleteError) {
-        logger.warn('Error deleting existing tasks:', {
-          error: deleteError.message,
-          stack: deleteError.stack
-        });
-        // Continue with plan generation even if deletion fails
-      }
-      
-      // Use our maintenanceService instead of directly calling OpenAI
-      const result = await maintenanceService.generateMaintenancePlan(home, true, forceGeneration);
-      
-      logger.info('Successfully generated maintenance plan');
-      
-      // Return the maintenance plan
-      return res.status(200).json(result);
-    }
+    // Use our maintenanceService to generate or retrieve the plan
+    const result = await maintenanceService.generateMaintenancePlan(home, true, forceGeneration);
     
-    // If we get here, we're using existing tasks
-    logger.info(`Using existing tasks for user ${req.user.id}`);
-    
-    // Return existing tasks instead
-    const Task = require('../models/Task');
-    const existingTasks = await Task.find({ home_id: req.body.id });
-    
-    return res.status(200).json({
-      tasks: existingTasks,
-      message: 'Using existing maintenance plan (less than 3 months since last generation)',
-      generated_at: new Date().toISOString()
-    });
+    // Return the maintenance plan
+    return res.status(200).json(result);
   } catch (error) {
     logger.error('Error generating maintenance plan:', {
       error: error.message,
