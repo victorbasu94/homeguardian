@@ -95,7 +95,7 @@ const Dashboard: React.FC = () => {
       
       const data = await response.json() as TasksApiResponse;
       
-      // If we have tasks, use them regardless of the message
+      // If we have tasks, format and display them
       if (data.data && data.data.length > 0) {
         // Verify that the tasks belong to the current user's home
         const tasksForCurrentHome = data.data.filter((task: any) => 
@@ -139,28 +139,10 @@ const Dashboard: React.FC = () => {
           
           console.log('Formatted existing tasks for frontend:', formattedTasks);
           updateTasks(formattedTasks, homeId);
-          return;
+        } else {
+          setError('No maintenance tasks found for this home.');
+          setMaintenanceTasks([]);
         }
-      }
-      
-      // If we reach here, we have no tasks. Check if we should generate new ones
-      if (data.message?.includes('less than 3 months')) {
-        // We shouldn't generate new tasks yet
-        toast({
-          title: "No tasks found",
-          description: "New tasks can only be generated once every 3 months. Please check back later.",
-          duration: 5000,
-        });
-        setMaintenanceTasks([]);
-        return;
-      }
-      
-      // If the home is new (no tasks and no 3-month message), generate initial plan
-      if (selectedHome && !localStorage.getItem(`tasks_generated_${homeId}`)) {
-        console.log('Generating initial maintenance plan for new home');
-        await fetchMaintenancePlan(selectedHome);
-        // Mark that we've generated tasks for this home
-        localStorage.setItem(`tasks_generated_${homeId}`, 'true');
       } else {
         setError('No maintenance tasks found for this home.');
         setMaintenanceTasks([]);

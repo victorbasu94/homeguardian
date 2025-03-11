@@ -224,13 +224,18 @@ router.post('/',
       const home = new Home(sanitizedInput);
       await home.save();
 
-      // Generate maintenance plan for the new home
-      await generateMaintenancePlan(home);
+      // Generate initial maintenance plan for the new home
+      // Force generation since this is a new home
+      const result = await generateMaintenancePlan(home, true, true);
+      logger.info(`Generated initial maintenance plan for home ${home._id}`);
 
-      // Return success response
+      // Return success response with both home and tasks
       res.status(201).json({
-        id: home._id,
-        message: "Home created with maintenance plan"
+        message: "Home created successfully with maintenance plan",
+        data: {
+          home: home,
+          tasks: result.tasks
+        }
       });
     } catch (error) {
       next(error);
