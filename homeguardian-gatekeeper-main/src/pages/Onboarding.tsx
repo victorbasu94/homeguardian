@@ -261,18 +261,18 @@ const Onboarding: React.FC = () => {
         notes: completeFormData.notes
       });
 
-      // Force generate maintenance plan for the new home
-      const homeDetails = {
-        id: homeResponse.data.data.home.id,
+      // Extract the home ID and details from the response
+      const homeId = homeResponse.data.data.home.id;
+      
+      // Call the maintenance plan generation API with the home ID and force=true
+      await api.post('/api/maintenance/generate-plan', {
+        id: homeId,
         location: homeResponse.data.data.home.location,
         year_built: homeResponse.data.data.home.year_built,
         square_footage: homeResponse.data.data.home.square_footage,
         roof_type: homeResponse.data.data.home.roof_type,
         hvac_type: homeResponse.data.data.home.hvac_type
-      };
-
-      // Call the maintenance plan generation API with force=true
-      await api.post('/api/maintenance/generate-plan', homeDetails, {
+      }, {
         params: {
           force: true
         }
