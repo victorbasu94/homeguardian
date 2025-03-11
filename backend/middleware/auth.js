@@ -42,11 +42,7 @@ exports.verifyToken = async (req, res, next) => {
       });
     }
     
-    // Check if user has verified email
-    if (!user.email_verified) {
-      // Temporarily bypass email verification in all environments
-      logger.warn(`Bypassing email verification for ${user.email} in all environments`);
-    }
+    // Email verification check removed - allowing all users regardless of verification status
     
     // Set user on request object
     req.user = user;

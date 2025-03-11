@@ -192,20 +192,7 @@ exports.login = async (req, res) => {
       });
     }
     
-    // Check if email is verified
-    /* Temporarily bypassing email verification
-    if (!user.email_verified) {
-      // In development mode, bypass email verification
-      if (process.env.NODE_ENV === 'development') {
-        logger.warn(`Bypassing email verification for ${email} in development mode`);
-      } else {
-        return res.status(403).json({
-          status: 'error',
-          message: 'Please verify your email before logging in'
-        });
-      }
-    }
-    */
+    // Email verification check removed - allowing all logins regardless of verification status
     
     // Generate tokens
     const accessToken = generateToken(user._id);
