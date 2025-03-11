@@ -29,41 +29,67 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
+        console.log('Initializing auth state...');
+        
         // Check for token in localStorage
         const storedToken = localStorage.getItem('accessToken');
         
         if (storedToken) {
-          console.log('Found stored token on initialization:', storedToken);
+          console.log('Found stored token on initialization:', storedToken.substring(0, 10) + '...');
           
           // Set token in axios headers
           setAccessToken(storedToken);
           
+          // Verify the token was set in axios
+          const currentToken = api.defaults.headers.common['Authorization'];
+          console.log('Verification - Authorization header:', currentToken ? 'Present' : 'Missing');
+          
           // Fetch user data
           try {
+            console.log('Fetching user data with token...');
             const response = await api.get('/api/auth/me');
-            if (response.data.user) {
+            
+            if (response.data && response.data.user) {
               console.log('User data fetched successfully:', response.data.user);
               setUser(response.data.user);
             } else {
               console.warn('User data response missing user object');
-              localStorage.removeItem('accessToken');
-              clearAccessToken();
+              // Don't clear token yet, might be a temporary issue
+              console.log('Response data:', response.data);
               setUser(null);
             }
           } catch (error) {
             console.error('Error fetching user data:', error);
-            // Only clear token if it's an authentication error (401)
-            if (error.response && error.response.status === 401) {
-              localStorage.removeItem('accessToken');
-              clearAccessToken();
-              setUser(null);
+            
+            // More detailed error logging
+            if (error.response) {
+              console.error('Server response error:', {
+                status: error.response.status,
+                data: error.response.data
+              });
+              
+              // Only clear token if it's an authentication error (401)
+              if (error.response.status === 401) {
+                console.log('Authentication error (401), clearing token');
+                localStorage.removeItem('accessToken');
+                clearAccessToken();
+                setUser(null);
+              } else {
+                // For other errors (like network issues), keep the token and set a retry
+                console.log('Non-auth error occurred, will retry authentication later');
+                // We'll keep the user logged in but in a loading state
+                setTimeout(() => {
+                  console.log('Retrying authentication...');
+                  initializeAuth();
+                }, 5000); // Retry after 5 seconds
+              }
             } else {
-              // For other errors (like network issues), keep the token and set a retry
-              console.log('Non-auth error occurred, will retry authentication later');
-              // We'll keep the user logged in but in a loading state
+              console.error('Network or other error:', error);
+              // Don't clear token for network errors
               setTimeout(() => {
+                console.log('Retrying after network error...');
                 initializeAuth();
-              }, 5000); // Retry after 5 seconds
+              }, 5000);
             }
           }
         } else {
@@ -83,18 +109,33 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   
   // Login function
   const login = useCallback((token: string, userData: User) => {
-    console.log('Login called with token:', token);
+    console.log('Login called with token:', token.substring(0, 10) + '...');
     
-    // Save token to localStorage
-    localStorage.setItem('accessToken', token);
+    if (!token) {
+      console.error('Attempted to login with empty token');
+      return;
+    }
     
-    // Set token in axios headers
-    setAccessToken(token);
-    
-    // Set user data
-    setUser(userData);
-    
-    console.log('Login completed, user set:', userData);
+    try {
+      // Save token to localStorage
+      localStorage.setItem('accessToken', token);
+      
+      // Set token in axios headers
+      setAccessToken(token);
+      
+      // Set user data
+      setUser(userData);
+      
+      console.log('Login completed, user set:', userData);
+    } catch (error) {
+      console.error('Error during login process:', error);
+      // Try to recover
+      if (token && userData) {
+        console.log('Attempting recovery...');
+        setUser(userData);
+        api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      }
+    }
   }, []);
   
   // Logout function

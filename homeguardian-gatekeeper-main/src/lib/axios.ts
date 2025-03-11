@@ -19,13 +19,19 @@ if (!API_BASE_URL.startsWith('http://') && !API_BASE_URL.startsWith('https://'))
 
 // For production, ensure we're using the correct backend URL
 if (import.meta.env.PROD) {
-  // If we're in production and the URL contains 'maintainmint-backend'
-  // Make sure it's properly formatted
+  // Check if we're using the maintainmint backend
   if (API_BASE_URL.includes('maintainmint-backend')) {
-    // Ensure it has the correct format
-    API_BASE_URL = `https://maintainmint-backend-6dfe05c4ba93.herokuapp.com`;
+    // Fix any typos in the URL (like _om instead of .com)
+    if (API_BASE_URL.includes('maintainmint-backend_om')) {
+      API_BASE_URL = API_BASE_URL.replace('maintainmint-backend_om', 'maintainmint-backend.com');
+      console.log('Fixed typo in backend URL (_om -> .com):', API_BASE_URL);
+    }
     
-    console.log('Corrected API Base URL for production:', API_BASE_URL);
+    // Ensure it has the correct format for Heroku
+    if (!API_BASE_URL.includes('herokuapp.com')) {
+      API_BASE_URL = `https://maintainmint-backend-6dfe05c4ba93.herokuapp.com`;
+      console.log('Corrected API Base URL for production:', API_BASE_URL);
+    }
   }
 }
 
@@ -46,18 +52,38 @@ let accessToken: string | null = null;
 
 // Initialize token from localStorage if available
 if (typeof window !== 'undefined') {
-  const storedToken = localStorage.getItem('accessToken');
-  if (storedToken) {
-    accessToken = storedToken;
+  try {
+    const storedToken = localStorage.getItem('accessToken');
+    if (storedToken) {
+      accessToken = storedToken;
+      console.log('Token loaded from localStorage on initialization:', storedToken.substring(0, 10) + '...');
+    } else {
+      console.log('No token found in localStorage on initialization');
+    }
+  } catch (error) {
+    console.error('Error accessing localStorage:', error);
   }
 }
 
 // Function to set the access token
 export const setAccessToken = (token: string) => {
-  accessToken = token;
-  // Also set it directly in the headers for immediate use
-  api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-  console.log('Access token set:', token);
+  if (!token) {
+    console.warn('Attempted to set empty access token');
+    return;
+  }
+  
+  try {
+    accessToken = token;
+    // Also set it directly in the headers for immediate use
+    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    console.log('Access token set successfully:', token.substring(0, 10) + '...');
+    
+    // Also store in localStorage for persistence
+    localStorage.setItem('accessToken', token);
+    console.log('Token saved to localStorage');
+  } catch (error) {
+    console.error('Error setting access token:', error);
+  }
 };
 
 // Function to get the current access token
@@ -80,28 +106,43 @@ api.interceptors.request.use(
   (config) => {
     // Add authorization header if we have a token
     if (accessToken) {
-      console.log('Request with token:', accessToken);
+      console.log('Request with token:', accessToken.substring(0, 10) + '...');
       config.headers.Authorization = `Bearer ${accessToken}`;
       
       // Debug: Check if the header was actually set
-      console.log('Authorization header set:', config.headers.Authorization);
+      console.log('Authorization header set:', config.headers.Authorization.substring(0, 16) + '...');
     } else {
       console.log('Request without token');
       
       // Debug: Check if there's a token in localStorage that wasn't set in memory
-      const storedToken = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
-      if (storedToken) {
-        console.log('Found token in localStorage but not in memory:', storedToken);
-        // Set the token in memory and in the request
-        accessToken = storedToken;
-        config.headers.Authorization = `Bearer ${storedToken}`;
-        console.log('Authorization header set from localStorage:', config.headers.Authorization);
+      try {
+        const storedToken = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+        if (storedToken) {
+          console.log('Found token in localStorage but not in memory:', storedToken.substring(0, 10) + '...');
+          // Set the token in memory and in the request
+          accessToken = storedToken;
+          config.headers.Authorization = `Bearer ${storedToken}`;
+          console.log('Authorization header set from localStorage:', config.headers.Authorization.substring(0, 16) + '...');
+        } else {
+          console.log('No token found in localStorage either');
+        }
+      } catch (error) {
+        console.error('Error checking localStorage for token:', error);
       }
     }
+    
+    // Log the full request details for debugging
+    console.log('Request details:', {
+      url: config.url,
+      method: config.method,
+      baseURL: config.baseURL,
+      hasAuthHeader: !!config.headers.Authorization,
+    });
     
     return config;
   },
   (error) => {
+    console.error('Request interceptor error:', error);
     return Promise.reject(error);
   }
 );
@@ -203,5 +244,69 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+// Function to diagnose CORS issues
+export const diagnoseCorsIssues = async () => {
+  console.log('Diagnosing potential CORS issues...');
+  
+  try {
+    // Try a simple OPTIONS request to check CORS configuration
+    const response = await axios({
+      method: 'OPTIONS',
+      url: `${API_BASE_URL}/api/auth/login`,
+      headers: {
+        'Access-Control-Request-Method': 'POST',
+        'Access-Control-Request-Headers': 'content-type,authorization',
+        'Origin': window.location.origin
+      }
+    });
+    
+    console.log('CORS preflight response:', {
+      status: response.status,
+      headers: response.headers,
+    });
+    
+    // Check for necessary CORS headers
+    const corsHeaders = {
+      'access-control-allow-origin': response.headers['access-control-allow-origin'],
+      'access-control-allow-methods': response.headers['access-control-allow-methods'],
+      'access-control-allow-headers': response.headers['access-control-allow-headers'],
+      'access-control-allow-credentials': response.headers['access-control-allow-credentials']
+    };
+    
+    console.log('CORS headers present:', corsHeaders);
+    
+    // Check if credentials are allowed
+    if (corsHeaders['access-control-allow-credentials'] !== 'true') {
+      console.warn('CORS issue: credentials not allowed by the server');
+    }
+    
+    // Check if origin is allowed
+    if (corsHeaders['access-control-allow-origin'] !== window.location.origin && 
+        corsHeaders['access-control-allow-origin'] !== '*') {
+      console.warn('CORS issue: origin not allowed by the server');
+    }
+    
+    return {
+      success: true,
+      corsHeaders
+    };
+  } catch (error) {
+    console.error('CORS diagnosis failed:', error);
+    return {
+      success: false,
+      error
+    };
+  }
+};
+
+// Run CORS diagnosis on startup
+if (typeof window !== 'undefined') {
+  setTimeout(() => {
+    diagnoseCorsIssues().then(result => {
+      console.log('CORS diagnosis complete:', result.success ? 'No issues detected' : 'Issues detected');
+    });
+  }, 1000); // Delay by 1 second to not block initial rendering
+}
 
 export default api;

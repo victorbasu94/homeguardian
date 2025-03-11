@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
@@ -12,7 +12,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import api from '@/lib/axios';
+import api, { diagnoseCorsIssues } from '@/lib/axios';
+
+// Get the API base URL from environment variables
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001';
 
 // Define validation schema
 const loginSchema = z.object({
@@ -36,6 +39,7 @@ const Login: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { login } = useAuth();
+  const [diagnosticInfo, setDiagnosticInfo] = useState<any>(null);
   
   // Get redirect path from location state or default to dashboard
   const from = location.state?.from?.pathname || '/dashboard';
@@ -53,21 +57,112 @@ const Login: React.FC = () => {
     },
   });
   
+  // Run diagnostics on component mount
+  useEffect(() => {
+    const runDiagnostics = async () => {
+      try {
+        console.log('Running login diagnostics...');
+        
+        // Check if we can access localStorage
+        let localStorageAccessible = false;
+        try {
+          localStorage.setItem('test', 'test');
+          if (localStorage.getItem('test') === 'test') {
+            localStorageAccessible = true;
+          }
+          localStorage.removeItem('test');
+        } catch (e) {
+          console.error('localStorage not accessible:', e);
+        }
+        
+        // Check for existing token
+        let existingToken = null;
+        if (localStorageAccessible) {
+          existingToken = localStorage.getItem('accessToken');
+        }
+        
+        // Check CORS configuration
+        const corsResult = await diagnoseCorsIssues();
+        
+        // Check network connectivity to API
+        let apiReachable = false;
+        try {
+          const pingResponse = await fetch(`${API_BASE_URL}/api/health`, { 
+            method: 'GET',
+            mode: 'cors',
+            cache: 'no-cache'
+          });
+          apiReachable = pingResponse.ok;
+        } catch (e) {
+          console.error('API not reachable:', e);
+        }
+        
+        // Store diagnostic information
+        const diagnostics = {
+          timestamp: new Date().toISOString(),
+          browser: navigator.userAgent,
+          localStorageAccessible,
+          existingToken: existingToken ? 'Present' : 'Missing',
+          corsStatus: corsResult.success ? 'OK' : 'Issues detected',
+          apiReachable,
+          origin: window.location.origin,
+          apiBaseUrl: API_BASE_URL
+        };
+        
+        console.log('Diagnostic information:', diagnostics);
+        setDiagnosticInfo(diagnostics);
+        
+        // If we detect issues, try to fix them
+        if (existingToken && !apiReachable) {
+          console.log('Detected token but API not reachable - clearing token to force re-login');
+          localStorage.removeItem('accessToken');
+        }
+      } catch (error) {
+        console.error('Error running diagnostics:', error);
+      }
+    };
+    
+    runDiagnostics();
+  }, []);
+  
   const onSubmit = async (data: LoginFormValues) => {
     setIsLoading(true);
     
     try {
+      console.log('Attempting login with email:', data.email);
+      
       // Call the API to authenticate
       const response = await api.post('/api/auth/login', {
         email: data.email,
         password: data.password
       });
       
+      console.log('Login response received:', response.status);
+      
       // Extract token and user data
       const { accessToken, user } = response.data;
       
+      if (!accessToken) {
+        throw new Error('No access token received from server');
+      }
+      
+      console.log('Access token received:', accessToken.substring(0, 10) + '...');
+      console.log('User data received:', user);
+      
+      // Manually set the token in localStorage first
+      try {
+        localStorage.setItem('accessToken', accessToken);
+        console.log('Token saved to localStorage');
+      } catch (storageError) {
+        console.error('Error saving token to localStorage:', storageError);
+      }
+      
       // Call the login function from useAuth
       login(accessToken, user);
+      
+      // Verify the token was set correctly
+      const storedToken = localStorage.getItem('accessToken');
+      console.log('Verification - token in localStorage:', storedToken ? 'Present' : 'Missing');
       
       // Show success toast
       toast({
@@ -79,6 +174,19 @@ const Login: React.FC = () => {
       navigate(from, { replace: true });
     } catch (error: any) {
       console.error('Login error:', error);
+      
+      // More detailed error logging
+      if (error.response) {
+        console.error('Server response error:', {
+          status: error.response.status,
+          data: error.response.data,
+          headers: error.response.headers
+        });
+      } else if (error.request) {
+        console.error('No response received:', error.request);
+      } else {
+        console.error('Error setting up request:', error.message);
+      }
       
       // Show error toast
       toast({
@@ -244,6 +352,18 @@ const Login: React.FC = () => {
             <CheckCircle className="h-4 w-4 text-primary" />
             <span>Secure login with 256-bit encryption</span>
           </div>
+          
+          {/* Add diagnostic information for development */}
+          {import.meta.env.DEV && diagnosticInfo && (
+            <div className="mt-4 p-4 bg-gray-100 rounded-lg text-xs">
+              <details>
+                <summary className="cursor-pointer font-medium">Diagnostic Information</summary>
+                <pre className="mt-2 overflow-auto max-h-40">
+                  {JSON.stringify(diagnosticInfo, null, 2)}
+                </pre>
+              </details>
+            </div>
+          )}
         </div>
       </div>
       
