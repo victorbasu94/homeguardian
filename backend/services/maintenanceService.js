@@ -5,6 +5,7 @@ const taskRules = require('../config/tasks.json');
 const logger = require('winston');
 const { generateMaintenancePlanWithAI } = require('./openaiService');
 const Home = require('../models/Home');
+const mongoose = require('mongoose');
 
 /**
  * Checks if tasks should be generated for a user based on the 3-month rule
@@ -41,6 +42,7 @@ async function shouldGenerateTasks(userId, homeId) {
     
     if (existingTasks.length === 0) {
       // If no tasks exist for this home, we should generate them
+      logger.info(`No existing tasks found for home ${homeId}, will generate new tasks`);
       return true;
     }
     
@@ -48,11 +50,14 @@ async function shouldGenerateTasks(userId, homeId) {
     const lastGenerated = DateTime.fromJSDate(user.last_tasks_generated_at);
     const threeMonthsAgo = DateTime.now().minus({ months: 3 });
     
-    return lastGenerated < threeMonthsAgo;
+    const shouldGenerate = lastGenerated < threeMonthsAgo;
+    logger.info(`Task generation decision for user ${userId}: ${shouldGenerate ? 'will generate' : 'will use existing'} (last generated: ${lastGenerated.toISO()})`);
+    
+    return shouldGenerate;
   } catch (error) {
     logger.error('Error checking if tasks should be generated:', error);
-    // Default to false to prevent unnecessary task generation
-    return false;
+    // For new users or error cases, default to generating tasks
+    return true;
   }
 }
 
@@ -185,18 +190,25 @@ function calculateDueDate(frequency) {
  * @returns {Array} - Array of task objects
  */
 async function generateMaintenancePlan(home, useAI = false, forceGeneration = false) {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  
   try {
-    // Check if tasks should be generated based on the 3-month rule
-    const shouldGenerate = await shouldGenerateTasks(home.user_id, home._id);
-    
     // If we're forcing generation or should generate based on rules
-    if (forceGeneration || shouldGenerate) {
+    if (forceGeneration) {
       let generatedTasks = [];
       
       // Check if we're in development mode - if so, use mock data instead of calling OpenAI
       if (process.env.NODE_ENV !== 'production') {
         logger.info('Using mock data for maintenance plan in development mode');
-        return generateMockMaintenancePlan(home);
+        const mockResult = generateMockMaintenancePlan(home);
+        
+        // Save mock tasks within the transaction
+        await Task.insertMany(mockResult.tasks, { session });
+        await updateTaskGenerationTimestamp(home.user_id);
+        
+        await session.commitTransaction();
+        return mockResult;
       }
       
       // If AI-powered plan generation is requested and we're in production
@@ -222,13 +234,12 @@ async function generateMaintenancePlan(home, useAI = false, forceGeneration = fa
               ai_generated: true
             }));
             
-            // Save all tasks to the database
-            if (generatedTasks.length > 0) {
-              await Task.insertMany(generatedTasks);
-              
-              // Update the last_tasks_generated_at timestamp
-              await updateTaskGenerationTimestamp(home.user_id);
-            }
+            // Delete existing tasks and save new ones within the transaction
+            await Task.deleteMany({ home_id: home._id }, { session });
+            await Task.insertMany(generatedTasks, { session });
+            await updateTaskGenerationTimestamp(home.user_id);
+            
+            await session.commitTransaction();
             
             return {
               tasks: generatedTasks,
@@ -237,80 +248,57 @@ async function generateMaintenancePlan(home, useAI = false, forceGeneration = fa
             };
           }
         } catch (error) {
-          logger.error('Error generating AI maintenance plan, falling back to rule-based:', error);
-          // Fall back to rule-based if AI fails
+          await session.abortTransaction();
+          logger.error('Error generating AI maintenance plan:', error);
+          throw error;
         }
       }
       
       // Original rule-based logic if AI generation failed or wasn't requested
       const { rules } = taskRules;
-
-      // Check each rule against the home
+      
+      // Delete existing tasks within the transaction
+      await Task.deleteMany({ home_id: home._id }, { session });
+      
+      // Generate new tasks
       for (const rule of rules) {
-        // If there are multiple conditions, all must be met
-        let conditionsMet = true;
-        
-        if (Array.isArray(rule.conditions)) {
-          for (const condition of rule.conditions) {
-            if (!evaluateCondition(condition, home)) {
-              conditionsMet = false;
-              break;
-            }
-          }
-        } else if (rule.condition) {
-          // Backward compatibility for single condition
-          conditionsMet = evaluateCondition(rule.condition, home);
-        }
-
-        if (conditionsMet) {
-          // Check if this task already exists for this home
-          const existingTask = await Task.findOne({
+        if (evaluateCondition(rule.condition, home)) {
+          const dueDate = calculateDueDate(rule.task.frequency);
+          
+          const taskData = {
             home_id: home._id,
-            task_name: rule.task.task_name
-          });
-
-          // Only add if no duplicate exists
-          if (!existingTask) {
-            const dueDate = calculateDueDate(rule.task.frequency);
-            
-            // Create task with enhanced details
-            const taskData = {
-              home_id: home._id,
-              task_name: rule.task.task_name,
-              description: rule.task.description || `Maintenance task: ${rule.task.task_name}`,
-              frequency: rule.task.frequency,
-              due_date: dueDate,
-              why: rule.task.why,
-              estimated_time: rule.task.estimated_time || 30,
-              estimated_cost: rule.task.estimated_cost || 0,
-              category: rule.task.category || 'maintenance',
-              priority: rule.task.priority || 'medium',
-              steps: rule.task.steps || [],
-              completed: false
-            };
-            
-            generatedTasks.push(taskData);
-          }
+            task_name: rule.task.task_name,
+            description: rule.task.description || `Maintenance task: ${rule.task.task_name}`,
+            frequency: rule.task.frequency,
+            due_date: dueDate,
+            why: rule.task.why,
+            estimated_time: rule.task.estimated_time || 30,
+            estimated_cost: rule.task.estimated_cost || 0,
+            category: rule.task.category || 'maintenance',
+            priority: rule.task.priority || 'medium',
+            steps: rule.task.steps || [],
+            completed: false
+          };
+          
+          generatedTasks.push(taskData);
         }
       }
-
-      // Save all tasks to the database
+      
+      // Save all tasks within the transaction
       if (generatedTasks.length > 0) {
-        await Task.insertMany(generatedTasks);
-        
-        // Update the last_tasks_generated_at timestamp
+        await Task.insertMany(generatedTasks, { session });
         await updateTaskGenerationTimestamp(home.user_id);
       }
-
+      
+      await session.commitTransaction();
+      
       return {
         tasks: generatedTasks,
         message: 'Rule-based maintenance plan generated successfully',
         generated_at: new Date().toISOString()
       };
     } else {
-      logger.info(`Using existing maintenance plan for user ${home.user_id}`);
-      
-      // Return existing tasks instead
+      // Return existing tasks
       const existingTasks = await Task.find({ home_id: home._id });
       
       return {
@@ -320,8 +308,11 @@ async function generateMaintenancePlan(home, useAI = false, forceGeneration = fa
       };
     }
   } catch (error) {
+    await session.abortTransaction();
     logger.error('Error generating maintenance plan:', error);
     throw error;
+  } finally {
+    session.endSession();
   }
 }
 
