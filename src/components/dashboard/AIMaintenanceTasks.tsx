@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, AlertCircle, Loader2 } from 'lucide-react';
+import { Sparkles, AlertCircle, Loader2, PlusCircle } from 'lucide-react';
 import { useMaintenance, MaintenanceTask } from '@/contexts/MaintenanceContext';
 import { MOCK_MAINTENANCE_TASKS } from '@/lib/mockData';
 import { setUseMockApi } from '@/lib/mockApiIntegration';
@@ -94,7 +94,21 @@ const AIMaintenanceTasks: React.FC<AIMaintenanceTasksProps> = ({ homeId }) => {
     console.log('Current maintenance tasks in AIMaintenanceTasks:', tasks);
     console.log('Using mock data:', useMockData);
     console.log('Real maintenance tasks from context:', maintenanceTasks);
-  }, [tasks, useMockData, maintenanceTasks]);
+    
+    // Verify that tasks belong to the current home
+    if (homeId && tasks.length > 0) {
+      const tasksForCurrentHome = tasks.filter(task => 
+        task.home_id === homeId || 
+        (task as any).homeId === homeId
+      );
+      
+      if (tasksForCurrentHome.length === 0) {
+        console.warn('No tasks found for the current home ID:', homeId);
+      } else {
+        console.log(`Found ${tasksForCurrentHome.length} tasks for home ID ${homeId}`);
+      }
+    }
+  }, [tasks, useMockData, maintenanceTasks, homeId]);
   
   // Filter out completed tasks unless they're explicitly requested
   const incompleteTasks = tasks.filter(task => task.status !== 'completed');
@@ -107,7 +121,7 @@ const AIMaintenanceTasks: React.FC<AIMaintenanceTasksProps> = ({ homeId }) => {
       <div className="flex flex-col items-center justify-center py-8">
         <Loader2 className="h-8 w-8 text-primary animate-spin mb-4" />
         <h3 className="text-lg font-medium">Loading maintenance plan...</h3>
-        <p className="text-muted-foreground mt-2">This may take a moment</p>
+        <p className="text-muted-foreground mt-2">This may take a moment as we generate your personalized maintenance plan</p>
       </div>
     );
   }
@@ -136,23 +150,22 @@ const AIMaintenanceTasks: React.FC<AIMaintenanceTasksProps> = ({ homeId }) => {
   
   if (tasks.length === 0) {
     return (
-      <Alert>
-        <AlertCircle className="h-4 w-4" />
-        <AlertTitle>No AI-generated tasks</AlertTitle>
-        <AlertDescription>
-          No AI-generated maintenance tasks are available. Try adding a new home to generate a maintenance plan.
-          {import.meta.env.DEV && (
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="mt-2"
-              onClick={() => setUseMockData(true)}
-            >
-              Use Mock Data
-            </Button>
-          )}
-        </AlertDescription>
-      </Alert>
+      <div className="flex flex-col items-center justify-center py-12 border border-dashed border-muted-foreground/20 rounded-lg bg-muted/50">
+        <Sparkles className="h-10 w-10 text-primary/50 mb-4" />
+        <h3 className="text-lg font-medium">No Maintenance Tasks Yet</h3>
+        <p className="text-muted-foreground text-center max-w-md mt-2 mb-6">
+          We'll generate a personalized maintenance plan for your home. This helps you keep track of important tasks and maintain your property's value.
+        </p>
+        {import.meta.env.DEV && (
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setUseMockData(true)}
+          >
+            Use Mock Data
+          </Button>
+        )}
+      </div>
     );
   }
   

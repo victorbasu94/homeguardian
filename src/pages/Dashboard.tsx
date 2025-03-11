@@ -76,6 +76,9 @@ const Dashboard: React.FC = () => {
     setError(null);
     
     try {
+      // First, clear any existing tasks to prevent showing previous user's tasks
+      setMaintenanceTasks([]);
+      
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/tasks/${homeId}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
@@ -102,15 +105,32 @@ const Dashboard: React.FC = () => {
         // If no tasks found, try to generate a maintenance plan
         // But only if we don't have a message about the 3-month rule
         if (selectedHome && (!data.message || !data.message.includes('less than 3 months'))) {
+          // Generate a new maintenance plan using OpenAI
           await fetchMaintenancePlan(selectedHome);
         } else {
           setError('No maintenance tasks found for this home.');
           setMaintenanceTasks([]);
         }
       } else {
+        // Verify that the tasks belong to the current user's home
+        const tasksForCurrentHome = data.data.filter((task: any) => 
+          task.home_id === homeId || task.homeId === homeId
+        );
+        
+        if (tasksForCurrentHome.length === 0) {
+          // If no tasks for this home, generate a new maintenance plan
+          if (selectedHome) {
+            await fetchMaintenancePlan(selectedHome);
+          } else {
+            setError('No maintenance tasks found for this home.');
+            setMaintenanceTasks([]);
+          }
+          return;
+        }
+        
         // Map the tasks to the expected format
-        console.log('Raw tasks data from API:', data.data);
-        const formattedTasks = data.data.map((task: any) => {
+        console.log('Raw tasks data for current home:', tasksForCurrentHome);
+        const formattedTasks = tasksForCurrentHome.map((task: any) => {
           // Check if the task has steps or subtasks
           const subtasks = task.subtasks || 
                           (task.steps && Array.isArray(task.steps)) 
@@ -177,6 +197,9 @@ const Dashboard: React.FC = () => {
       setIsLoading(true);
       setError(null);
       
+      // Clear any existing tasks to prevent showing previous user's tasks
+      setMaintenanceTasks([]);
+      
       // Convert HomeData to HomeDetails format expected by getMaintenancePlan
       const homeDetails = {
         id: home.id,
@@ -187,14 +210,14 @@ const Dashboard: React.FC = () => {
         hvac_type: home.hvac_type
       };
       
-      console.log('Fetching maintenance plan for home:', home.id);
+      console.log('Generating new maintenance plan for home:', home.id);
       
       // Call the API to get maintenance plan
       const maintenancePlan = await getMaintenancePlan(homeDetails) as MaintenancePlanResponse;
       
       // If we got tasks back, update the context
       if (maintenancePlan && maintenancePlan.tasks && maintenancePlan.tasks.length > 0) {
-        console.log("Maintenance plan fetched successfully:", maintenancePlan);
+        console.log("Maintenance plan generated successfully:", maintenancePlan);
         
         // Check if the response includes a message about using existing tasks
         if (maintenancePlan.message && maintenancePlan.message.includes('existing maintenance plan')) {
@@ -203,6 +226,13 @@ const Dashboard: React.FC = () => {
             title: "Using existing maintenance plan",
             description: "New tasks are only generated once every 3 months. Using your existing maintenance plan.",
             duration: 5000,
+          });
+        } else {
+          // Show a success notification for new plan generation
+          toast({
+            title: "Maintenance Plan Generated",
+            description: "Your AI-generated maintenance plan is ready.",
+            duration: 3000,
           });
         }
         
@@ -216,7 +246,7 @@ const Dashboard: React.FC = () => {
           
           // Create a task object with both naming conventions for compatibility
           return {
-            id: task._id || task.id,
+            id: task._id || task.id || `new-task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             title: task.title || task.task_name || task.task,
             description: task.description || task.taskDescription,
             due_date: task.due_date || task.suggestedCompletionDate,
@@ -239,6 +269,11 @@ const Dashboard: React.FC = () => {
         });
         
         console.log('Formatted maintenance tasks for frontend:', formattedTasks);
+        
+        // Save the generated tasks to the backend
+        await saveTasksToBackend(formattedTasks, home.id);
+        
+        // Update the UI with the new tasks
         setMaintenanceTasks(formattedTasks);
       } else {
         // This shouldn't happen as the API should throw an error if no tasks are returned
@@ -247,7 +282,7 @@ const Dashboard: React.FC = () => {
       }
     } catch (error) {
       console.error("Error fetching maintenance plan:", error);
-      setError("Failed to fetch maintenance plan. Please try again later.");
+      setError("Failed to generate maintenance plan. Please try again later.");
     } finally {
       setIsLoading(false);
     }
@@ -256,8 +291,18 @@ const Dashboard: React.FC = () => {
   // Save tasks to backend
   const saveTasksToBackend = async (tasks: MaintenanceTask[], homeId: string) => {
     try {
+      console.log(`Saving ${tasks.length} tasks for home ID: ${homeId}`);
+      
       // Save each task to the backend
       for (const task of tasks) {
+        // Ensure the task is associated with the current home
+        const taskToSave = {
+          ...task,
+          home_id: homeId // Explicitly set the home_id to the current home
+        };
+        
+        console.log(`Saving task "${taskToSave.title}" for home ID: ${homeId}`);
+        
         await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/tasks`, {
           method: 'POST',
           headers: {
@@ -266,14 +311,14 @@ const Dashboard: React.FC = () => {
           },
           body: JSON.stringify({
             home_id: homeId,
-            task_name: task.title,
-            description: task.description,
-            due_date: task.due_date,
-            priority: task.priority,
-            category: task.category,
-            estimated_time: task.estimated_time,
-            estimated_cost: task.estimated_cost,
-            steps: task.subtasks.map((subtask, index) => ({
+            task_name: taskToSave.title,
+            description: taskToSave.description,
+            due_date: taskToSave.due_date,
+            priority: taskToSave.priority,
+            category: taskToSave.category,
+            estimated_time: taskToSave.estimated_time,
+            estimated_cost: taskToSave.estimated_cost,
+            steps: taskToSave.subtasks.map((subtask, index) => ({
               step_number: index + 1,
               description: subtask
             }))

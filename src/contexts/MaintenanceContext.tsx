@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 
 // Define the interface for a maintenance task
 export interface MaintenanceTask {
@@ -45,6 +45,11 @@ export const MaintenanceProvider: React.FC<{ children: ReactNode }> = ({ childre
   const [error, setError] = useState<string | null>(null);
   // Default to using real data, not mock data
   const [useMockData, setUseMockData] = useState(false);
+
+  // Clear tasks when the component mounts to ensure we don't show tasks from previous users
+  useEffect(() => {
+    setMaintenanceTasks([]);
+  }, []);
 
   return (
     <MaintenanceContext.Provider
