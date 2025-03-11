@@ -1,12 +1,14 @@
-import React, { useState, useEffect, useCallback, createContext, useContext, ReactNode } from 'react';
-import api, { setAccessToken, clearAccessToken } from '@/lib/axios';
+import React, { createContext, useState, useContext, useEffect, useCallback, ReactNode } from 'react';
+import api, { setAccessToken, clearAccessToken, switchToNextProxy } from '@/lib/axios';
 
+// Define User interface
 interface User {
   id: string;
   email: string;
   subscription_status: string;
 }
 
+// Define Auth Context Type
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
@@ -15,7 +17,14 @@ interface AuthContextType {
   logout: () => void;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+// Create Auth Context with default values
+const AuthContext = createContext<AuthContextType>({
+  user: null,
+  isAuthenticated: false,
+  isLoading: true,
+  login: () => {},
+  logout: () => {},
+});
 
 interface AuthProviderProps {
   children: ReactNode;
@@ -58,7 +67,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               console.log('Response data:', response.data);
               setUser(null);
             }
-          } catch (error) {
+          } catch (error: any) {
             console.error('Error fetching user data:', error);
             
             // More detailed error logging
@@ -86,9 +95,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             } else if (error.message && error.message.includes('Network Error')) {
               // Special handling for CORS/Network errors
               console.error('Network error occurred, possibly CORS-related');
-              // Don't clear token for network errors, but don't keep retrying indefinitely
-              // Set user to null but keep the token
-              setUser(null);
+              
+              // Try switching to another CORS proxy
+              const switched = switchToNextProxy();
+              
+              if (switched) {
+                console.log('Switched to another CORS proxy, will retry');
+                setTimeout(() => {
+                  console.log('Retrying with new proxy...');
+                  initializeAuth();
+                }, 1000);
+              } else {
+                // Don't clear token for network errors, but don't keep retrying indefinitely
+                // Set user to null but keep the token
+                setUser(null);
+              }
             } else {
               console.error('Other error:', error);
               // Don't clear token for network errors
@@ -176,11 +197,5 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 };
 
 export const useAuth = () => {
-  const context = useContext(AuthContext);
-  
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  
-  return context;
+  return useContext(AuthContext);
 }; 

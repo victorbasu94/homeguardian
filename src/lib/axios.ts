@@ -136,6 +136,12 @@ export const getAccessToken = () => {
 // Function to clear the access token (logout)
 export const clearAccessToken = () => {
   accessToken = null;
+  delete api.defaults.headers.common['Authorization'];
+  try {
+    localStorage.removeItem('accessToken');
+  } catch (error) {
+    console.error('Error removing token from localStorage:', error);
+  }
 };
 
 // Make getAccessToken accessible from window for auth checks
@@ -145,7 +151,7 @@ if (typeof window !== 'undefined') {
 
 // Add request interceptor
 api.interceptors.request.use(
-  (config) => {
+  (config: any) => {
     // Apply CORS proxy to the URL if needed
     if (config.url && !config.url.startsWith('http')) {
       const fullUrl = `${API_BASE_URL}${config.url}`;
@@ -191,7 +197,7 @@ api.interceptors.request.use(
     
     return config;
   },
-  (error) => {
+  (error: any) => {
     console.error('Request interceptor error:', error);
     return Promise.reject(error);
   }
@@ -213,7 +219,7 @@ api.interceptors.response.use(
     }
     return response;
   },
-  async (error) => {
+  async (error: any) => {
     const originalRequest = error.config;
     
     // Check if this is a CORS error or network error
@@ -253,7 +259,7 @@ api.interceptors.response.use(
               
               if (!refreshToken) {
                 // No refresh token available, force logout
-                toast.error("Session expired. Please log in again.");
+                toast('Session expired. Please log in again.');
                 // Don't redirect immediately, let the component handle it
                 localStorage.removeItem('accessToken');
                 clearAccessToken();
@@ -277,7 +283,7 @@ api.interceptors.response.use(
               return api(originalRequest);
             } catch (refreshError) {
               // Token refresh failed, force logout
-              toast.error("Authentication failed. Please log in again.");
+              toast('Authentication failed. Please log in again.');
               Cookies.remove('refreshToken');
               clearAccessToken();
               localStorage.removeItem('accessToken');
@@ -287,30 +293,30 @@ api.interceptors.response.use(
           break;
           
         case 403: // Forbidden
-          toast.error("Access denied. You don't have permission to perform this action.");
+          toast('Access denied. You don\'t have permission to perform this action.');
           break;
           
         case 404: // Not Found
-          toast.error("Resource not found.");
+          toast('Resource not found.');
           break;
           
         case 500: // Server Error
         case 502: // Bad Gateway
         case 503: // Service Unavailable
         case 504: // Gateway Timeout
-          toast.error("Server error. Please try again later.");
+          toast('Server error. Please try again later.');
           break;
           
         default:
-          toast.error(error.response.data?.message || "An unexpected error occurred.");
+          toast(error.response.data?.message || 'An unexpected error occurred.');
           break;
       }
     } else if (error.request) {
       // Request was made but no response received (network error)
-      toast.error("Network error. Please check your connection and try again.");
+      toast('Network error. Please check your connection and try again.');
     } else {
       // Something else caused the error
-      toast.error("An unexpected error occurred.");
+      toast('An unexpected error occurred.');
     }
     
     return Promise.reject(error);
@@ -381,4 +387,4 @@ if (typeof window !== 'undefined') {
   }, 1000); // Delay by 1 second to not block initial rendering
 }
 
-export default api;
+export default api; 
