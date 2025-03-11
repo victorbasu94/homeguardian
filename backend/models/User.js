@@ -16,6 +16,11 @@ const UserSchema = new mongoose.Schema({
     minlength: 8,
     select: false // Don't return password by default in queries
   },
+  onboarding_status: {
+    type: String,
+    enum: ['REGISTERED', 'HOME_CREATED', 'TASKS_GENERATED', 'ONBOARDING_COMPLETE'],
+    default: 'REGISTERED'
+  },
   stripe_customer_id: String,
   subscription_status: {
     type: String,

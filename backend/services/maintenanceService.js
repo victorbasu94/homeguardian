@@ -37,6 +37,12 @@ async function shouldGenerateTasks(userId, homeId) {
       return false;
     }
 
+    // Always generate tasks if user is in REGISTERED or HOME_CREATED state
+    if (user.onboarding_status === 'REGISTERED' || user.onboarding_status === 'HOME_CREATED') {
+      logger.info(`User ${userId} is in ${user.onboarding_status} state - generating initial tasks`);
+      return true;
+    }
+
     // If user has just completed onboarding (no last_tasks_generated_at or it's null),
     // we should always generate tasks
     if (!user.last_tasks_generated_at || user.last_tasks_generated_at === null) {
@@ -61,7 +67,8 @@ async function shouldGenerateTasks(userId, homeId) {
       - Last generated: ${lastGenerated.toISO()}
       - Three months ago: ${threeMonthsAgo.toISO()}
       - Should generate: ${shouldGenerate}
-      - Existing tasks count: ${existingTasks.length}`);
+      - Existing tasks count: ${existingTasks.length}
+      - Onboarding status: ${user.onboarding_status}`);
     
     return shouldGenerate;
   } catch (error) {
@@ -204,6 +211,12 @@ async function generateMaintenancePlan(home, useAI = false, forceGeneration = fa
   session.startTransaction();
   
   try {
+    // Get user to check onboarding status
+    const user = await User.findById(home.user_id);
+    if (!user) {
+      throw new Error('User not found');
+    }
+
     // If we're forcing generation or should generate based on rules
     if (forceGeneration) {
       let generatedTasks = [];
@@ -216,6 +229,15 @@ async function generateMaintenancePlan(home, useAI = false, forceGeneration = fa
         // Save mock tasks within the transaction
         await Task.insertMany(mockResult.tasks, { session });
         await updateTaskGenerationTimestamp(home.user_id);
+        
+        // Update user's onboarding status if in onboarding flow
+        if (user.onboarding_status === 'HOME_CREATED' || user.onboarding_status === 'REGISTERED') {
+          await User.findByIdAndUpdate(
+            home.user_id,
+            { onboarding_status: 'TASKS_GENERATED' },
+            { session }
+          );
+        }
         
         await session.commitTransaction();
         return mockResult;
@@ -248,6 +270,15 @@ async function generateMaintenancePlan(home, useAI = false, forceGeneration = fa
             await Task.deleteMany({ home_id: home._id }, { session });
             await Task.insertMany(generatedTasks, { session });
             await updateTaskGenerationTimestamp(home.user_id);
+            
+            // Update user's onboarding status if in onboarding flow
+            if (user.onboarding_status === 'HOME_CREATED' || user.onboarding_status === 'REGISTERED') {
+              await User.findByIdAndUpdate(
+                home.user_id,
+                { onboarding_status: 'TASKS_GENERATED' },
+                { session }
+              );
+            }
             
             await session.commitTransaction();
             
@@ -298,6 +329,15 @@ async function generateMaintenancePlan(home, useAI = false, forceGeneration = fa
       if (generatedTasks.length > 0) {
         await Task.insertMany(generatedTasks, { session });
         await updateTaskGenerationTimestamp(home.user_id);
+        
+        // Update user's onboarding status if in onboarding flow
+        if (user.onboarding_status === 'HOME_CREATED' || user.onboarding_status === 'REGISTERED') {
+          await User.findByIdAndUpdate(
+            home.user_id,
+            { onboarding_status: 'TASKS_GENERATED' },
+            { session }
+          );
+        }
       }
       
       await session.commitTransaction();

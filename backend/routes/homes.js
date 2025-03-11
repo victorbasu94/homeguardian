@@ -5,8 +5,10 @@ const sanitize = require('mongo-sanitize');
 const { verifyToken } = require('../middleware/auth');
 const Home = require('../models/Home');
 const Task = require('../models/Task');
+const User = require('../models/User');
 const logger = require('../utils/logger');
 const { generateMaintenancePlan } = require('../services/maintenanceService');
+const mongoose = require('mongoose');
 
 /**
  * @swagger
@@ -151,11 +153,20 @@ router.post('/',
       .isIn(['primary_residence', 'rental', 'vacation_home', 'other']).withMessage('Invalid occupancy type')
   ],
   async (req, res, next) => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+    
     try {
       // Validate request
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
+      }
+
+      // Get user and check onboarding status
+      const user = await User.findById(req.user.id);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
       }
 
       // Sanitize inputs
@@ -168,7 +179,7 @@ router.post('/',
         number_of_stories: sanitize(req.body.number_of_stories),
         roof_type: sanitize(req.body.roof_type),
         hvac_type: sanitize(req.body.hvac_type),
-        user_id: req.user.id // Set from authenticated user
+        user_id: req.user.id
       };
 
       // Add optional fields if provided
@@ -220,14 +231,38 @@ router.post('/',
       
       if (req.body.occupancy) sanitizedInput.occupancy = sanitize(req.body.occupancy);
 
-      // Create new home
+      // Create new home within the transaction
       const home = new Home(sanitizedInput);
-      await home.save();
+      await home.save({ session });
+
+      // Update user's onboarding status to HOME_CREATED if they're still in REGISTERED state
+      if (user.onboarding_status === 'REGISTERED') {
+        await User.findByIdAndUpdate(
+          req.user.id,
+          { onboarding_status: 'HOME_CREATED' },
+          { session }
+        );
+      }
 
       // Generate initial maintenance plan for the new home
       // Force generation since this is a new home
       const result = await generateMaintenancePlan(home, true, true);
       logger.info(`Generated initial maintenance plan for home ${home._id}`);
+
+      // Update user's onboarding status to TASKS_GENERATED if tasks were created successfully
+      if (result.tasks && result.tasks.length > 0) {
+        await User.findByIdAndUpdate(
+          req.user.id,
+          { 
+            onboarding_status: 'TASKS_GENERATED',
+            last_tasks_generated_at: new Date()
+          },
+          { session }
+        );
+      }
+
+      // Commit the transaction
+      await session.commitTransaction();
 
       // Return success response with both home and tasks
       res.status(201).json({
@@ -238,7 +273,12 @@ router.post('/',
         }
       });
     } catch (error) {
+      // Abort transaction on error
+      await session.abortTransaction();
+      logger.error('Error in home creation:', error);
       next(error);
+    } finally {
+      session.endSession();
     }
   }
 );
