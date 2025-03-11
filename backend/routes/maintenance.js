@@ -44,7 +44,8 @@ router.post('/generate-plan', verifyToken, extendedTimeout, async (req, res) => 
   try {
     logger.info('Received maintenance plan generation request:', {
       body: req.body,
-      user: req.user?.id
+      user: req.user?.id,
+      force: req.query.force
     });
 
     // Log environment mode
@@ -106,10 +107,8 @@ router.post('/generate-plan', verifyToken, extendedTimeout, async (req, res) => 
       });
     }
 
-    // Check if we should generate tasks based on the 3-month rule
+    // Force generation if explicitly requested via query param or if shouldGenerate is true
     const shouldGenerate = await maintenanceService.shouldGenerateTasks(req.user.id, req.body.id);
-    
-    // Force generation if explicitly requested or if shouldGenerate is true
     const forceGeneration = req.query.force === 'true' || shouldGenerate;
     
     logger.info(`Generation decision - shouldGenerate: ${shouldGenerate}, forceGeneration: ${forceGeneration}`);

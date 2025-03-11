@@ -215,7 +215,7 @@ const Onboarding: React.FC = () => {
     
     try {
       // Call API to create home
-      await api.post('/api/homes', {
+      const homeResponse = await api.post('/api/homes', {
         name: `My ${completeFormData.home_type.replace('_', ' ')} Home`,
         home_type: completeFormData.home_type,
         location: `${completeFormData.address}, ${completeFormData.city}, ${completeFormData.state} ${completeFormData.zipCode}`,
@@ -260,16 +260,29 @@ const Onboarding: React.FC = () => {
         reminder_frequency: completeFormData.reminder_frequency,
         notes: completeFormData.notes
       });
+
+      // Force generate maintenance plan for the new home
+      const homeDetails = {
+        id: homeResponse.data.data.home.id,
+        location: homeResponse.data.data.home.location,
+        year_built: homeResponse.data.data.home.year_built,
+        square_footage: homeResponse.data.data.home.square_footage,
+        roof_type: homeResponse.data.data.home.roof_type,
+        hvac_type: homeResponse.data.data.home.hvac_type
+      };
+
+      // Call the maintenance plan generation API with force=true
+      await api.post(`/api/maintenance/generate-plan?force=true`, homeDetails);
       
       // Show success toast
       toast({
         title: 'Home added successfully',
-        description: 'Your home has been set up and is ready to be managed.',
+        description: 'Your home has been set up and maintenance plan has been generated.',
       });
       
-      // Navigate to plan selection instead of dashboard
+      // Navigate to plan selection
       navigate('/plan-selection');
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error adding home:', error);
       
       // Show error toast
