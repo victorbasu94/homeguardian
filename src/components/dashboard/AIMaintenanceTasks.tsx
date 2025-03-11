@@ -72,51 +72,40 @@ interface AIMaintenanceTasksProps {
 }
 
 const AIMaintenanceTasks: React.FC<AIMaintenanceTasksProps> = ({ homeId }) => {
-  const { maintenanceTasks, setMaintenanceTasks, isLoading, error } = useMaintenance();
+  const { maintenanceTasks, setMaintenanceTasks, isLoading, error, currentHomeId } = useMaintenance();
   const [showAll, setShowAll] = useState(false);
   const [selectedTask, setSelectedTask] = useState<MaintenanceTask | null>(null);
   const { toast } = useToast();
   
-  // In production, always use real data
-  const tasks = maintenanceTasks;
+  // Use the homeId prop or fall back to the currentHomeId from context
+  const effectiveHomeId = homeId || currentHomeId;
   
   // Log the tasks to help with debugging
   useEffect(() => {
-    console.log('Current maintenance tasks in AIMaintenanceTasks:', tasks);
-    console.log('Real maintenance tasks from context:', maintenanceTasks);
+    console.log('Current maintenance tasks in AIMaintenanceTasks:', maintenanceTasks);
+    console.log('Effective Home ID:', effectiveHomeId);
+    console.log('Context Home ID:', currentHomeId);
+    console.log('Prop Home ID:', homeId);
     
     // Verify that tasks belong to the current home
-    if (homeId && tasks.length > 0) {
-      console.log('Checking tasks for home ID:', homeId);
+    if (effectiveHomeId && maintenanceTasks.length > 0) {
+      console.log('Checking tasks for home ID:', effectiveHomeId);
       
       // Log each task's home_id for debugging
-      tasks.forEach((task, index) => {
-        console.log(`Task ${index} - Title: ${task.title}, Home ID: ${task.home_id}`);
+      maintenanceTasks.forEach((task, index) => {
+        console.log(`Task ${index} - Title: ${task.title}, Home ID: ${task.home_id || task.homeId}`);
       });
-      
-      // More lenient filtering - check if any property contains the homeId
-      const tasksForCurrentHome = tasks.filter(task => {
-        const taskHomeId = task.home_id || (task as any).homeId;
-        const result = taskHomeId === homeId;
-        console.log(`Task "${task.title}" - Home ID match: ${result} (${taskHomeId} vs ${homeId})`);
-        return result;
-      });
-      
-      if (tasksForCurrentHome.length === 0) {
-        console.warn('No tasks found for the current home ID:', homeId);
-      } else {
-        console.log(`Found ${tasksForCurrentHome.length} tasks for home ID ${homeId}`);
-      }
     }
-  }, [tasks, maintenanceTasks, homeId]);
+  }, [maintenanceTasks, effectiveHomeId, currentHomeId, homeId]);
   
-  // Filter tasks for the current home
-  const tasksForCurrentHome = homeId 
-    ? tasks.filter(task => {
-        const taskHomeId = task.home_id || (task as any).homeId;
-        return taskHomeId === homeId;
+  // Filter tasks for the current home - use a more lenient approach
+  const tasksForCurrentHome = effectiveHomeId 
+    ? maintenanceTasks.filter(task => {
+        const taskHomeId = task.home_id || task.homeId;
+        const result = taskHomeId === effectiveHomeId;
+        return result;
       })
-    : tasks;
+    : maintenanceTasks;
   
   // Filter out completed tasks unless they're explicitly requested
   const incompleteTasks = tasksForCurrentHome.filter(task => task.status !== 'completed');
@@ -155,8 +144,9 @@ const AIMaintenanceTasks: React.FC<AIMaintenanceTasksProps> = ({ homeId }) => {
           We'll generate a personalized maintenance plan for your home. This helps you keep track of important tasks and maintain your property's value.
         </p>
         <div className="text-xs text-muted-foreground">
-          <p>Debug info: Home ID: {homeId}</p>
+          <p>Debug info: Effective Home ID: {effectiveHomeId}</p>
           <p>Total tasks in context: {maintenanceTasks.length}</p>
+          <p>Tasks for this home: {tasksForCurrentHome.length}</p>
         </div>
       </div>
     );
@@ -221,7 +211,7 @@ const AIMaintenanceTasks: React.FC<AIMaintenanceTasksProps> = ({ homeId }) => {
           <h2 className="text-xl font-semibold">AI-Generated Maintenance Plan</h2>
         </div>
         <div className="text-xs text-muted-foreground">
-          Home ID: {homeId} | Tasks: {displayedTasks.length}/{incompleteTasks.length}
+          Home ID: {effectiveHomeId} | Tasks: {displayedTasks.length}/{incompleteTasks.length}
         </div>
       </div>
       

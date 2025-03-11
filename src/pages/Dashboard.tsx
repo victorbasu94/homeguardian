@@ -36,7 +36,7 @@ const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [selectedHome, setSelectedHome] = useState<HomeData | null>(null);
-  const { maintenanceTasks, setMaintenanceTasks, setIsLoading, setError } = useMaintenance();
+  const { maintenanceTasks, setMaintenanceTasks, updateTasks, setIsLoading, setError, setCurrentHomeId } = useMaintenance();
   const { toast } = useToast();
   
   // Effect to load the user's homes when the component mounts
@@ -78,6 +78,9 @@ const Dashboard: React.FC = () => {
     try {
       // First, clear any existing tasks to prevent showing previous user's tasks
       setMaintenanceTasks([]);
+      
+      // Set the current home ID
+      setCurrentHomeId(homeId);
       
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/tasks/${homeId}`, {
         headers: {
@@ -149,7 +152,8 @@ const Dashboard: React.FC = () => {
             estimated_time: task.estimated_time || task.estimatedTime || '1 hour',
             estimated_cost: task.estimated_cost || task.estimatedCost || 0,
             subtasks: subtasks,
-            home_id: task.home_id,
+            home_id: homeId,
+            homeId: homeId,
             
             // Add alternative property names for compatibility
             task: task.title || task.task_name || task.task,
@@ -162,7 +166,9 @@ const Dashboard: React.FC = () => {
         });
         
         console.log('Formatted tasks for frontend:', formattedTasks);
-        setMaintenanceTasks(formattedTasks);
+        
+        // Use the new updateTasks function
+        updateTasks(formattedTasks, homeId);
       }
     } catch (error) {
       console.error("Error fetching tasks:", error);
@@ -172,9 +178,6 @@ const Dashboard: React.FC = () => {
         : "Unknown error occurred while fetching tasks";
       
       setError(`Failed to load tasks: ${errorMessage}`);
-      
-      // Don't automatically use mock data, let the user decide
-      // if they want to use mock data through the UI button
     } finally {
       setIsLoading(false);
     }
@@ -199,6 +202,9 @@ const Dashboard: React.FC = () => {
       
       // Clear any existing tasks to prevent showing previous user's tasks
       setMaintenanceTasks([]);
+      
+      // Set the current home ID
+      setCurrentHomeId(home.id);
       
       // Convert HomeData to HomeDetails format expected by getMaintenancePlan
       const homeDetails = {
@@ -259,6 +265,7 @@ const Dashboard: React.FC = () => {
             estimated_cost: task.estimated_cost || task.estimatedCost || 0,
             subtasks: subtasks,
             home_id: home.id, // Always use the current home's ID
+            homeId: home.id, // Add homeId property for compatibility
             
             // Add alternative property names for compatibility
             task: task.title || task.task_name || task.task,
@@ -266,8 +273,7 @@ const Dashboard: React.FC = () => {
             suggestedCompletionDate: task.due_date || task.suggestedCompletionDate,
             estimatedCost: task.estimated_cost || task.estimatedCost || 0,
             estimatedTime: task.estimated_time || task.estimatedTime || '1 hour',
-            subTasks: subtasks,
-            homeId: home.id // Add homeId property for compatibility
+            subTasks: subtasks
           };
         });
         
@@ -276,19 +282,8 @@ const Dashboard: React.FC = () => {
         // Save the generated tasks to the backend
         await saveTasksToBackend(formattedTasks, home.id);
         
-        // Update the UI with the new tasks - use a function to ensure we're not using stale state
-        console.log('Setting maintenance tasks in context. Count:', formattedTasks.length);
-        setMaintenanceTasks(formattedTasks);
-        
-        // Force a re-render to ensure the tasks are displayed
-        setTimeout(() => {
-          console.log('Current tasks in context after setting:', maintenanceTasks.length);
-          // If tasks aren't showing up, try setting them again
-          if (maintenanceTasks.length === 0 && formattedTasks.length > 0) {
-            console.log('Tasks not showing up, setting them again...');
-            setMaintenanceTasks([...formattedTasks]);
-          }
-        }, 500);
+        // Use the new updateTasks function for more reliable updates
+        updateTasks(formattedTasks, home.id);
       } else {
         // This shouldn't happen as the API should throw an error if no tasks are returned
         console.error("No tasks in maintenance plan");
