@@ -187,145 +187,138 @@ function calculateDueDate(frequency) {
 async function generateMaintenancePlan(home, useAI = false, forceGeneration = false) {
   try {
     // Check if tasks should be generated based on the 3-month rule
-    if (!forceGeneration) {
-      const shouldGenerate = await shouldGenerateTasks(home.user_id, home._id);
+    const shouldGenerate = await shouldGenerateTasks(home.user_id, home._id);
+    
+    // If we're forcing generation or should generate based on rules
+    if (forceGeneration || shouldGenerate) {
+      let generatedTasks = [];
       
-      if (!shouldGenerate) {
-        logger.info(`Skipping task generation for user ${home.user_id} - less than 3 months since last generation`);
-        
-        // Return existing tasks instead
-        const existingTasks = await Task.find({ home_id: home._id });
-        
-        // Include a message indicating we're using existing tasks
-        return {
-          tasks: existingTasks,
-          message: 'Using existing maintenance plan (less than 3 months since last generation)',
-          generated_at: new Date().toISOString()
-        };
+      // Check if we're in development mode - if so, use mock data instead of calling OpenAI
+      if (process.env.NODE_ENV !== 'production') {
+        logger.info('Using mock data for maintenance plan in development mode');
+        return generateMockMaintenancePlan(home);
       }
-    }
-    
-    // Check if we're in development mode - if so, use mock data instead of calling OpenAI
-    if (process.env.NODE_ENV !== 'production') {
-      logger.info('Using mock data for maintenance plan in development mode');
-      return generateMockMaintenancePlan(home);
-    }
-    
-    // If AI-powered plan generation is requested and we're in production
-    if (useAI && process.env.OPENAI_API_KEY) {
-      try {
-        const aiPlan = await generateMaintenancePlanWithAI(home);
-        const tasks = [];
-        
-        // Convert AI-generated plan to our task format
-        if (aiPlan && aiPlan.tasks && Array.isArray(aiPlan.tasks)) {
-          for (const item of aiPlan.tasks) {
-            // Create task with AI-generated details
-            const taskData = {
+      
+      // If AI-powered plan generation is requested and we're in production
+      if (useAI && process.env.OPENAI_API_KEY) {
+        try {
+          const aiPlan = await generateMaintenancePlanWithAI(home);
+          
+          // Convert AI-generated plan to our task format
+          if (aiPlan && aiPlan.tasks && Array.isArray(aiPlan.tasks)) {
+            generatedTasks = aiPlan.tasks.map(item => ({
               home_id: home._id,
               task_name: item.title || item.task,
               description: item.description || item.taskDescription || `Maintenance task: ${item.title || item.task}`,
               frequency: 'custom', // AI doesn't specify frequency directly
               due_date: item.due_date || item.suggestedCompletionDate,
               why: "AI-recommended maintenance task",
-              estimated_time: parseEstimatedTime(item.estimated_time || item.estimatedTime), // Convert time string to minutes
+              estimated_time: parseEstimatedTime(item.estimated_time || item.estimatedTime),
               estimated_cost: item.estimated_cost || item.estimatedCost || 0,
               category: item.category || 'maintenance',
               priority: item.priority || determinePriority(item.due_date || item.suggestedCompletionDate),
               steps: item.subtasks || item.subTasks || [],
               completed: false,
               ai_generated: true
+            }));
+            
+            // Save all tasks to the database
+            if (generatedTasks.length > 0) {
+              await Task.insertMany(generatedTasks);
+              
+              // Update the last_tasks_generated_at timestamp
+              await updateTaskGenerationTimestamp(home.user_id);
+            }
+            
+            return {
+              tasks: generatedTasks,
+              message: 'AI-powered maintenance plan generated successfully',
+              generated_at: aiPlan.generated_at || new Date().toISOString()
+            };
+          }
+        } catch (error) {
+          logger.error('Error generating AI maintenance plan, falling back to rule-based:', error);
+          // Fall back to rule-based if AI fails
+        }
+      }
+      
+      // Original rule-based logic if AI generation failed or wasn't requested
+      const { rules } = taskRules;
+
+      // Check each rule against the home
+      for (const rule of rules) {
+        // If there are multiple conditions, all must be met
+        let conditionsMet = true;
+        
+        if (Array.isArray(rule.conditions)) {
+          for (const condition of rule.conditions) {
+            if (!evaluateCondition(condition, home)) {
+              conditionsMet = false;
+              break;
+            }
+          }
+        } else if (rule.condition) {
+          // Backward compatibility for single condition
+          conditionsMet = evaluateCondition(rule.condition, home);
+        }
+
+        if (conditionsMet) {
+          // Check if this task already exists for this home
+          const existingTask = await Task.findOne({
+            home_id: home._id,
+            task_name: rule.task.task_name
+          });
+
+          // Only add if no duplicate exists
+          if (!existingTask) {
+            const dueDate = calculateDueDate(rule.task.frequency);
+            
+            // Create task with enhanced details
+            const taskData = {
+              home_id: home._id,
+              task_name: rule.task.task_name,
+              description: rule.task.description || `Maintenance task: ${rule.task.task_name}`,
+              frequency: rule.task.frequency,
+              due_date: dueDate,
+              why: rule.task.why,
+              estimated_time: rule.task.estimated_time || 30,
+              estimated_cost: rule.task.estimated_cost || 0,
+              category: rule.task.category || 'maintenance',
+              priority: rule.task.priority || 'medium',
+              steps: rule.task.steps || [],
+              completed: false
             };
             
-            tasks.push(taskData);
+            generatedTasks.push(taskData);
           }
-          
-          // Save all tasks to the database
-          if (tasks.length > 0) {
-            await Task.insertMany(tasks);
-            
-            // Update the last_tasks_generated_at timestamp
-            await updateTaskGenerationTimestamp(home.user_id);
-          }
-          
-          return {
-            tasks,
-            message: 'AI-powered maintenance plan generated successfully',
-            generated_at: aiPlan.generated_at || new Date().toISOString()
-          };
         }
-      } catch (error) {
-        logger.error('Error generating AI maintenance plan, falling back to rule-based:', error);
-        // Fall back to rule-based if AI fails
       }
-    }
-    
-    // Original rule-based logic
-    const tasks = [];
-    const { rules } = taskRules;
 
-    // Check each rule against the home
-    for (const rule of rules) {
-      // If there are multiple conditions, all must be met
-      let conditionsMet = true;
+      // Save all tasks to the database
+      if (generatedTasks.length > 0) {
+        await Task.insertMany(generatedTasks);
+        
+        // Update the last_tasks_generated_at timestamp
+        await updateTaskGenerationTimestamp(home.user_id);
+      }
+
+      return {
+        tasks: generatedTasks,
+        message: 'Rule-based maintenance plan generated successfully',
+        generated_at: new Date().toISOString()
+      };
+    } else {
+      logger.info(`Using existing maintenance plan for user ${home.user_id}`);
       
-      if (Array.isArray(rule.conditions)) {
-        for (const condition of rule.conditions) {
-          if (!evaluateCondition(condition, home)) {
-            conditionsMet = false;
-            break;
-          }
-        }
-      } else if (rule.condition) {
-        // Backward compatibility for single condition
-        conditionsMet = evaluateCondition(rule.condition, home);
-      }
-
-      if (conditionsMet) {
-        // Check if this task already exists for this home
-        const existingTask = await Task.findOne({
-          home_id: home._id,
-          task_name: rule.task.task_name
-        });
-
-        // Only add if no duplicate exists
-        if (!existingTask) {
-          const dueDate = calculateDueDate(rule.task.frequency);
-          
-          // Create task with enhanced details
-          const taskData = {
-            home_id: home._id,
-            task_name: rule.task.task_name,
-            description: rule.task.description || `Maintenance task: ${rule.task.task_name}`,
-            frequency: rule.task.frequency,
-            due_date: dueDate,
-            why: rule.task.why,
-            estimated_time: rule.task.estimated_time || 30, // Default 30 minutes
-            estimated_cost: rule.task.estimated_cost || 0,
-            category: rule.task.category || 'maintenance',
-            priority: rule.task.priority || 'medium',
-            steps: rule.task.steps || [],
-            completed: false
-          };
-          
-          tasks.push(taskData);
-        }
-      }
-    }
-
-    // Save all tasks to the database
-    if (tasks.length > 0) {
-      await Task.insertMany(tasks);
+      // Return existing tasks instead
+      const existingTasks = await Task.find({ home_id: home._id });
       
-      // Update the last_tasks_generated_at timestamp
-      await updateTaskGenerationTimestamp(home.user_id);
+      return {
+        tasks: existingTasks,
+        message: 'Using existing maintenance plan (less than 3 months since last generation)',
+        generated_at: new Date().toISOString()
+      };
     }
-
-    return {
-      tasks,
-      message: 'Rule-based maintenance plan generated successfully',
-      generated_at: new Date().toISOString()
-    };
   } catch (error) {
     logger.error('Error generating maintenance plan:', error);
     throw error;
