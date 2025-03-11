@@ -36,7 +36,9 @@ const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
-    'Accept': 'application/json'
+    'Accept': 'application/json',
+    'Cache-Control': 'no-cache',
+    'Pragma': 'no-cache'
   },
   withCredentials: true,
   timeout: 15000
@@ -71,7 +73,7 @@ export const clearAccessToken = () => {
 
 // Request interceptor
 api.interceptors.request.use(
-  (config: InternalAxiosRequestConfig) => {
+  (config) => {
     if (accessToken && config.headers) {
       config.headers.Authorization = `Bearer ${accessToken}`;
     }
@@ -82,12 +84,23 @@ api.interceptors.request.use(
 
 // Response interceptor
 api.interceptors.response.use(
-  (response: AxiosResponse) => response,
+  (response) => response,
   async (error) => {
     if (error.response) {
+      // Log the error for debugging
+      console.error('API Error:', {
+        status: error.response.status,
+        data: error.response.data,
+        url: error.config.url
+      });
+      
       switch (error.response.status) {
         case 401:
           clearAccessToken();
+          break;
+        case 403:
+          // Handle forbidden error
+          console.error('Access forbidden:', error.response.data);
           break;
       }
     }
@@ -135,5 +148,36 @@ if (typeof window !== 'undefined') {
     });
   }, 1000); // Delay by 1 second to not block initial rendering
 }
+
+// Function to make a direct fetch request as a fallback
+export const directFetch = async (endpoint: string) => {
+  const url = `${API_BASE_URL}${endpoint}`;
+  const token = localStorage.getItem('accessToken');
+  
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      mode: 'cors',
+      credentials: 'include',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Authorization': token ? `Bearer ${token}` : '',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    return { data };
+  } catch (error) {
+    console.error('Direct fetch error:', error);
+    throw error;
+  }
+};
 
 export default api; 
