@@ -62,7 +62,29 @@ router.get('/:homeId',
       }
       
       // Fetch tasks for the home
-      const tasks = await Task.find({ home_id: homeId }).sort({ due_date: 1 });
+      let tasks = await Task.find({ home_id: homeId }).sort({ due_date: 1 });
+      
+      // If no tasks found, check if we should generate them based on the 3-month rule
+      if (tasks.length === 0) {
+        const { shouldGenerateTasks, generateMaintenancePlan } = require('../services/maintenanceService');
+        const shouldGenerate = await shouldGenerateTasks(req.user.id);
+        
+        if (shouldGenerate) {
+          // Generate tasks if it's been more than 3 months or never generated before
+          logger.info(`Generating initial tasks for home ${homeId} and user ${req.user.id}`);
+          const result = await generateMaintenancePlan(home, true);
+          tasks = result.tasks;
+          
+          // Return tasks with a message
+          return res.status(200).json({ 
+            data: tasks,
+            message: 'Generated initial maintenance plan for your home'
+          });
+        } else {
+          // If we shouldn't generate tasks, just return empty array
+          logger.info(`Not generating tasks for home ${homeId} - less than 3 months since last generation`);
+        }
+      }
       
       // Return tasks
       res.status(200).json({ data: tasks });

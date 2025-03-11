@@ -68,7 +68,8 @@ exports.register = async (req, res) => {
       password,
       email_verified: true,
       verification_token: verificationToken,
-      verification_token_expiry: verificationTokenExpiry
+      verification_token_expiry: verificationTokenExpiry,
+      last_tasks_generated_at: null // Explicitly set to null to ensure tasks are generated on first login
     });
     
     // Save user to database
@@ -208,6 +209,11 @@ exports.login = async (req, res) => {
     
     // Save refresh token to database
     user.refresh_token = refreshToken;
+
+    // Don't modify last_tasks_generated_at on login
+    // This ensures the 3-month rule is respected
+    // The last_tasks_generated_at field will only be updated when tasks are actually generated
+
     await user.save();
     
     // Set refresh token as HttpOnly cookie

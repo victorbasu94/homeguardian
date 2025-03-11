@@ -21,6 +21,17 @@ interface HomeData {
   hvac_type?: string;
 }
 
+// Add this interface at the top of the file, after the imports
+interface TasksApiResponse {
+  data: any[];
+  message?: string;
+}
+
+// Add this interface after the TasksApiResponse interface
+interface MaintenancePlanResponse extends MaintenancePlan {
+  message?: string;
+}
+
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -76,10 +87,21 @@ const Dashboard: React.FC = () => {
         throw new Error(errorData.message || `Failed to fetch tasks: ${response.status}`);
       }
       
-      const data = await response.json();
+      const data = await response.json() as TasksApiResponse;
+      
+      // Check if we got a message about tasks not being generated due to 3-month rule
+      if (data.message && data.message.includes('less than 3 months')) {
+        toast({
+          title: "Using existing tasks",
+          description: "New tasks are only generated once every 3 months.",
+          duration: 5000,
+        });
+      }
+      
       if (!data.data || data.data.length === 0) {
         // If no tasks found, try to generate a maintenance plan
-        if (selectedHome) {
+        // But only if we don't have a message about the 3-month rule
+        if (selectedHome && (!data.message || !data.message.includes('less than 3 months'))) {
           await fetchMaintenancePlan(selectedHome);
         } else {
           setError('No maintenance tasks found for this home.');
@@ -92,8 +114,8 @@ const Dashboard: React.FC = () => {
           title: task.task_name,
           description: task.description,
           due_date: task.due_date,
-          status: task.completed ? 'completed' : 'pending',
-          priority: task.priority,
+          status: (task.completed ? 'completed' : 'pending') as 'completed' | 'pending',
+          priority: task.priority as 'low' | 'medium' | 'high',
           category: task.category,
           estimated_time: task.estimated_time || '1 hour',
           estimated_cost: task.estimated_cost || 0,
@@ -104,25 +126,21 @@ const Dashboard: React.FC = () => {
         setMaintenanceTasks(formattedTasks);
       }
     } catch (error) {
-      console.error("Error fetching maintenance plan:", error);
+      console.error("Error fetching tasks:", error);
       
       const errorMessage = error instanceof Error 
         ? error.message 
-        : "Unknown error occurred while fetching maintenance plan";
+        : "Unknown error occurred while fetching tasks";
       
-      setError(`Failed to load maintenance plan: ${errorMessage}`);
+      setError(`Failed to load tasks: ${errorMessage}`);
       
       // In development mode, use mock data if real data fails to load
       if (import.meta.env.DEV) {
-        console.log("Using mock data in development mode");
-        // Add the home_id to the mock tasks
-        const mockedTasks = MOCK_MAINTENANCE_TASKS.map((task: MaintenanceTask) => ({
+        console.log('Using mock data in development mode');
+        setMaintenanceTasks(MOCK_MAINTENANCE_TASKS.map(task => ({
           ...task,
           home_id: homeId
-        }));
-        setMaintenanceTasks(mockedTasks);
-      } else {
-        setMaintenanceTasks([]);
+        })));
       }
     } finally {
       setIsLoading(false);
@@ -159,7 +177,7 @@ const Dashboard: React.FC = () => {
       console.log('Fetching maintenance plan for home:', home.id);
       
       // Call the API to get maintenance plan
-      const maintenancePlan = await getMaintenancePlan(homeDetails);
+      const maintenancePlan = await getMaintenancePlan(homeDetails) as MaintenancePlanResponse;
       
       // If we got tasks back, update the context
       if (maintenancePlan && maintenancePlan.tasks && maintenancePlan.tasks.length > 0) {

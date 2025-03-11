@@ -51,6 +51,7 @@ router.post('/generate-plan', verifyToken, async (req, res) => {
     }
 
     // Verify that the home belongs to the authenticated user
+    let home;
     try {
       const Home = require('../models/Home');
       const homeId = req.body.id;
@@ -62,7 +63,7 @@ router.post('/generate-plan', verifyToken, async (req, res) => {
         : homeId;
       
       // Find the home
-      const home = await Home.findById(homeObjectId);
+      home = await Home.findById(homeObjectId);
       
       if (!home) {
         logger.warn(`Home not found: ${homeId}`);
@@ -93,6 +94,27 @@ router.post('/generate-plan', verifyToken, async (req, res) => {
       });
     }
 
+    // Check if we should generate tasks based on the 3-month rule
+    const { shouldGenerateTasks, generateMaintenancePlan } = require('../services/maintenanceService');
+    const shouldGenerate = await shouldGenerateTasks(req.user.id);
+    
+    // If force=true is provided in the query, generate tasks regardless of the 3-month rule
+    const forceGeneration = req.query.force === 'true';
+    
+    if (!shouldGenerate && !forceGeneration) {
+      logger.info(`Skipping task generation for user ${req.user.id} - less than 3 months since last generation`);
+      
+      // Return existing tasks instead
+      const Task = require('../models/Task');
+      const existingTasks = await Task.find({ home_id: req.body.id });
+      
+      return res.status(200).json({
+        tasks: existingTasks,
+        message: 'Using existing maintenance plan (less than 3 months since last generation)',
+        generated_at: new Date().toISOString()
+      });
+    }
+    
     // Generate maintenance plan using OpenAI
     logger.info('Calling OpenAI service with home details');
     
@@ -119,12 +141,13 @@ router.post('/generate-plan', verifyToken, async (req, res) => {
       // Continue with plan generation even if deletion fails
     }
     
-    const maintenancePlan = await generateMaintenancePlanWithAI(req.body);
+    // Use our maintenanceService instead of directly calling OpenAI
+    const result = await generateMaintenancePlan(home, true, forceGeneration);
     
     logger.info('Successfully generated maintenance plan');
     
-    // Return the maintenance plan directly since it's already in the correct format
-    res.status(200).json(maintenancePlan);
+    // Return the maintenance plan
+    res.status(200).json(result);
   } catch (error) {
     logger.error('Error generating maintenance plan:', {
       error: error.message,
