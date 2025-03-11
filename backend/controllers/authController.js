@@ -58,15 +58,28 @@ exports.register = async (req, res) => {
       });
     }
     
-    // Create new user with email_verified set to true
+    // Generate verification token
+    const verificationToken = crypto.randomBytes(20).toString('hex');
+    const verificationTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    
+    // Create new user
     const user = new User({
       email,
       password,
-      email_verified: true // Set to true by default
+      email_verified: true,
+      verification_token: verificationToken,
+      verification_token_expiry: verificationTokenExpiry
     });
     
     // Save user to database
     await user.save();
+    
+    // Send verification email
+    const emailSent = await emailService.sendVerificationEmail(user, verificationToken);
+    
+    if (!emailSent) {
+      logger.warn(`Failed to send verification email to ${email}`);
+    }
     
     // Auto-login: Generate tokens
     const accessToken = generateToken(user._id);
@@ -82,7 +95,7 @@ exports.register = async (req, res) => {
     // Return success response with access token
     res.status(201).json({
       status: 'success',
-      message: 'Registration successful.',
+      message: 'Registration successful. Please check your email to verify your account.',
       accessToken,
       user: {
         id: user._id,
@@ -149,14 +162,12 @@ exports.verifyEmail = async (req, res) => {
  */
 exports.login = async (req, res) => {
   try {
-    console.log('Login controller called with body:', req.body);
-    
-    // Check if the request body is empty or missing required fields
-    if (!req.body || !req.body.email || !req.body.password) {
-      console.error('Missing required fields in request body');
+    // Check for validation errors
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
       return res.status(400).json({
         status: 'error',
-        message: 'Email and password are required'
+        errors: errors.array()
       });
     }
     
@@ -166,7 +177,6 @@ exports.login = async (req, res) => {
     const user = await User.findOne({ email }).select('+password');
     
     if (!user) {
-      console.log('User not found:', email);
       return res.status(401).json({
         status: 'error',
         message: 'Invalid email or password'
@@ -177,19 +187,19 @@ exports.login = async (req, res) => {
     const isPasswordCorrect = await user.comparePassword(password);
     
     if (!isPasswordCorrect) {
-      console.log('Incorrect password for user:', email);
       return res.status(401).json({
         status: 'error',
         message: 'Invalid email or password'
       });
     }
     
-    // Always set email_verified to true
+    // Check if email is verified
     if (!user.email_verified) {
-      console.log(`Setting email_verified to true for user: ${email}`);
+      // Always set email_verified to true
+      logger.info(`Auto-verifying email for user: ${email}`);
       user.email_verified = true;
       // No need to await this save, we can do it in the background
-      user.save().catch(err => console.error('Error saving user:', err));
+      user.save().catch(err => logger.error('Error saving user:', err));
     }
     
     // Generate tokens
@@ -203,10 +213,8 @@ exports.login = async (req, res) => {
     // Set refresh token as HttpOnly cookie
     setRefreshTokenCookie(res, refreshToken);
     
-    console.log('Login successful for user:', email);
-    
     // Return success response with access token
-    return res.status(200).json({
+    res.status(200).json({
       status: 'success',
       accessToken,
       user: {
@@ -216,9 +224,8 @@ exports.login = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Login error:', error);
-    
-    return res.status(500).json({
+    logger.error('Login error:', error);
+    res.status(500).json({
       status: 'error',
       message: 'An error occurred during login. Please try again.'
     });
@@ -418,33 +425,5 @@ exports.getCurrentUser = async (req, res) => {
       status: 'error',
       message: 'An error occurred. Please try again.'
     });
-  }
-};
-
-/**
- * Update all users to have email_verified set to true
- * This function is called when the server starts
- */
-exports.verifyAllEmails = async () => {
-  try {
-    // Find all users with email_verified set to false
-    const users = await User.find({ email_verified: false });
-    
-    if (users.length === 0) {
-      console.log('No users found with unverified emails');
-      return;
-    }
-    
-    console.log(`Found ${users.length} users with unverified emails`);
-    
-    // Update all users to have email_verified set to true
-    const result = await User.updateMany(
-      { email_verified: false },
-      { $set: { email_verified: true } }
-    );
-    
-    console.log(`Updated ${result.modifiedCount} users to have verified emails`);
-  } catch (error) {
-    console.error('Error verifying all emails:', error);
   }
 }; 
