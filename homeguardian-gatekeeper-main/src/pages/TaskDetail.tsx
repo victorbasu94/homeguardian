@@ -319,22 +319,27 @@ const TaskDetail: React.FC = () => {
       setIsLoading(true);
       
       try {
-        // In a real app, this would be an API call
-        // const response = await api.get(`/tasks/${taskId}`);
-        // setTask(response.data);
-        
-        // For now, we'll use mock data
-        setTimeout(() => {
-          setTask(mockTask);
-          setIsLoading(false);
-        }, 1000);
+        console.log(`Fetching task details for taskId: ${taskId}`);
+        // Replace mock data with real API call
+        const response = await api.get(`/tasks/${taskId}`);
+        console.log('Task details fetched successfully:', response.data);
+        setTask(response.data);
+        setIsLoading(false);
       } catch (error) {
         console.error('Error fetching task:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to load task details.',
-          variant: 'destructive',
-        });
+        
+        // In development mode, fall back to mock data if API call fails
+        if (import.meta.env.DEV) {
+          console.log('Using mock data in development as fallback');
+          setTask(mockTask);
+        } else {
+          toast({
+            title: 'Error',
+            description: 'Failed to load task details.',
+            variant: 'destructive',
+          });
+        }
+        
         setIsLoading(false);
       }
     };
