@@ -5,11 +5,11 @@ import { toast } from 'sonner';
 // Get the API base URL from environment variables
 let API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001';
 
-console.log('Original API Base URL:', API_BASE_URL);
+console.log('API Base URL:', API_BASE_URL);
 
 // CORS Proxy Configuration
 // In production, we'll use a CORS proxy to bypass CORS restrictions
-const USE_CORS_PROXY = false; // Set to false to disable the CORS proxy
+const USE_CORS_PROXY = false; // Disable CORS proxy by default
 
 // List of CORS proxies to try in order
 const CORS_PROXIES = [
@@ -80,13 +80,11 @@ console.log('Final API Base URL:', API_BASE_URL);
 
 // Create a base axios instance with common configuration
 const api = axios.create({
-  // We don't apply the proxy to the baseURL, but to individual requests
   baseURL: API_BASE_URL,
   headers: {
-    'Content-Type': 'application/json',
+    'Content-Type': 'application/json'
   },
-  withCredentials: USE_CORS_PROXY ? false : true, // Disable withCredentials when using proxy
-  timeout: 10000, // 10 seconds
+  timeout: 15000 // 15 seconds
 });
 
 // In-memory token storage (more secure than localStorage)
@@ -98,7 +96,7 @@ if (typeof window !== 'undefined') {
     const storedToken = localStorage.getItem('accessToken');
     if (storedToken) {
       accessToken = storedToken;
-      console.log('Token loaded from localStorage on initialization:', storedToken.substring(0, 10) + '...');
+      console.log('Token loaded from localStorage on initialization');
     } else {
       console.log('No token found in localStorage on initialization');
     }
@@ -118,7 +116,7 @@ export const setAccessToken = (token: string) => {
     accessToken = token;
     // Also set it directly in the headers for immediate use
     api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-    console.log('Access token set successfully:', token.substring(0, 10) + '...');
+    console.log('Access token set successfully');
     
     // Also store in localStorage for persistence
     localStorage.setItem('accessToken', token);
@@ -136,58 +134,18 @@ export const getAccessToken = () => {
 // Function to clear the access token (logout)
 export const clearAccessToken = () => {
   accessToken = null;
+  delete api.defaults.headers.common['Authorization'];
+  localStorage.removeItem('accessToken');
+  console.log('Access token cleared');
 };
-
-// Make getAccessToken accessible from window for auth checks
-if (typeof window !== 'undefined') {
-  (window as any).getAccessToken = getAccessToken;
-}
 
 // Add request interceptor
 api.interceptors.request.use(
   (config) => {
-    // Apply CORS proxy to the URL if needed
-    if (config.url && !config.url.startsWith('http')) {
-      const fullUrl = `${API_BASE_URL}${config.url}`;
-      config.url = applyProxyIfNeeded(fullUrl);
-    } else if (config.url) {
-      config.url = applyProxyIfNeeded(config.url);
-    }
-    
     // Add authorization header if we have a token
     if (accessToken) {
-      console.log('Request with token:', accessToken.substring(0, 10) + '...');
       config.headers.Authorization = `Bearer ${accessToken}`;
-      
-      // Debug: Check if the header was actually set
-      console.log('Authorization header set:', config.headers.Authorization.substring(0, 16) + '...');
-    } else {
-      console.log('Request without token');
-      
-      // Debug: Check if there's a token in localStorage that wasn't set in memory
-      try {
-        const storedToken = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
-        if (storedToken) {
-          console.log('Found token in localStorage but not in memory:', storedToken.substring(0, 10) + '...');
-          // Set the token in memory and in the request
-          accessToken = storedToken;
-          config.headers.Authorization = `Bearer ${storedToken}`;
-          console.log('Authorization header set from localStorage:', config.headers.Authorization.substring(0, 16) + '...');
-        } else {
-          console.log('No token found in localStorage either');
-        }
-      } catch (error) {
-        console.error('Error checking localStorage for token:', error);
-      }
     }
-    
-    // Log the full request details for debugging
-    console.log('Request details:', {
-      url: config.url,
-      method: config.method,
-      baseURL: config.baseURL,
-      hasAuthHeader: !!config.headers.Authorization,
-    });
     
     return config;
   },

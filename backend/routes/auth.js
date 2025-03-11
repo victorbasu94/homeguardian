@@ -152,37 +152,18 @@ router.options('/login', (req, res) => {
  *         description: Login successful
  *       401:
  *         description: Invalid credentials
- *       403:
- *         description: Email not verified
  *       500:
  *         description: Server error
  */
-router.post(
-  '/login',
-  // Temporarily bypass rate limiter for debugging
-  // loginLimiter,
-  [
-    body('email')
-      .isEmail()
-      .withMessage('Please provide a valid email address')
-      .normalizeEmail(),
-    body('password')
-      .isLength({ min: 1 })
-      .withMessage('Password is required')
-  ],
-  (req, res, next) => {
-    // Log the request details
-    console.log('Login request received:', {
-      body: req.body,
-      headers: req.headers,
-      ip: req.ip,
-      method: req.method,
-      url: req.originalUrl
-    });
-    next();
-  },
-  authController.login
-);
+router.post('/login', (req, res, next) => {
+  console.log('Login request received:', {
+    body: req.body,
+    method: req.method,
+    url: req.originalUrl,
+    ip: req.ip
+  });
+  next();
+}, authController.login);
 
 /**
  * @swagger

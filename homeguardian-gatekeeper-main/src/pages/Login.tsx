@@ -55,70 +55,37 @@ export default function Login() {
       
       console.log('Attempting to log in user with:', { email: data.email });
       
-      // For testing purposes, use a hardcoded test account
-      if (data.email === 'test@example.com' && data.password === 'password123') {
-        console.log('Using test account login');
-        
-        // Simulate a successful login
-        const testResponse = {
-          status: 'success',
-          accessToken: 'test_access_token',
-          user: {
-            id: 'test_user_id',
-            email: 'test@example.com',
-            subscription_status: 'active'
-          }
-        };
-        
-        // Save remember me preference
-        if (data.rememberMe) {
-          localStorage.setItem('rememberMe', 'true');
-        } else {
-          localStorage.removeItem('rememberMe');
-        }
-        
-        // Call the login function from useAuth
-        login(testResponse.accessToken, testResponse.user);
-        
-        toast({
-          title: 'Success',
-          description: 'You have been logged in successfully with the test account.'
-        });
-        
-        navigate('/dashboard');
-        return;
-      }
+      // Direct API call without any proxies or complex logic
+      const apiUrl = `${import.meta.env.VITE_API_BASE_URL}/api/auth/login`;
+      console.log('Login URL:', apiUrl);
       
-      // Try a simple direct fetch first
-      console.log('Attempting direct fetch to login endpoint...');
-      
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/auth/login`, {
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           email: data.email,
           password: data.password
-        }),
-        credentials: 'include'
+        })
       });
       
       console.log('Login response status:', response.status);
       
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Login failed:', {
-          status: response.status,
-          statusText: response.statusText,
-          body: errorText
-        });
-        throw new Error(`Login failed: ${response.status} ${response.statusText}`);
+      let responseData;
+      try {
+        responseData = await response.json();
+        console.log('Login response data:', responseData);
+      } catch (parseError) {
+        console.error('Error parsing response:', parseError);
+        const text = await response.text();
+        console.log('Response text:', text);
+        throw new Error('Invalid response format from server');
       }
       
-      const responseData = await response.json();
-      console.log('Login response data:', responseData);
+      if (!response.ok) {
+        throw new Error(responseData.message || `Login failed: ${response.status} ${response.statusText}`);
+      }
       
       // Extract token and user data
       const { accessToken, user } = responseData;
@@ -146,36 +113,11 @@ export default function Login() {
     } catch (error: any) {
       console.error('Login error:', error);
       
-      // Get detailed error information
-      const statusCode = error.response?.status || error.status;
-      const errorMessage = error.response?.data?.message || error.data?.message || error.message || 'Failed to log in. Please check your credentials and try again.';
-      
-      console.error('Login error details:', {
-        statusCode,
-        errorMessage,
-        error
+      toast({
+        title: 'Login Failed',
+        description: error.message || 'An error occurred during login. Please try again.',
+        variant: 'destructive'
       });
-      
-      // Special handling for different error types
-      if (error.message?.includes('CORS') || error.message?.includes('Network Error')) {
-        toast({
-          title: 'Connection Error',
-          description: 'Unable to connect to the server due to CORS or network issues. Please try again later.',
-          variant: 'destructive'
-        });
-      } else if (statusCode === 403) {
-        toast({
-          title: 'Access Denied (403)',
-          description: 'The server rejected your login request. Please check your credentials and try again.',
-          variant: 'destructive'
-        });
-      } else {
-        toast({
-          title: `Login failed ${statusCode ? `(${statusCode})` : ''}`,
-          description: errorMessage,
-          variant: 'destructive'
-        });
-      }
     } finally {
       setIsLoading(false);
     }
@@ -183,83 +125,6 @@ export default function Login() {
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
-  };
-  
-  const testApiConnection = async () => {
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/auth/test`, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json'
-        }
-      });
-      
-      const data = await response.json();
-      console.log('API test response:', data);
-      
-      toast({
-        title: 'API Connection Test',
-        description: `Status: ${response.status}. Check console for details.`,
-        variant: response.ok ? 'default' : 'destructive'
-      });
-    } catch (error) {
-      console.error('API test error:', error);
-      
-      toast({
-        title: 'API Connection Failed',
-        description: error.message || 'Could not connect to the API',
-        variant: 'destructive'
-      });
-    }
-  };
-  
-  const tryDirectLogin = async () => {
-    try {
-      setIsLoading(true);
-      
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/auth/direct-login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({
-          email: form.getValues('email') || 'test@example.com',
-          password: form.getValues('password') || 'password123'
-        })
-      });
-      
-      const data = await response.json();
-      console.log('Direct login response:', data);
-      
-      if (response.ok && data.accessToken && data.user) {
-        // Call the login function from useAuth
-        login(data.accessToken, data.user);
-        
-        toast({
-          title: 'Direct Login Successful',
-          description: 'You have been logged in using the direct endpoint.'
-        });
-        
-        navigate('/dashboard');
-      } else {
-        toast({
-          title: 'Direct Login Failed',
-          description: data.message || 'Unknown error',
-          variant: 'destructive'
-        });
-      }
-    } catch (error) {
-      console.error('Direct login error:', error);
-      
-      toast({
-        title: 'Direct Login Failed',
-        description: error.message || 'Could not connect to the direct login endpoint',
-        variant: 'destructive'
-      });
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   return (
@@ -278,20 +143,6 @@ export default function Login() {
             <p className="text-neutral/70">
               Sign in to your account to continue
             </p>
-            <div className="flex justify-center space-x-4 mt-2">
-              <button 
-                onClick={testApiConnection}
-                className="text-xs text-primary hover:underline"
-              >
-                Test API Connection
-              </button>
-              <button 
-                onClick={tryDirectLogin}
-                className="text-xs text-primary hover:underline"
-              >
-                Try Direct Login
-              </button>
-            </div>
           </div>
           
           <div className="bg-white p-8 rounded-2xl shadow-card">

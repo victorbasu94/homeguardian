@@ -20,7 +20,10 @@ const { initReminderService } = require('./services/reminderService');
 const app = express();
 
 // Connect to MongoDB
-connectDB();
+connectDB().then(() => {
+  // Create test user after connecting to MongoDB
+  createTestUser();
+});
 
 // Initialize reminder service
 initReminderService();
@@ -90,27 +93,7 @@ app.use((req, res, next) => {
 
 // CORS configuration
 app.use(cors({
-  origin: function(origin, callback) {
-    // Allow requests with no origin (like mobile apps, curl requests)
-    if(!origin) return callback(null, true);
-    
-    // List of allowed origins
-    const allowedOrigins = [
-      'http://localhost:8081', 
-      'http://localhost:5173', 
-      'http://localhost:8080', 
-      'http://localhost:8082',
-      'https://maintainmint.vercel.app',
-      process.env.FRONTEND_URL
-    ].filter(Boolean); // Remove any undefined values
-    
-    if(allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      console.log('Blocked origin:', origin);
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
+  origin: '*', // Allow all origins
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: [
@@ -128,7 +111,13 @@ app.use(cors({
 }));
 
 // Add a middleware to handle preflight requests
-app.options('*', cors());
+app.options('*', (req, res) => {
+  console.log('Global OPTIONS handler called for:', req.url);
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.status(200).send();
+});
 
 // Request logging
 app.use(morgan('combined', { stream: logger.stream }));

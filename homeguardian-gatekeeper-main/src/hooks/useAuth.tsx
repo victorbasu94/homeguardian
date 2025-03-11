@@ -35,7 +35,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const storedToken = localStorage.getItem('accessToken');
         
         if (storedToken) {
-          console.log('Found stored token on initialization:', storedToken.substring(0, 10) + '...');
+          console.log('Found stored token on initialization');
           
           // Set token in axios headers
           setAccessToken(storedToken);
@@ -49,53 +49,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             console.log('Fetching user data with token...');
             const response = await api.get('/api/auth/me');
             
-            if (response.data && response.data.user) {
-              console.log('User data fetched successfully:', response.data.user);
-              setUser(response.data.user);
+            const userData = response.data as { user?: User };
+            
+            if (userData && userData.user) {
+              console.log('User data fetched successfully');
+              setUser(userData.user);
             } else {
               console.warn('User data response missing user object');
               // Don't clear token yet, might be a temporary issue
-              console.log('Response data:', response.data);
               setUser(null);
             }
-          } catch (error) {
+          } catch (error: any) {
             console.error('Error fetching user data:', error);
             
-            // More detailed error logging
-            if (error.response) {
-              console.error('Server response error:', {
-                status: error.response.status,
-                data: error.response.data
-              });
-              
-              // Only clear token if it's an authentication error (401)
-              if (error.response.status === 401) {
-                console.log('Authentication error (401), clearing token');
-                localStorage.removeItem('accessToken');
-                clearAccessToken();
-                setUser(null);
-              } else {
-                // For other errors (like network issues), keep the token and set a retry
-                console.log('Non-auth error occurred, will retry authentication later');
-                // We'll keep the user logged in but in a loading state
-                setTimeout(() => {
-                  console.log('Retrying authentication...');
-                  initializeAuth();
-                }, 5000); // Retry after 5 seconds
-              }
-            } else if (error.message && error.message.includes('Network Error')) {
-              // Special handling for CORS/Network errors
-              console.error('Network error occurred, possibly CORS-related');
-              // Don't clear token for network errors, but don't keep retrying indefinitely
-              // Set user to null but keep the token
+            // Only clear token if it's an authentication error (401)
+            if (error.response?.status === 401) {
+              console.log('Authentication error (401), clearing token');
+              localStorage.removeItem('accessToken');
+              clearAccessToken();
               setUser(null);
-            } else {
-              console.error('Other error:', error);
-              // Don't clear token for network errors
-              setTimeout(() => {
-                console.log('Retrying after error...');
-                initializeAuth();
-              }, 5000);
             }
           }
         } else {
@@ -135,6 +107,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('Login completed, user set:', userData);
     } catch (error) {
       console.error('Error during login process:', error);
+      
       // Try to recover
       if (token && userData) {
         console.log('Attempting recovery...');

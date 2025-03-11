@@ -161,61 +161,18 @@ exports.verifyEmail = async (req, res) => {
  */
 exports.login = async (req, res) => {
   try {
-    console.log('Login attempt:', { 
-      email: req.body.email,
-      ip: req.ip,
-      userAgent: req.headers['user-agent']
-    });
+    console.log('Login controller called with body:', req.body);
     
-    // Check if the request body is empty
-    if (!req.body || Object.keys(req.body).length === 0) {
-      console.error('Empty request body received');
-      return res.status(400).json({
-        status: 'error',
-        message: 'Request body is empty'
-      });
-    }
-    
-    // Check for validation errors
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      console.log('Validation errors:', errors.array());
-      return res.status(400).json({
-        status: 'error',
-        errors: errors.array()
-      });
-    }
-    
-    // Check if email and password are provided
-    const { email, password } = req.body;
-    
-    if (!email || !password) {
-      console.log('Missing credentials:', { email: !!email, password: !!password });
+    // Check if the request body is empty or missing required fields
+    if (!req.body || !req.body.email || !req.body.password) {
+      console.error('Missing required fields in request body');
       return res.status(400).json({
         status: 'error',
         message: 'Email and password are required'
       });
     }
     
-    // For debugging purposes, allow a test account
-    if (email === 'test@example.com' && password === 'password123') {
-      console.log('Test account login successful');
-      
-      // Generate tokens
-      const accessToken = 'test_access_token';
-      const refreshToken = 'test_refresh_token';
-      
-      // Return success response with access token
-      return res.status(200).json({
-        status: 'success',
-        accessToken,
-        user: {
-          id: 'test_user_id',
-          email: 'test@example.com',
-          subscription_status: 'active'
-        }
-      });
-    }
+    const { email, password } = req.body;
     
     // Find user by email
     const user = await User.findOne({ email }).select('+password');
@@ -239,8 +196,6 @@ exports.login = async (req, res) => {
       });
     }
     
-    // Email verification check removed - allowing all logins regardless of verification status
-    
     // Generate tokens
     const accessToken = generateToken(user._id);
     const refreshToken = generateRefreshToken(user._id);
@@ -255,7 +210,7 @@ exports.login = async (req, res) => {
     console.log('Login successful for user:', email);
     
     // Return success response with access token
-    res.status(200).json({
+    return res.status(200).json({
       status: 'success',
       accessToken,
       user: {
@@ -265,12 +220,9 @@ exports.login = async (req, res) => {
       }
     });
   } catch (error) {
-    logger.error('Login error:', error);
-    console.error('Login error details:', {
-      message: error.message,
-      stack: error.stack
-    });
-    res.status(500).json({
+    console.error('Login error:', error);
+    
+    return res.status(500).json({
       status: 'error',
       message: 'An error occurred during login. Please try again.'
     });
