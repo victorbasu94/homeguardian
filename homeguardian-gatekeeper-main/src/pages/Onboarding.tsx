@@ -262,16 +262,17 @@ const Onboarding: React.FC = () => {
       });
 
       // Extract the home ID and details from the response
-      const homeId = homeResponse.data.data.home.id;
+      const homeId = homeResponse.data.data.home._id || homeResponse.data.data.home.id;
+      const homeDetails = homeResponse.data.data.home;
       
       // Call the maintenance plan generation API with the home ID and force=true
       await api.post('/api/maintenance/generate-plan', {
-        id: homeId,
-        location: homeResponse.data.data.home.location,
-        year_built: homeResponse.data.data.home.year_built,
-        square_footage: homeResponse.data.data.home.square_footage,
-        roof_type: homeResponse.data.data.home.roof_type,
-        hvac_type: homeResponse.data.data.home.hvac_type
+        id: homeId,  // This is now guaranteed to be the MongoDB _id
+        location: homeDetails.location,
+        year_built: homeDetails.year_built,
+        square_footage: homeDetails.square_footage,
+        roof_type: homeDetails.roof_type,
+        hvac_type: homeDetails.hvac_type
       }, {
         params: {
           force: true

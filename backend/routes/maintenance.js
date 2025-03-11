@@ -109,12 +109,12 @@ router.post('/generate-plan', verifyToken, extendedTimeout, async (req, res) => 
 
     // Force generation if explicitly requested via query param or if shouldGenerate is true
     const shouldGenerate = await maintenanceService.shouldGenerateTasks(req.user.id, req.body.id);
-    const forceGeneration = req.query.force === 'true' || shouldGenerate;
+    const forceGeneration = req.query.force === 'true';
     
-    logger.info(`Generation decision - shouldGenerate: ${shouldGenerate}, forceGeneration: ${forceGeneration}`);
+    logger.info(`Generation decision - shouldGenerate: ${shouldGenerate}, forceGeneration: ${forceGeneration}, force query param: ${req.query.force}`);
     
     // Use our maintenanceService to generate or retrieve the plan
-    const result = await maintenanceService.generateMaintenancePlan(home, true, forceGeneration);
+    const result = await maintenanceService.generateMaintenancePlan(home, true, forceGeneration || shouldGenerate);
     
     // Return the maintenance plan
     return res.status(200).json(result);
