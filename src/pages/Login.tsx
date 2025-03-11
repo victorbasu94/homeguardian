@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import api, { diagnoseCorsIssues, switchToNextProxy } from '@/lib/axios';
+import api, { diagnoseCorsIssues, directFetch } from '@/lib/axios';
 
 // Get the API base URL from environment variables
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001';
@@ -131,13 +131,40 @@ const Login: React.FC = () => {
     try {
       console.log('Attempting login with email:', data.email);
       
-      // Call the API to authenticate
+      // First try with direct fetch to bypass CORS issues
+      try {
+        console.log('Trying login with direct fetch first...');
+        const response = await directFetch('/api/auth/login', {
+          method: 'POST',
+          body: JSON.stringify({
+            email: data.email,
+            password: data.password
+          })
+        });
+        
+        console.log('Direct fetch login successful:', response.status);
+        
+        // Extract token and user data
+        const { accessToken, user } = response.data;
+        
+        if (!accessToken) {
+          throw new Error('No access token received from server');
+        }
+        
+        handleSuccessfulLogin(accessToken, user);
+        return;
+      } catch (directFetchError) {
+        console.error('Direct fetch login failed, falling back to axios:', directFetchError);
+        // Continue with axios as fallback
+      }
+      
+      // Fallback to axios
       const response = await api.post('/api/auth/login', {
         email: data.email,
         password: data.password
       });
       
-      console.log('Login response received:', response.status);
+      console.log('Axios login response received:', response.status);
       
       // Extract token and user data
       const { accessToken, user } = response.data;
@@ -146,32 +173,7 @@ const Login: React.FC = () => {
         throw new Error('No access token received from server');
       }
       
-      console.log('Access token received:', accessToken.substring(0, 10) + '...');
-      console.log('User data received:', user);
-      
-      // Manually set the token in localStorage first
-      try {
-        localStorage.setItem('accessToken', accessToken);
-        console.log('Token saved to localStorage');
-      } catch (storageError) {
-        console.error('Error saving token to localStorage:', storageError);
-      }
-      
-      // Call the login function from useAuth
-      login(accessToken, user);
-      
-      // Verify the token was set correctly
-      const storedToken = localStorage.getItem('accessToken');
-      console.log('Verification - token in localStorage:', storedToken ? 'Present' : 'Missing');
-      
-      // Show success toast
-      toast({
-        title: 'Login successful',
-        description: 'Welcome back to MaintainMint!',
-      });
-      
-      // Redirect to the page they were trying to access or dashboard
-      navigate(from, { replace: true });
+      handleSuccessfulLogin(accessToken, user);
     } catch (error: any) {
       console.error('Login error:', error);
       
@@ -183,50 +185,19 @@ const Login: React.FC = () => {
           headers: error.response.headers
         });
         
-        // Special handling for CORS errors
-        if (error.message && error.message.includes('Network Error')) {
-          // Try switching to another CORS proxy
-          const switched = switchToNextProxy();
-          
-          if (switched) {
-            toast({
-              title: 'Connection issue detected',
-              description: 'Trying an alternative connection method. Please try again.',
-              variant: 'destructive',
-            });
-          } else {
-            toast({
-              title: 'Connection Error',
-              description: 'Unable to connect to the server. This might be due to CORS restrictions. Please try again later.',
-              variant: 'destructive',
-            });
-          }
-        } else {
-          toast({
-            title: 'Login failed',
-            description: error.response?.data?.message || 'Please check your credentials and try again.',
-            variant: 'destructive',
-          });
-        }
+        toast({
+          title: 'Login failed',
+          description: error.response?.data?.message || 'Please check your credentials and try again.',
+          variant: 'destructive',
+        });
       } else if (error.request) {
         console.error('No response received:', error.request);
         
-        // Try switching to another CORS proxy
-        const switched = switchToNextProxy();
-        
-        if (switched) {
-          toast({
-            title: 'Server connection issue',
-            description: 'Trying an alternative connection method. Please try again.',
-            variant: 'destructive',
-          });
-        } else {
-          toast({
-            title: 'Server not responding',
-            description: 'The server is not responding. Please try again later.',
-            variant: 'destructive',
-          });
-        }
+        toast({
+          title: 'Server not responding',
+          description: 'The server is not responding. Please try again later.',
+          variant: 'destructive',
+        });
       } else {
         console.error('Error setting up request:', error.message);
         toast({
@@ -238,6 +209,35 @@ const Login: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+  
+  const handleSuccessfulLogin = (accessToken: string, user: User) => {
+    console.log('Access token received:', accessToken.substring(0, 10) + '...');
+    console.log('User data received:', user);
+    
+    // Manually set the token in localStorage first
+    try {
+      localStorage.setItem('accessToken', accessToken);
+      console.log('Token saved to localStorage');
+    } catch (storageError) {
+      console.error('Error saving token to localStorage:', storageError);
+    }
+    
+    // Call the login function from useAuth
+    login(accessToken, user);
+    
+    // Verify the token was set correctly
+    const storedToken = localStorage.getItem('accessToken');
+    console.log('Verification - token in localStorage:', storedToken ? 'Present' : 'Missing');
+    
+    // Show success toast
+    toast({
+      title: 'Login successful',
+      description: 'Welcome back to MaintainMint!',
+    });
+    
+    // Redirect to the page they were trying to access or dashboard
+    navigate(from, { replace: true });
   };
   
   const togglePasswordVisibility = () => {

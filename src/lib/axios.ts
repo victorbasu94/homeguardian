@@ -7,46 +7,10 @@ let API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001';
 
 console.log('Original API Base URL:', API_BASE_URL);
 
-// CORS Proxy Configuration
-// In production, we'll use a CORS proxy to bypass CORS restrictions
-const USE_CORS_PROXY = true; // Set to true to enable the CORS proxy
-
-// List of CORS proxies to try in order
-const CORS_PROXIES = [
-  'https://corsproxy.io/?',
-  'https://cors-anywhere.herokuapp.com/',
-  'https://api.allorigins.win/raw?url='
-];
-
-// Track which proxy we're currently using
-let currentProxyIndex = 0;
-
-// Function to get the current CORS proxy URL
-const getCurrentProxyUrl = (): string => {
-  return CORS_PROXIES[currentProxyIndex];
-};
-
-// Function to switch to the next proxy if the current one fails
-export const switchToNextProxy = (): boolean => {
-  if (currentProxyIndex < CORS_PROXIES.length - 1) {
-    currentProxyIndex++;
-    console.log(`Switching to next CORS proxy: ${getCurrentProxyUrl()}`);
-    return true;
-  }
-  console.warn('No more CORS proxies available to try');
-  return false;
-};
-
-// Function to apply CORS proxy to a URL if needed
-const applyProxyIfNeeded = (url: string): string => {
-  if (USE_CORS_PROXY && import.meta.env.PROD) {
-    // Only use the proxy in production
-    const proxyUrl = getCurrentProxyUrl();
-    console.log(`Applying CORS proxy (${proxyUrl}) to URL:`, url);
-    return `${proxyUrl}${encodeURIComponent(url)}`;
-  }
-  return url;
-};
+// CORS Strategy Configuration
+// Instead of using proxies which are also getting blocked, we'll try direct connection
+// with modified settings
+const USE_DIRECT_CONNECTION = true;
 
 // Remove trailing slash if present
 if (API_BASE_URL.endsWith('/')) {
@@ -80,13 +44,16 @@ console.log('Final API Base URL:', API_BASE_URL);
 
 // Create a base axios instance with common configuration
 const api = axios.create({
-  // We don't apply the proxy to the baseURL, but to individual requests
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
+    // Add headers that might help bypass CORS
+    'Accept': 'application/json, text/plain, */*',
+    'X-Requested-With': 'XMLHttpRequest',
   },
-  withCredentials: USE_CORS_PROXY ? false : true, // Disable withCredentials when using proxy
-  timeout: 10000, // 10 seconds
+  // Disable withCredentials to avoid preflight requests
+  withCredentials: false,
+  timeout: 15000, // 15 seconds - increased timeout
 });
 
 // In-memory token storage (more secure than localStorage)
@@ -149,17 +116,48 @@ if (typeof window !== 'undefined') {
   (window as any).getAccessToken = getAccessToken;
 }
 
+// Create a direct fetch function that bypasses axios for critical endpoints
+export const directFetch = async (endpoint: string, options: RequestInit = {}) => {
+  const url = `${API_BASE_URL}${endpoint}`;
+  console.log(`Making direct fetch request to: ${url}`);
+  
+  // Set default headers
+  const headers = new Headers(options.headers || {});
+  headers.set('Content-Type', 'application/json');
+  
+  // Add authorization if we have a token
+  if (accessToken) {
+    headers.set('Authorization', `Bearer ${accessToken}`);
+  }
+  
+  // Create the request options
+  const requestOptions: RequestInit = {
+    ...options,
+    headers,
+    mode: 'cors',
+    credentials: 'omit', // Don't send cookies
+  };
+  
+  try {
+    const response = await fetch(url, requestOptions);
+    
+    // Check if the response is ok
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    // Parse the JSON response
+    const data = await response.json();
+    return { data, status: response.status };
+  } catch (error) {
+    console.error('Direct fetch error:', error);
+    throw error;
+  }
+};
+
 // Add request interceptor
 api.interceptors.request.use(
   (config: any) => {
-    // Apply CORS proxy to the URL if needed
-    if (config.url && !config.url.startsWith('http')) {
-      const fullUrl = `${API_BASE_URL}${config.url}`;
-      config.url = applyProxyIfNeeded(fullUrl);
-    } else if (config.url) {
-      config.url = applyProxyIfNeeded(config.url);
-    }
-    
     // Add authorization header if we have a token
     if (accessToken) {
       console.log('Request with token:', accessToken.substring(0, 10) + '...');
@@ -223,24 +221,38 @@ api.interceptors.response.use(
     const originalRequest = error.config;
     
     // Check if this is a CORS error or network error
-    if (error.message && error.message.includes('Network Error') && USE_CORS_PROXY) {
-      console.error('Network error detected, might be CORS-related');
+    if (error.message && (error.message.includes('Network Error') || error.message.includes('CORS'))) {
+      console.error('Network/CORS error detected:', error.message);
       
-      // Try switching to another proxy
-      if (switchToNextProxy() && originalRequest && !originalRequest._retryWithNextProxy) {
-        originalRequest._retryWithNextProxy = true;
+      // If this is a login request, try using the direct fetch method
+      if (originalRequest.url && originalRequest.url.includes('/api/auth/login') && !originalRequest._retryWithDirectFetch) {
+        originalRequest._retryWithDirectFetch = true;
         
-        // Update the URL with the new proxy
-        if (originalRequest.url && originalRequest.url.includes(CORS_PROXIES[currentProxyIndex - 1])) {
-          // Replace the old proxy with the new one
-          const urlWithoutProxy = decodeURIComponent(
-            originalRequest.url.replace(CORS_PROXIES[currentProxyIndex - 1], '')
-          );
-          originalRequest.url = applyProxyIfNeeded(urlWithoutProxy);
+        try {
+          console.log('Retrying login with direct fetch...');
+          
+          // Extract the request body
+          const requestBody = JSON.parse(originalRequest.data);
+          
+          // Make a direct fetch request
+          const response = await directFetch('/api/auth/login', {
+            method: 'POST',
+            body: JSON.stringify(requestBody)
+          });
+          
+          // Return a response in the format axios expects
+          return {
+            data: response.data,
+            status: response.status,
+            statusText: 'OK',
+            headers: {},
+            config: originalRequest,
+            request: {}
+          };
+        } catch (directFetchError) {
+          console.error('Direct fetch also failed:', directFetchError);
+          return Promise.reject(directFetchError);
         }
-        
-        console.log('Retrying request with new proxy:', originalRequest.url);
-        return api(originalRequest);
       }
     }
     
@@ -328,46 +340,23 @@ export const diagnoseCorsIssues = async () => {
   console.log('Diagnosing potential CORS issues...');
   
   try {
-    // Try a simple OPTIONS request to check CORS configuration
-    const response = await axios({
-      method: 'OPTIONS',
-      url: `${API_BASE_URL}/api/auth/login`,
+    // Try a simple fetch request to check CORS configuration
+    const response = await fetch(`${API_BASE_URL}/api/health`, {
+      method: 'GET',
+      mode: 'cors',
       headers: {
-        'Access-Control-Request-Method': 'POST',
-        'Access-Control-Request-Headers': 'content-type,authorization',
-        'Origin': window.location.origin
+        'Accept': 'application/json',
       }
     });
     
-    console.log('CORS preflight response:', {
+    console.log('CORS test response:', {
       status: response.status,
-      headers: response.headers,
+      ok: response.ok
     });
     
-    // Check for necessary CORS headers
-    const corsHeaders = {
-      'access-control-allow-origin': response.headers['access-control-allow-origin'],
-      'access-control-allow-methods': response.headers['access-control-allow-methods'],
-      'access-control-allow-headers': response.headers['access-control-allow-headers'],
-      'access-control-allow-credentials': response.headers['access-control-allow-credentials']
-    };
-    
-    console.log('CORS headers present:', corsHeaders);
-    
-    // Check if credentials are allowed
-    if (corsHeaders['access-control-allow-credentials'] !== 'true') {
-      console.warn('CORS issue: credentials not allowed by the server');
-    }
-    
-    // Check if origin is allowed
-    if (corsHeaders['access-control-allow-origin'] !== window.location.origin && 
-        corsHeaders['access-control-allow-origin'] !== '*') {
-      console.warn('CORS issue: origin not allowed by the server');
-    }
-    
     return {
-      success: true,
-      corsHeaders
+      success: response.ok,
+      status: response.status
     };
   } catch (error) {
     console.error('CORS diagnosis failed:', error);

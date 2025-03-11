@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, useEffect, useCallback, ReactNode } from 'react';
-import api, { setAccessToken, clearAccessToken, switchToNextProxy } from '@/lib/axios';
+import api, { setAccessToken, clearAccessToken, directFetch } from '@/lib/axios';
 
 // Define User interface
 interface User {
@@ -53,13 +53,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           const currentToken = api.defaults.headers.common['Authorization'];
           console.log('Verification - Authorization header:', currentToken ? 'Present' : 'Missing');
           
-          // Fetch user data
+          // Fetch user data - first try with direct fetch
           try {
-            console.log('Fetching user data with token...');
+            console.log('Fetching user data with direct fetch...');
+            const response = await directFetch('/api/auth/me');
+            
+            if (response.data && response.data.user) {
+              console.log('User data fetched successfully with direct fetch:', response.data.user);
+              setUser(response.data.user);
+              setIsLoading(false);
+              return;
+            } else {
+              console.warn('User data response missing user object (direct fetch)');
+              // Fall back to axios
+            }
+          } catch (directFetchError) {
+            console.error('Direct fetch error:', directFetchError);
+            // Fall back to axios
+          }
+          
+          // Fallback to axios
+          try {
+            console.log('Fetching user data with axios...');
             const response = await api.get('/api/auth/me');
             
             if (response.data && response.data.user) {
-              console.log('User data fetched successfully:', response.data.user);
+              console.log('User data fetched successfully with axios:', response.data.user);
               setUser(response.data.user);
             } else {
               console.warn('User data response missing user object');
@@ -68,7 +87,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               setUser(null);
             }
           } catch (error: any) {
-            console.error('Error fetching user data:', error);
+            console.error('Error fetching user data with axios:', error);
             
             // More detailed error logging
             if (error.response) {
@@ -96,20 +115,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               // Special handling for CORS/Network errors
               console.error('Network error occurred, possibly CORS-related');
               
-              // Try switching to another CORS proxy
-              const switched = switchToNextProxy();
-              
-              if (switched) {
-                console.log('Switched to another CORS proxy, will retry');
-                setTimeout(() => {
-                  console.log('Retrying with new proxy...');
-                  initializeAuth();
-                }, 1000);
-              } else {
-                // Don't clear token for network errors, but don't keep retrying indefinitely
-                // Set user to null but keep the token
-                setUser(null);
-              }
+              // Don't clear token for network errors, but don't keep retrying indefinitely
+              // Set user to null but keep the token
+              setUser(null);
             } else {
               console.error('Other error:', error);
               // Don't clear token for network errors
