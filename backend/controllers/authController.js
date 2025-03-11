@@ -58,29 +58,16 @@ exports.register = async (req, res) => {
       });
     }
     
-    // Generate verification token
-    const verificationToken = crypto.randomBytes(20).toString('hex');
-    const verificationTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-    
     // Create new user
     const user = new User({
       email,
       password,
       email_verified: true,
-      verification_token: verificationToken,
-      verification_token_expiry: verificationTokenExpiry,
       last_tasks_generated_at: null // Explicitly set to null to ensure tasks are generated on first login
     });
     
     // Save user to database
     await user.save();
-    
-    // Send verification email
-    const emailSent = await emailService.sendVerificationEmail(user, verificationToken);
-    
-    if (!emailSent) {
-      logger.warn(`Failed to send verification email to ${email}`);
-    }
     
     // Auto-login: Generate tokens
     const accessToken = generateToken(user._id);
@@ -192,15 +179,6 @@ exports.login = async (req, res) => {
         status: 'error',
         message: 'Invalid email or password'
       });
-    }
-    
-    // Check if email is verified
-    if (!user.email_verified) {
-      // Always set email_verified to true
-      logger.info(`Auto-verifying email for user: ${email}`);
-      user.email_verified = true;
-      // No need to await this save, we can do it in the background
-      user.save().catch(err => logger.error('Error saving user:', err));
     }
     
     // Generate tokens

@@ -42,14 +42,6 @@ exports.verifyToken = async (req, res, next) => {
       });
     }
     
-    // Always set email_verified to true
-    if (!user.email_verified) {
-      logger.info(`Auto-verifying email for user: ${user.email}`);
-      user.email_verified = true;
-      // No need to await this save, we can do it in the background
-      user.save().catch(err => logger.error('Error saving user:', err));
-    }
-    
     // Set user on request object
     req.user = user;
     next();
@@ -113,14 +105,6 @@ exports.verifyRefreshToken = async (req, res, next) => {
         status: 'error',
         message: 'Invalid refresh token. Please log in again.' 
       });
-    }
-    
-    // Always set email_verified to true
-    if (!user.email_verified) {
-      logger.info(`Auto-verifying email for user: ${user.email}`);
-      user.email_verified = true;
-      // No need to await this save, we can do it in the background
-      user.save().catch(err => logger.error('Error saving user:', err));
     }
     
     // Set user on request object
