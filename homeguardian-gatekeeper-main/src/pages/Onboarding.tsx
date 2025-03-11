@@ -272,7 +272,11 @@ const Onboarding: React.FC = () => {
       };
 
       // Call the maintenance plan generation API with force=true
-      await api.post(`/api/maintenance/generate-plan?force=true`, homeDetails);
+      await api.post('/api/maintenance/generate-plan', homeDetails, {
+        params: {
+          force: true
+        }
+      });
       
       // Show success toast
       toast({
