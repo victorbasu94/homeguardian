@@ -92,6 +92,14 @@ export default function Login() {
       // Get detailed error information
       const statusCode = error.response?.status;
       const errorMessage = error.response?.data?.message || 'Failed to log in. Please check your credentials and try again.';
+      const requestUrl = error.config?.url;
+      
+      console.error('Login error details:', {
+        statusCode,
+        errorMessage,
+        requestUrl,
+        baseURL: error.config?.baseURL
+      });
       
       toast({
         title: `Login failed ${statusCode ? `(${statusCode})` : ''}`,

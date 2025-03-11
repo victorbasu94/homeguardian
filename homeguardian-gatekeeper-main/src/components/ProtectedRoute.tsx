@@ -1,9 +1,8 @@
-
 import { useEffect, useState, ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { getAccessToken } from '@/lib/axios';
 import api from '@/lib/axios';
-import Cookies from 'js-cookie';
+import { useAuth } from '@/hooks/useAuth';
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -11,47 +10,45 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const [isLoading, setIsLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { isAuthenticated, user } = useAuth();
   const location = useLocation();
   
   useEffect(() => {
     const checkAuth = async () => {
-      const accessToken = getAccessToken();
-      
-      if (accessToken) {
-        setIsAuthenticated(true);
-        setIsLoading(false);
-        return;
-      }
-      
-      // No access token, try to refresh
-      const refreshToken = Cookies.get('refreshToken');
-      
-      if (!refreshToken) {
-        setIsAuthenticated(false);
-        setIsLoading(false);
-        return;
-      }
-      
       try {
-        // Attempt to refresh the token
-        const response = await api.post('/api/auth/refresh', { refreshToken });
+        // Use the auth context to determine if user is authenticated
+        if (user && isAuthenticated) {
+          setIsLoading(false);
+          return;
+        }
         
-        if (response.data && response.data.accessToken) {
-          setIsAuthenticated(true);
-        } else {
-          setIsAuthenticated(false);
+        // If not authenticated through context, check for token
+        const accessToken = getAccessToken();
+        
+        if (!accessToken) {
+          // No token available, finish loading
+          setIsLoading(false);
+          return;
+        }
+        
+        // We have a token but no user in context, try to validate it
+        try {
+          await api.get('/api/auth/me');
+          // If successful, token is valid
+        } catch (error) {
+          console.error('Token validation failed:', error);
+          // Token is invalid, but we'll let the auth context handle redirection
+        } finally {
+          setIsLoading(false);
         }
       } catch (error) {
-        console.error('Token refresh failed:', error);
-        setIsAuthenticated(false);
-      } finally {
+        console.error('Auth check error:', error);
         setIsLoading(false);
       }
     };
     
     checkAuth();
-  }, []);
+  }, [isAuthenticated, user]);
   
   if (isLoading) {
     // You could return a loading spinner here

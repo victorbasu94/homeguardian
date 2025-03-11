@@ -9,7 +9,7 @@ console.log('Original API Base URL:', API_BASE_URL);
 
 // CORS Proxy Configuration
 // In production, we'll use a CORS proxy to bypass CORS restrictions
-const USE_CORS_PROXY = true; // Set to true to enable the CORS proxy
+const USE_CORS_PROXY = false; // Set to false to disable the CORS proxy
 
 // List of CORS proxies to try in order
 const CORS_PROXIES = [
@@ -39,8 +39,8 @@ export const switchToNextProxy = (): boolean => {
 
 // Function to apply CORS proxy to a URL if needed
 const applyProxyIfNeeded = (url: string): string => {
-  if (USE_CORS_PROXY && import.meta.env.PROD) {
-    // Only use the proxy in production
+  if (USE_CORS_PROXY) {
+    // Only use the proxy if explicitly enabled
     const proxyUrl = getCurrentProxyUrl();
     console.log(`Applying CORS proxy (${proxyUrl}) to URL:`, url);
     return `${proxyUrl}${encodeURIComponent(url)}`;
