@@ -41,7 +41,7 @@ const api = axios.create({
     'Pragma': 'no-cache'
   },
   withCredentials: true,
-  timeout: 15000
+  timeout: 60000
 });
 
 // In-memory token storage

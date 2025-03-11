@@ -84,7 +84,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json'
   },
-  timeout: 15000 // 15 seconds
+  timeout: 60000 // 60 seconds
 });
 
 // In-memory token storage (more secure than localStorage)

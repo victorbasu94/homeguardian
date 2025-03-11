@@ -3,6 +3,15 @@ const router = express.Router();
 const { verifyToken } = require('../middleware/auth');
 const { generateMaintenancePlanWithAI } = require('../services/openaiService');
 const logger = require('../utils/logger');
+const maintenanceService = require('../services/maintenanceService');
+
+// Timeout middleware for long-running operations
+const extendedTimeout = (req, res, next) => {
+  // Set timeout to 60 seconds
+  req.setTimeout(60000);
+  res.setTimeout(60000);
+  next();
+};
 
 /**
  * @swagger
@@ -31,7 +40,7 @@ const logger = require('../utils/logger');
  *       500:
  *         description: Server error
  */
-router.post('/generate-plan', verifyToken, async (req, res) => {
+router.post('/generate-plan', verifyToken, extendedTimeout, async (req, res) => {
   try {
     logger.info('Received maintenance plan generation request:', {
       body: req.body,
@@ -98,11 +107,10 @@ router.post('/generate-plan', verifyToken, async (req, res) => {
     }
 
     // Check if we should generate tasks based on the 3-month rule
-    const { shouldGenerateTasks, generateMaintenancePlan } = require('../services/maintenanceService');
-    const shouldGenerate = await shouldGenerateTasks(req.user.id);
+    const shouldGenerate = await maintenanceService.shouldGenerateTasks(req.user.id, req.body.id);
     
     // If force=true is provided in the query, generate tasks regardless of the 3-month rule
-    const forceGeneration = req.query.force === 'true';
+    const forceGeneration = req.query.force === 'true' || !shouldGenerate;
     
     if (!shouldGenerate && !forceGeneration) {
       logger.info(`Skipping task generation for user ${req.user.id} - less than 3 months since last generation`);
@@ -145,7 +153,7 @@ router.post('/generate-plan', verifyToken, async (req, res) => {
     }
     
     // Use our maintenanceService instead of directly calling OpenAI
-    const result = await generateMaintenancePlan(home, true, forceGeneration);
+    const result = await maintenanceService.generateMaintenancePlan(home, true, forceGeneration);
     
     logger.info('Successfully generated maintenance plan');
     
