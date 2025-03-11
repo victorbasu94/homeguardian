@@ -193,6 +193,7 @@ exports.login = async (req, res) => {
     }
     
     // Check if email is verified
+    /* Temporarily bypassing email verification
     if (!user.email_verified) {
       // In development mode, bypass email verification
       if (process.env.NODE_ENV === 'development') {
@@ -204,6 +205,7 @@ exports.login = async (req, res) => {
         });
       }
     }
+    */
     
     // Generate tokens
     const accessToken = generateToken(user._id);
