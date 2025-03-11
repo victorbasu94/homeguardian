@@ -31,6 +31,10 @@ const UserSchema = new mongoose.Schema({
   reset_token: String,
   reset_token_expiry: Date,
   refresh_token: String,
+  last_tasks_generated_at: {
+    type: Date,
+    default: null
+  },
   created_at: {
     type: Date,
     default: Date.now

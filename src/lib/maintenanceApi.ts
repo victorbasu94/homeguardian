@@ -9,10 +9,11 @@ interface HomeDetails {
   hvac_type?: string;
 }
 
-interface MaintenancePlan {
+export interface MaintenancePlan {
   home_id: string;
   tasks: MaintenanceTask[];
   generated_at: string;
+  message?: string; // Add message field to support the 3-month rule notification
 }
 
 // Vite environment type augmentation
@@ -73,6 +74,17 @@ export async function getMaintenancePlan(homeDetails: HomeDetails): Promise<Main
     const data = await response.json();
     console.log('Parsed response data:', data);
     
+    // Check if the response has the new format with tasks directly
+    if (data.tasks && Array.isArray(data.tasks)) {
+      return {
+        home_id: homeDetails.id,
+        tasks: data.tasks,
+        generated_at: data.generated_at || new Date().toISOString(),
+        message: data.message
+      };
+    }
+    
+    // Handle the old format with maintenancePlan array
     if (!data.maintenancePlan || !Array.isArray(data.maintenancePlan)) {
       throw new Error('Invalid maintenance plan format received from server');
     }
@@ -93,7 +105,8 @@ export async function getMaintenancePlan(homeDetails: HomeDetails): Promise<Main
         subtasks: task.subTasks || [], // Map from OpenAI's "subTasks"
         home_id: homeDetails.id
       })),
-      generated_at: new Date().toISOString()
+      generated_at: new Date().toISOString(),
+      message: data.message
     };
 
     console.log('Formatted maintenance plan:', formattedPlan);

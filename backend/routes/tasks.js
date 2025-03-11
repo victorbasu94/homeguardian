@@ -394,12 +394,20 @@ router.post('/generate-ai-plan/:homeId',
         return res.status(403).json({ message: 'You do not have permission to access this home' });
       }
       
+      // Check if we should generate tasks based on the 3-month rule
+      const { shouldGenerateTasks } = require('../services/maintenanceService');
+      const shouldGenerate = await shouldGenerateTasks(req.user.id);
+      
+      // If force=true is provided in the query, generate tasks regardless of the 3-month rule
+      const forceGeneration = req.query.force === 'true';
+      
       // Generate AI-powered maintenance plan
-      const tasks = await generateMaintenancePlan(home, true);
+      const result = await generateMaintenancePlan(home, true, forceGeneration);
       
       res.status(200).json({
-        message: 'AI-powered maintenance plan generated successfully',
-        tasks
+        message: result.message || 'Maintenance plan generated successfully',
+        tasks: result.tasks,
+        generated_at: result.generated_at
       });
     } catch (error) {
       logger.error('Error generating AI maintenance plan:', error);

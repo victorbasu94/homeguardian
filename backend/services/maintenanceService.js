@@ -1,8 +1,54 @@
 const { DateTime } = require('luxon');
 const Task = require('../models/Task');
+const User = require('../models/User');
 const taskRules = require('../config/tasks.json');
 const logger = require('winston');
 const { generateMaintenancePlanWithAI } = require('./openaiService');
+
+/**
+ * Checks if tasks should be generated for a user based on the 3-month rule
+ * @param {String} userId - The user ID
+ * @returns {Boolean} - Whether tasks should be generated
+ */
+async function shouldGenerateTasks(userId) {
+  try {
+    const user = await User.findById(userId);
+    
+    if (!user) {
+      logger.error(`User not found: ${userId}`);
+      return false;
+    }
+    
+    // If tasks have never been generated, generate them
+    if (!user.last_tasks_generated_at) {
+      return true;
+    }
+    
+    // Check if it's been more than 3 months since the last generation
+    const lastGenerated = DateTime.fromJSDate(user.last_tasks_generated_at);
+    const threeMonthsAgo = DateTime.now().minus({ months: 3 });
+    
+    return lastGenerated < threeMonthsAgo;
+  } catch (error) {
+    logger.error('Error checking if tasks should be generated:', error);
+    // Default to false to prevent unnecessary task generation
+    return false;
+  }
+}
+
+/**
+ * Updates the last_tasks_generated_at timestamp for a user
+ * @param {String} userId - The user ID
+ */
+async function updateTaskGenerationTimestamp(userId) {
+  try {
+    await User.findByIdAndUpdate(userId, {
+      last_tasks_generated_at: new Date()
+    });
+  } catch (error) {
+    logger.error('Error updating task generation timestamp:', error);
+  }
+}
 
 /**
  * Evaluates a condition against a home property
@@ -115,10 +161,30 @@ function calculateDueDate(frequency) {
  * Generates a maintenance plan for a home based on its characteristics
  * @param {Object} home - The home object
  * @param {Boolean} useAI - Whether to use AI for generating the plan
+ * @param {Boolean} forceGeneration - Whether to force generation regardless of the 3-month rule
  * @returns {Array} - Array of task objects
  */
-async function generateMaintenancePlan(home, useAI = false) {
+async function generateMaintenancePlan(home, useAI = false, forceGeneration = false) {
   try {
+    // Check if tasks should be generated based on the 3-month rule
+    if (!forceGeneration) {
+      const shouldGenerate = await shouldGenerateTasks(home.user_id);
+      
+      if (!shouldGenerate) {
+        logger.info(`Skipping task generation for user ${home.user_id} - less than 3 months since last generation`);
+        
+        // Return existing tasks instead
+        const existingTasks = await Task.find({ home_id: home._id });
+        
+        // Include a message indicating we're using existing tasks
+        return {
+          tasks: existingTasks,
+          message: 'Using existing maintenance plan (less than 3 months since last generation)',
+          generated_at: new Date().toISOString()
+        };
+      }
+    }
+    
     // If AI-powered plan generation is requested
     if (useAI && process.env.OPENAI_API_KEY) {
       try {
@@ -126,21 +192,21 @@ async function generateMaintenancePlan(home, useAI = false) {
         const tasks = [];
         
         // Convert AI-generated plan to our task format
-        if (aiPlan && aiPlan.maintenancePlan && Array.isArray(aiPlan.maintenancePlan)) {
-          for (const item of aiPlan.maintenancePlan) {
+        if (aiPlan && aiPlan.tasks && Array.isArray(aiPlan.tasks)) {
+          for (const item of aiPlan.tasks) {
             // Create task with AI-generated details
             const taskData = {
               home_id: home._id,
-              task_name: item.task,
-              description: item.taskDescription || `Maintenance task: ${item.task}`,
+              task_name: item.title || item.task,
+              description: item.description || item.taskDescription || `Maintenance task: ${item.title || item.task}`,
               frequency: 'custom', // AI doesn't specify frequency directly
-              due_date: item.suggestedCompletionDate,
+              due_date: item.due_date || item.suggestedCompletionDate,
               why: "AI-recommended maintenance task",
-              estimated_time: parseEstimatedTime(item.estimatedTime), // Convert time string to minutes
-              estimated_cost: item.estimatedCost || 0,
-              category: 'maintenance',
-              priority: determinePriority(item.suggestedCompletionDate),
-              steps: item.subTasks || [],
+              estimated_time: parseEstimatedTime(item.estimated_time || item.estimatedTime), // Convert time string to minutes
+              estimated_cost: item.estimated_cost || item.estimatedCost || 0,
+              category: item.category || 'maintenance',
+              priority: item.priority || determinePriority(item.due_date || item.suggestedCompletionDate),
+              steps: item.subtasks || item.subTasks || [],
               completed: false,
               ai_generated: true
             };
@@ -151,9 +217,16 @@ async function generateMaintenancePlan(home, useAI = false) {
           // Save all tasks to the database
           if (tasks.length > 0) {
             await Task.insertMany(tasks);
+            
+            // Update the last_tasks_generated_at timestamp
+            await updateTaskGenerationTimestamp(home.user_id);
           }
           
-          return tasks;
+          return {
+            tasks,
+            message: 'AI-powered maintenance plan generated successfully',
+            generated_at: aiPlan.generated_at || new Date().toISOString()
+          };
         }
       } catch (error) {
         logger.error('Error generating AI maintenance plan, falling back to rule-based:', error);
@@ -217,9 +290,16 @@ async function generateMaintenancePlan(home, useAI = false) {
     // Save all tasks to the database
     if (tasks.length > 0) {
       await Task.insertMany(tasks);
+      
+      // Update the last_tasks_generated_at timestamp
+      await updateTaskGenerationTimestamp(home.user_id);
     }
 
-    return tasks;
+    return {
+      tasks,
+      message: 'Rule-based maintenance plan generated successfully',
+      generated_at: new Date().toISOString()
+    };
   } catch (error) {
     logger.error('Error generating maintenance plan:', error);
     throw error;
@@ -235,9 +315,10 @@ async function generateMaintenancePlan(home, useAI = false) {
 async function regenerateTasksForHome(home, useAI = false) {
   try {
     // Generate new tasks based on updated home information
-    const newTasks = await generateMaintenancePlan(home, useAI);
+    // Force generation regardless of the 3-month rule
+    const result = await generateMaintenancePlan(home, useAI, true);
     
-    return newTasks;
+    return result;
   } catch (error) {
     logger.error('Error regenerating tasks for home:', error);
     throw error;
@@ -289,5 +370,7 @@ function determinePriority(dueDate) {
 
 module.exports = {
   generateMaintenancePlan,
-  regenerateTasksForHome
+  regenerateTasksForHome,
+  shouldGenerateTasks,
+  updateTaskGenerationTimestamp
 }; 

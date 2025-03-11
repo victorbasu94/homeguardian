@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { getMaintenancePlan } from '@/lib/maintenanceApi';
+import { getMaintenancePlan, MaintenancePlan } from '@/lib/maintenanceApi';
 import { useMaintenance, MaintenanceTask } from '@/contexts/MaintenanceContext';
 import { MOCK_MAINTENANCE_TASKS } from '@/lib/mockData';
 import AIMaintenanceTasks from '@/components/dashboard/AIMaintenanceTasks';
@@ -165,22 +165,26 @@ const Dashboard: React.FC = () => {
       if (maintenancePlan && maintenancePlan.tasks && maintenancePlan.tasks.length > 0) {
         console.log("Maintenance plan fetched successfully:", maintenancePlan);
         
-        // The tasks are already in the correct format from the API
-        // Just ensure we're not using any mock data
-        setMaintenanceTasks(maintenancePlan.tasks);
+        // Check if the response includes a message about using existing tasks
+        if (maintenancePlan.message && maintenancePlan.message.includes('existing maintenance plan')) {
+          // Show a toast notification to inform the user
+          toast({
+            title: "Using existing maintenance plan",
+            description: "New tasks are only generated once every 3 months. Using your existing maintenance plan.",
+            duration: 5000,
+          });
+        }
         
-        // Save the tasks to the backend so they persist
-        await saveTasksToBackend(maintenancePlan.tasks, home.id);
+        // The tasks are already in the correct format from the API
+        setMaintenanceTasks(maintenancePlan.tasks);
       } else {
         // This shouldn't happen as the API should throw an error if no tasks are returned
         console.error("No tasks in maintenance plan");
         throw new Error("No maintenance tasks were found in the plan");
       }
     } catch (error) {
-      console.error('Error fetching maintenance plan:', error);
-      setError('Failed to generate maintenance plan. Please try again.');
-      // Clear any existing tasks
-      setMaintenanceTasks([]);
+      console.error("Error fetching maintenance plan:", error);
+      setError("Failed to fetch maintenance plan. Please try again later.");
     } finally {
       setIsLoading(false);
     }
