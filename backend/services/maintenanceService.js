@@ -28,17 +28,19 @@ async function shouldGenerateTasks(userId, homeId) {
       logger.error(`User not found: ${userId}`);
       return false;
     }
+
+    // If user has just completed onboarding (no last_tasks_generated_at),
+    // we should always generate tasks
+    if (!user.last_tasks_generated_at) {
+      logger.info(`Generating initial tasks for new user ${userId}`);
+      return true;
+    }
     
     // Check if there are any existing tasks for this home
     const existingTasks = await Task.find({ home_id: homeId });
     
     if (existingTasks.length === 0) {
       // If no tasks exist for this home, we should generate them
-      return true;
-    }
-    
-    // If tasks have never been generated, generate them
-    if (!user.last_tasks_generated_at) {
       return true;
     }
     

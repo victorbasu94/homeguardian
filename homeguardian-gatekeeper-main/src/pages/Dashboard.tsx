@@ -391,9 +391,12 @@ const Dashboard = () => {
           task: task.title,
           taskDescription: task.description,
           suggestedCompletionDate: task.due_date,
-          estimatedCost: task.estimated_cost || 0,
-          estimatedTime: task.estimated_time || "1 hour",
-          subTasks: task.subtasks || []
+          estimatedCost: typeof task.estimated_cost === 'number' ? task.estimated_cost : 0,
+          estimatedTime: typeof task.estimated_time === 'string' ? task.estimated_time : '1 hour',
+          subTasks: Array.isArray(task.subtasks) ? task.subtasks : [],
+          priority: task.priority || 'medium',
+          category: task.category || 'general',
+          status: task.status || 'pending'
         }));
         
         setMaintenanceTasks(formattedTasks);

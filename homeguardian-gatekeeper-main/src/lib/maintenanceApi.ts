@@ -82,15 +82,15 @@ async function getProductionMaintenancePlan(homeDetails: HomeDetails): Promise<M
     return {
       home_id: homeDetails.id,
       tasks: data.tasks.map((task: any) => ({
-        title: task.title || task.task,
-        description: task.description || task.taskDescription,
-        due_date: task.due_date || task.suggestedCompletionDate,
-        status: 'pending',
-        priority: getPriorityFromDueDate(task.due_date || task.suggestedCompletionDate),
+        title: task.task_name || task.title || task.task || 'Untitled Task',
+        description: task.description || task.taskDescription || 'No description provided',
+        due_date: task.due_date || task.suggestedCompletionDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        status: task.status || 'pending',
+        priority: task.priority || getPriorityFromDueDate(task.due_date || task.suggestedCompletionDate),
         category: task.category || 'general',
-        estimated_time: task.estimated_time || task.estimatedTime,
-        estimated_cost: task.estimated_cost || task.estimatedCost,
-        subtasks: task.subtasks || task.subTasks || []
+        estimated_time: task.estimated_time || task.estimatedTime || '1 hour',
+        estimated_cost: task.estimated_cost || task.estimatedCost || 0,
+        subtasks: task.subtasks || task.subTasks || task.steps || []
       })),
       generated_at: data.generated_at || new Date().toISOString()
     };
