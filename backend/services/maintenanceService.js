@@ -249,7 +249,10 @@ async function generateMaintenancePlan(home, useAI = false, forceGeneration = fa
     let generatedTasks = [];
     
     // Check if we're in development mode - if so, use mock data instead of calling OpenAI
-    if (process.env.NODE_ENV !== 'production') {
+    const isDevelopment = process.env.NODE_ENV !== 'production';
+    logger.info(`Current environment: ${process.env.NODE_ENV}, isDevelopment: ${isDevelopment}`);
+    
+    if (isDevelopment) {
       logger.info('Using mock data for maintenance plan in development mode');
       const mockResult = generateMockMaintenancePlan(home);
       
@@ -274,13 +277,41 @@ async function generateMaintenancePlan(home, useAI = false, forceGeneration = fa
       };
     }
     
-    // If AI-powered plan generation is requested and we're in production
-    if (useAI && process.env.OPENAI_API_KEY) {
-      const aiPlan = await generateMaintenancePlanWithAI(home);
-      
-      // Convert AI-generated plan to our task format
-      if (aiPlan && aiPlan.tasks && Array.isArray(aiPlan.tasks)) {
-        generatedTasks = aiPlan.tasks.map(item => ({
+    // If we're in production, proceed with AI-powered plan generation
+    logger.info('In production mode, attempting AI-powered plan generation');
+    if (!process.env.OPENAI_API_KEY) {
+      logger.error('OpenAI API key not configured in production mode');
+      throw new Error('OpenAI API key is required in production mode');
+    }
+    
+    const aiPlan = await generateMaintenancePlanWithAI(home);
+    
+    // Convert AI-generated plan to our task format
+    if (aiPlan && aiPlan.tasks && Array.isArray(aiPlan.tasks)) {
+      generatedTasks = aiPlan.tasks.map(item => {
+        // Map category to valid enum value
+        let category = 'maintenance';
+        if (item.category) {
+          const categoryMap = {
+            'hvac': 'maintenance',
+            'plumbing': 'maintenance',
+            'electrical': 'maintenance',
+            'cleaning': 'cleaning',
+            'safety': 'safety',
+            'seasonal': 'seasonal',
+            'repair': 'repair',
+            'improvement': 'improvement'
+          };
+          category = categoryMap[item.category.toLowerCase()] || 'maintenance';
+        }
+
+        // Format steps as objects with step_number and description
+        const steps = (item.subtasks || item.subTasks || []).map((step, index) => ({
+          step_number: index + 1,
+          description: typeof step === 'string' ? step : step.description || ''
+        }));
+
+        return {
           home_id: home._id,
           task_name: item.title || item.task,
           description: item.description || item.taskDescription || `Maintenance task: ${item.title || item.task}`,
@@ -289,35 +320,35 @@ async function generateMaintenancePlan(home, useAI = false, forceGeneration = fa
           why: "AI-recommended maintenance task",
           estimated_time: parseEstimatedTime(item.estimated_time || item.estimatedTime),
           estimated_cost: item.estimated_cost || item.estimatedCost || 0,
-          category: item.category || 'maintenance',
+          category: category,
           priority: item.priority || determinePriority(item.due_date || item.suggestedCompletionDate),
-          steps: item.subtasks || item.subTasks || [],
+          steps: steps,
           completed: false,
           ai_generated: true
-        }));
-        
-        // Delete existing tasks and save new ones within the transaction
-        await Task.deleteMany({ home_id: home._id }, { session });
-        await Task.insertMany(generatedTasks, { session });
-        await updateTaskGenerationTimestamp(home.user_id);
-        
-        // Update user's onboarding status if in onboarding flow
-        if (user.onboarding_status === 'HOME_CREATED' || user.onboarding_status === 'REGISTERED') {
-          await User.findByIdAndUpdate(
-            home.user_id,
-            { onboarding_status: 'TASKS_GENERATED' },
-            { session }
-          );
-        }
-        
-        await session.commitTransaction();
-        
-        return {
-          tasks: generatedTasks,
-          message: 'AI-powered maintenance plan generated successfully',
-          generated_at: aiPlan.generated_at || new Date().toISOString()
         };
+      });
+      
+      // Delete existing tasks and save new ones within the transaction
+      await Task.deleteMany({ home_id: home._id }, { session });
+      await Task.insertMany(generatedTasks, { session });
+      await updateTaskGenerationTimestamp(home.user_id);
+      
+      // Update user's onboarding status if in onboarding flow
+      if (user.onboarding_status === 'HOME_CREATED' || user.onboarding_status === 'REGISTERED') {
+        await User.findByIdAndUpdate(
+          home.user_id,
+          { onboarding_status: 'TASKS_GENERATED' },
+          { session }
+        );
       }
+      
+      await session.commitTransaction();
+      
+      return {
+        tasks: generatedTasks,
+        message: 'AI-powered maintenance plan generated successfully',
+        generated_at: aiPlan.generated_at || new Date().toISOString()
+      };
     }
     
     // Original rule-based logic if AI generation failed or wasn't requested
@@ -562,11 +593,7 @@ function generateMockMaintenancePlan(home) {
     }
   ];
   
-  // Save mock tasks to the database
-  Task.insertMany(mockTasks).catch(err => {
-    logger.error('Error saving mock tasks to database:', err);
-  });
-  
+  // Return the mock data without saving to database
   return {
     tasks: mockTasks,
     message: 'Mock maintenance plan generated for development',
