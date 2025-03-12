@@ -15,6 +15,7 @@ const errorHandler = require('./middleware/errorHandler');
 const routes = require('./routes');
 const swaggerDocs = require('./config/swagger');
 const { initReminderService } = require('./services/reminderService');
+const { initCronJobs } = require('./services/cronService');
 
 // Initialize Express app
 const app = express();
@@ -24,6 +25,9 @@ connectDB();
 
 // Initialize reminder service
 initReminderService();
+
+// Initialize cron jobs for scheduled tasks
+initCronJobs();
 
 // Security middleware with relaxed settings for development
 if (process.env.NODE_ENV === 'production') {

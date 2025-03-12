@@ -220,11 +220,18 @@ function calculateDueDate(frequency) {
  * @param {Object} home - The home object
  * @param {Boolean} useAI - Whether to use AI for generating the plan
  * @param {Boolean} forceGeneration - Whether to force generation regardless of the 3-month rule
+ * @param {Object} existingSession - Optional: existing MongoDB session from parent function
  * @returns {Array} - Array of task objects
  */
-async function generateMaintenancePlan(home, useAI = false, forceGeneration = false) {
-  const session = await mongoose.startSession();
-  session.startTransaction();
+async function generateMaintenancePlan(home, useAI = false, forceGeneration = false, existingSession = null) {
+  // If an existing session was provided, use it instead of creating a new one
+  const session = existingSession || await mongoose.startSession();
+  
+  // Only start a transaction if we created a new session
+  const shouldManageTransaction = !existingSession;
+  if (shouldManageTransaction) {
+    session.startTransaction();
+  }
   
   try {
     // Get user to check onboarding status
@@ -270,7 +277,11 @@ async function generateMaintenancePlan(home, useAI = false, forceGeneration = fa
         );
       }
       
-      await session.commitTransaction();
+      // Only commit if we started our own transaction
+      if (shouldManageTransaction) {
+        await session.commitTransaction();
+      }
+      
       return {
         ...mockResult,
         message: 'New maintenance plan generated successfully'
@@ -342,7 +353,10 @@ async function generateMaintenancePlan(home, useAI = false, forceGeneration = fa
         );
       }
       
-      await session.commitTransaction();
+      // Only commit if we started our own transaction
+      if (shouldManageTransaction) {
+        await session.commitTransaction();
+      }
       
       return {
         tasks: generatedTasks,
@@ -396,7 +410,10 @@ async function generateMaintenancePlan(home, useAI = false, forceGeneration = fa
       }
     }
     
-    await session.commitTransaction();
+    // Only commit if we started our own transaction
+    if (shouldManageTransaction) {
+      await session.commitTransaction();
+    }
     
     return {
       tasks: generatedTasks,
@@ -404,13 +421,17 @@ async function generateMaintenancePlan(home, useAI = false, forceGeneration = fa
       generated_at: new Date().toISOString()
     };
   } catch (error) {
-    if (session.inTransaction()) {
+    // Only abort if we started our own transaction
+    if (shouldManageTransaction && session.inTransaction()) {
       await session.abortTransaction();
     }
     logger.error('Error generating maintenance plan:', error);
     throw error;
   } finally {
-    session.endSession();
+    // Only end session if we created it
+    if (shouldManageTransaction) {
+      session.endSession();
+    }
   }
 }
 

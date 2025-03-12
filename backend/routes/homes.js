@@ -9,6 +9,7 @@ const User = require('../models/User');
 const logger = require('../utils/logger');
 const { generateMaintenancePlan } = require('../services/maintenanceService');
 const mongoose = require('mongoose');
+const { queueTaskGenerationRetry } = require('../services/taskRetryService');
 
 /**
  * @swagger
@@ -244,35 +245,59 @@ router.post('/',
         );
       }
 
-      // Generate initial maintenance plan for the new home
-      // Force generation since this is a new home
-      const result = await generateMaintenancePlan(home, true, true);
-      logger.info(`Generated initial maintenance plan for home ${home._id}`);
+      // Try to generate initial maintenance plan for the new home
+      try {
+        // Force generation since this is a new home
+        const result = await generateMaintenancePlan(home, true, true, session);
+        logger.info(`Generated initial maintenance plan for home ${home._id}`);
 
-      // Update user's onboarding status to TASKS_GENERATED if tasks were created successfully
-      if (result.tasks && result.tasks.length > 0) {
-        await User.findByIdAndUpdate(
-          req.user.id,
-          { 
-            onboarding_status: 'TASKS_GENERATED',
-            last_tasks_generated_at: new Date(),
-            onboarding_completed_at: new Date()
-          },
-          { session }
-        );
-      }
-
-      // Commit the transaction
-      await session.commitTransaction();
-
-      // Return success response with both home and tasks
-      res.status(201).json({
-        message: "Home created successfully with maintenance plan",
-        data: {
-          home: home,
-          tasks: result.tasks
+        // Update user's onboarding status to TASKS_GENERATED if tasks were created successfully
+        if (result.tasks && result.tasks.length > 0) {
+          await User.findByIdAndUpdate(
+            req.user.id,
+            { 
+              onboarding_status: 'TASKS_GENERATED',
+              last_tasks_generated_at: new Date(),
+              onboarding_completed_at: new Date()
+            },
+            { session }
+          );
         }
-      });
+
+        // Commit the transaction
+        await session.commitTransaction();
+
+        // Return success response with both home and tasks
+        res.status(201).json({
+          message: "Home created successfully with maintenance plan",
+          data: {
+            home: home,
+            tasks: result.tasks
+          }
+        });
+      } catch (taskError) {
+        // If task generation fails, still commit the home creation transaction
+        await session.commitTransaction();
+        
+        logger.error('Error generating maintenance plan, but home was created:', taskError);
+        
+        // Queue a task generation retry
+        try {
+          await queueTaskGenerationRetry(home._id.toString());
+          logger.info(`Queued task generation retry for home ${home._id}`);
+        } catch (retryError) {
+          logger.error('Error queueing task generation retry:', retryError);
+        }
+        
+        // Return success response for home creation, but without tasks
+        res.status(201).json({
+          message: "Home created successfully. Task generation will be retried automatically.",
+          data: {
+            home: home,
+            tasks: []
+          }
+        });
+      }
     } catch (error) {
       // Abort transaction on error
       await session.abortTransaction();
