@@ -45,7 +45,18 @@ router.post('/generate-plan', verifyToken, extendedTimeout, async (req, res) => 
     logger.info('Received maintenance plan generation request:', {
       body: req.body,
       user: req.user?.id,
-      force: req.query.force
+      force: req.query.force,
+      headers: {
+        authorization: req.headers.authorization ? 'Bearer [REDACTED]' : 'Not provided',
+        'content-type': req.headers['content-type'],
+        host: req.headers.host,
+        origin: req.headers.origin
+      },
+      env: {
+        NODE_ENV: process.env.NODE_ENV,
+        OPENAI_MODEL: process.env.OPENAI_MODEL,
+        hasOpenAIKey: !!process.env.OPENAI_API_KEY
+      }
     });
 
     // Log environment mode

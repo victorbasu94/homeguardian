@@ -20,8 +20,37 @@ async function generateMaintenancePlanWithAI(homeDetails) {
       throw new Error('OpenAI API key is not configured');
     }
     
+    // Test the OpenAI API connection first
+    try {
+      logger.info('Testing OpenAI API connection...');
+      const testResponse = await axios.post(
+        'https://api.openai.com/v1/chat/completions',
+        {
+          model: process.env.OPENAI_MODEL || 'gpt-3.5-turbo',
+          messages: [{ role: 'user', content: 'Test connection' }],
+          max_tokens: 5
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+          }
+        }
+      );
+      logger.info('OpenAI API connection test successful:', {
+        status: testResponse.status,
+        model: testResponse.data.model
+      });
+    } catch (testError) {
+      logger.error('OpenAI API connection test failed:', {
+        error: testError.message,
+        response: testError.response?.data
+      });
+      throw new Error(`OpenAI API connection test failed: ${testError.message}`);
+    }
+    
     logger.info('Using OpenAI configuration:', {
-      model: process.env.OPENAI_MODEL || 'gpt-4',
+      model: process.env.OPENAI_MODEL || 'gpt-3.5-turbo',
       apiKeyPrefix: process.env.OPENAI_API_KEY.substring(0, 7) + '...'
     });
 
@@ -181,11 +210,18 @@ Return ONLY the JSON object with no additional text or explanation.`
     logger.error('Error in OpenAI service:', {
       name: error.name,
       message: error.message,
+      stack: error.stack,
       response: {
         status: error.response?.status,
         statusText: error.response?.statusText,
         data: error.response?.data,
-        headers: error.response?.headers
+        headers: error.response?.headers,
+        config: {
+          url: error.response?.config?.url,
+          method: error.response?.config?.method,
+          baseURL: error.response?.config?.baseURL,
+          headers: error.response?.config?.headers
+        }
       }
     });
     
@@ -196,6 +232,10 @@ Return ONLY the JSON object with no additional text or explanation.`
       throw new Error('OpenAI API rate limit exceeded');
     } else if (error.response?.status === 500) {
       throw new Error('OpenAI API service error');
+    } else if (error.code === 'ECONNREFUSED') {
+      throw new Error('Could not connect to OpenAI API');
+    } else if (error.code === 'ETIMEDOUT') {
+      throw new Error('Connection to OpenAI API timed out');
     }
     
     throw new Error(`Failed to generate maintenance plan: ${error.message}`);
