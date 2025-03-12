@@ -255,7 +255,8 @@ router.post('/',
           req.user.id,
           { 
             onboarding_status: 'TASKS_GENERATED',
-            last_tasks_generated_at: new Date()
+            last_tasks_generated_at: new Date(),
+            onboarding_completed_at: new Date()
           },
           { session }
         );

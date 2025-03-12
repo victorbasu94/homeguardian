@@ -21,6 +21,10 @@ const UserSchema = new mongoose.Schema({
     enum: ['REGISTERED', 'HOME_CREATED', 'TASKS_GENERATED', 'ONBOARDING_COMPLETE'],
     default: 'REGISTERED'
   },
+  onboarding_completed_at: {
+    type: Date,
+    default: null
+  },
   stripe_customer_id: String,
   subscription_status: {
     type: String,

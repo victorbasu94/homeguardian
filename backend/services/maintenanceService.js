@@ -49,31 +49,47 @@ async function shouldGenerateTasks(userId, homeId) {
       logger.info(`User ${userId} has no last_tasks_generated_at or it's null - generating initial tasks`);
       return true;
     }
+
+    // Check when the user completed onboarding
+    const onboardingCompletedAt = user.onboarding_completed_at;
+    if (!onboardingCompletedAt) {
+      // If no onboarding completion date, treat as if just completed
+      return true;
+    }
+
+    const threeMonthsFromOnboarding = new Date(onboardingCompletedAt);
+    threeMonthsFromOnboarding.setMonth(threeMonthsFromOnboarding.getMonth() + 3);
+    const now = new Date();
+
+    // If it's been less than 3 months since onboarding, always generate new tasks
+    if (now < threeMonthsFromOnboarding) {
+      logger.info(`Less than 3 months since onboarding - generating new tasks`);
+      return true;
+    }
     
     // Check if there are any existing tasks for this home
     const existingTasks = await Task.find({ home_id: homeId });
     
-    if (existingTasks.length === 0) {
-      logger.info(`No existing tasks found for home ${homeId} - will generate new tasks`);
+    // If no existing tasks, we should generate
+    if (!existingTasks || existingTasks.length === 0) {
+      logger.info(`No existing tasks found for home ${homeId} - generating tasks`);
       return true;
     }
+
+    // If it's been more than 3 months since last generation, generate new tasks
+    const threeMonthsAgo = new Date();
+    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
     
-    // Check if it's been more than 3 months since the last generation
-    const lastGenerated = DateTime.fromJSDate(user.last_tasks_generated_at);
-    const threeMonthsAgo = DateTime.now().minus({ months: 3 });
-    
-    const shouldGenerate = lastGenerated < threeMonthsAgo;
-    logger.info(`Task generation decision for user ${userId}:
-      - Last generated: ${lastGenerated.toISO()}
-      - Three months ago: ${threeMonthsAgo.toISO()}
-      - Should generate: ${shouldGenerate}
-      - Existing tasks count: ${existingTasks.length}
-      - Onboarding status: ${user.onboarding_status}`);
-    
-    return shouldGenerate;
+    if (new Date(user.last_tasks_generated_at) < threeMonthsAgo) {
+      logger.info(`More than 3 months since last task generation - generating new tasks`);
+      return true;
+    }
+
+    logger.info(`Using existing tasks - less than 3 months since last generation`);
+    return false;
   } catch (error) {
-    logger.error('Error checking if tasks should be generated:', error);
-    // For new users or error cases, default to generating tasks
+    logger.error('Error in shouldGenerateTasks:', error);
+    // In case of error, default to generating tasks
     return true;
   }
 }
