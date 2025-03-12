@@ -276,53 +276,47 @@ async function generateMaintenancePlan(home, useAI = false, forceGeneration = fa
     
     // If AI-powered plan generation is requested and we're in production
     if (useAI && process.env.OPENAI_API_KEY) {
-      try {
-        const aiPlan = await generateMaintenancePlanWithAI(home);
+      const aiPlan = await generateMaintenancePlanWithAI(home);
+      
+      // Convert AI-generated plan to our task format
+      if (aiPlan && aiPlan.tasks && Array.isArray(aiPlan.tasks)) {
+        generatedTasks = aiPlan.tasks.map(item => ({
+          home_id: home._id,
+          task_name: item.title || item.task,
+          description: item.description || item.taskDescription || `Maintenance task: ${item.title || item.task}`,
+          frequency: 'custom', // AI doesn't specify frequency directly
+          due_date: item.due_date || item.suggestedCompletionDate,
+          why: "AI-recommended maintenance task",
+          estimated_time: parseEstimatedTime(item.estimated_time || item.estimatedTime),
+          estimated_cost: item.estimated_cost || item.estimatedCost || 0,
+          category: item.category || 'maintenance',
+          priority: item.priority || determinePriority(item.due_date || item.suggestedCompletionDate),
+          steps: item.subtasks || item.subTasks || [],
+          completed: false,
+          ai_generated: true
+        }));
         
-        // Convert AI-generated plan to our task format
-        if (aiPlan && aiPlan.tasks && Array.isArray(aiPlan.tasks)) {
-          generatedTasks = aiPlan.tasks.map(item => ({
-            home_id: home._id,
-            task_name: item.title || item.task,
-            description: item.description || item.taskDescription || `Maintenance task: ${item.title || item.task}`,
-            frequency: 'custom', // AI doesn't specify frequency directly
-            due_date: item.due_date || item.suggestedCompletionDate,
-            why: "AI-recommended maintenance task",
-            estimated_time: parseEstimatedTime(item.estimated_time || item.estimatedTime),
-            estimated_cost: item.estimated_cost || item.estimatedCost || 0,
-            category: item.category || 'maintenance',
-            priority: item.priority || determinePriority(item.due_date || item.suggestedCompletionDate),
-            steps: item.subtasks || item.subTasks || [],
-            completed: false,
-            ai_generated: true
-          }));
-          
-          // Delete existing tasks and save new ones within the transaction
-          await Task.deleteMany({ home_id: home._id }, { session });
-          await Task.insertMany(generatedTasks, { session });
-          await updateTaskGenerationTimestamp(home.user_id);
-          
-          // Update user's onboarding status if in onboarding flow
-          if (user.onboarding_status === 'HOME_CREATED' || user.onboarding_status === 'REGISTERED') {
-            await User.findByIdAndUpdate(
-              home.user_id,
-              { onboarding_status: 'TASKS_GENERATED' },
-              { session }
-            );
-          }
-          
-          await session.commitTransaction();
-          
-          return {
-            tasks: generatedTasks,
-            message: 'AI-powered maintenance plan generated successfully',
-            generated_at: aiPlan.generated_at || new Date().toISOString()
-          };
+        // Delete existing tasks and save new ones within the transaction
+        await Task.deleteMany({ home_id: home._id }, { session });
+        await Task.insertMany(generatedTasks, { session });
+        await updateTaskGenerationTimestamp(home.user_id);
+        
+        // Update user's onboarding status if in onboarding flow
+        if (user.onboarding_status === 'HOME_CREATED' || user.onboarding_status === 'REGISTERED') {
+          await User.findByIdAndUpdate(
+            home.user_id,
+            { onboarding_status: 'TASKS_GENERATED' },
+            { session }
+          );
         }
-      } catch (error) {
-        await session.abortTransaction();
-        logger.error('Error generating AI maintenance plan:', error);
-        throw error;
+        
+        await session.commitTransaction();
+        
+        return {
+          tasks: generatedTasks,
+          message: 'AI-powered maintenance plan generated successfully',
+          generated_at: aiPlan.generated_at || new Date().toISOString()
+        };
       }
     }
     
@@ -379,7 +373,9 @@ async function generateMaintenancePlan(home, useAI = false, forceGeneration = fa
       generated_at: new Date().toISOString()
     };
   } catch (error) {
-    await session.abortTransaction();
+    if (session.inTransaction()) {
+      await session.abortTransaction();
+    }
     logger.error('Error generating maintenance plan:', error);
     throw error;
   } finally {
